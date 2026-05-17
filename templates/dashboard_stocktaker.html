@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}盘点员工作台{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">盘点员工作台</span>{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h1>盘点员工作台</h1>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 进行中盘点 {{ open_orders|length }} 单 · 近期关闭 {{ recent_closed|length }} 单</div>
+</div>
+
+<div class="stat-grid" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="num">{{ open_orders|length }}</div><div class="label">进行中盘点</div></div>
+    <div class="stat-card"><div class="num">{{ recent_closed|length }}</div><div class="label">近期关闭</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">在仓总数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.batch }}</div><div class="label">批次数</div></div>
+</div>
+
+<div class="card">
+    <div class="card-header">进行中盘点单 <a href="{{ url_for('stocktake_list') }}">全部 →</a></div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>单号</th><th>备注</th><th class="text-right">总行</th><th class="text-right">已盘</th><th class="text-right">差异</th><th>创建时间</th><th></th></tr></thead>
+            <tbody>
+                {% for o in open_orders %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('stocktake_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
+                    <td class="text-secondary" style="font-size:12px;">{{ o.note or '-' }}</td>
+                    <td class="mono text-right">{{ o.total }}</td>
+                    <td class="mono text-right">{{ o.counted }}/{{ o.total }}</td>
+                    <td class="mono text-right {% if o.diff > 0 %}text-error fw-bold{% endif %}">{{ o.diff }}</td>
+                    <td class="mono text-secondary" style="font-size:12px;">{{ o.created_at }}</td>
+                    <td><a class="btn btn-sm btn-primary" href="{{ url_for('stocktake_detail', order_no=o.order_no) }}">录入</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="empty">无进行中盘点</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">近期已关闭盘点单</div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>单号</th><th class="text-right">差异行数</th><th>关闭时间</th></tr></thead>
+            <tbody>
+                {% for c in recent_closed %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('stocktake_detail', order_no=c.order_no) }}">{{ c.order_no }}</a></td>
+                    <td class="mono text-right">{{ c.diff }}</td>
+                    <td class="mono text-secondary" style="font-size:12px;">{{ c.closed_at }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="empty">暂无已关闭盘点</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

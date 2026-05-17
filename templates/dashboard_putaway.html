@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}上架员工作台{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">上架员工作台</span>{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h1>上架员工作台</h1>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 库位占用 {{ loc_occupancy|length }} 个 · 近 1 日已审入库 {{ recent_inbound|length }} 张</div>
+</div>
+
+<div class="stat-grid" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="num">{{ recent_inbound|length }}</div><div class="label">近 1 日待上架</div></div>
+    <div class="stat-card"><div class="num">{{ loc_occupancy|length }}</div><div class="label">总库位数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">在仓总件数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.batch }}</div><div class="label">在仓批次</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="card">
+        <div class="card-header">近 1 日已审入库（待上架） <a href="{{ url_for('inbound_list') }}">全部 →</a></div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead><tr><th>单号</th><th>供应商</th><th class="text-right">件数</th><th>时间</th></tr></thead>
+                <tbody>
+                    {% for r in recent_inbound %}
+                    <tr>
+                        <td class="mono" style="font-size:12px;"><a href="{{ url_for('inbound_detail', order_no=r.order_no) }}">{{ r.order_no }}</a></td>
+                        <td>{{ r.supplier or '-' }}</td>
+                        <td class="mono text-right fw-bold">{{ r.qty }}</td>
+                        <td class="mono text-secondary" style="font-size:12px;">{{ r.created_at }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="empty">无待上架</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">库位占用 <a href="{{ url_for('location_list') }}">详情 →</a></div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead><tr><th>库位</th><th>类型</th><th class="text-right">已存</th></tr></thead>
+                <tbody>
+                    {% for l in loc_occupancy %}
+                    <tr>
+                        <td class="mono fw-bold">{{ l.code }}</td>
+                        <td><span class="tag">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻','isolation':'隔离','downgrade':'降级'}.get(l.zone_type, l.zone_type) }}</span></td>
+                        <td class="mono text-right">{{ l.used }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="empty">无库位</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

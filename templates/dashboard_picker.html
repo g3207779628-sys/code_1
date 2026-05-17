@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}拣货员工作台{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">拣货员工作台</span>{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h1>拣货员工作台</h1>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 待拣 {{ my_pending|length }} · 今日已完成 {{ my_done_today|length }}</div>
+</div>
+
+<div class="stat-grid" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="num">{{ my_pending|length }}</div><div class="label">待拣任务</div></div>
+    <div class="stat-card"><div class="num">{{ my_done_today|length }}</div><div class="label">今日已完成</div></div>
+    <div class="stat-card"><div class="num">{{ my_done_today|sum(attribute='qty') if my_done_today else 0 }}</div><div class="label">今日已拣件数</div></div>
+    <div class="stat-card"><div class="num">{{ pick_rank[0]['picked'] if pick_rank else 0 }}</div><div class="label">今日榜首件数</div></div>
+</div>
+
+<div class="card">
+    <div class="card-header">待拣货任务（按 FIFO 已派批次） <a href="{{ url_for('pick_list') }}">完整列表 →</a></div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>出库单</th><th>销售单</th><th>收件人</th><th class="text-right">行数</th><th class="text-right">件数</th><th>派单时间</th><th></th></tr></thead>
+            <tbody>
+                {% for p in my_pending %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('pick_detail', order_no=p.order_no) }}">{{ p.order_no }}</a></td>
+                    <td class="mono text-secondary" style="font-size:12px;">{{ p.sales_order_no }}</td>
+                    <td>{{ p.receiver_name or '-' }}</td>
+                    <td class="mono text-right">{{ p.lines }}</td>
+                    <td class="mono text-right fw-bold">{{ p.qty }}</td>
+                    <td class="mono text-secondary" style="font-size:12px;">{{ p.created_at }}</td>
+                    <td><a class="btn btn-sm btn-primary" href="{{ url_for('pick_detail', order_no=p.order_no) }}">开始</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="empty">所有任务已拣完</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="card">
+        <div class="card-header">我今日已完成</div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead><tr><th>出库单</th><th class="text-right">件数</th><th>完成时间</th></tr></thead>
+                <tbody>
+                    {% for d in my_done_today %}
+                    <tr>
+                        <td class="mono"><a href="{{ url_for('pick_detail', order_no=d.order_no) }}">{{ d.order_no }}</a></td>
+                        <td class="mono text-right fw-bold">{{ d.qty }}</td>
+                        <td class="mono text-secondary" style="font-size:12px;">{{ d.completed_at }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="empty">今日还没完成任务</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">今日拣货排行</div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead><tr><th class="text-right">名次</th><th>员工</th><th class="text-right">拣货单数</th></tr></thead>
+                <tbody>
+                    {% for r in pick_rank %}
+                    <tr {% if r.name == session.display_name %}style="background:#F6F9FC;"{% endif %}>
+                        <td class="mono text-right fw-bold">#{{ loop.index }}</td>
+                        <td>{{ r.name }} {% if r.name == session.display_name %}<span class="text-secondary">（我）</span>{% endif %}</td>
+                        <td class="mono text-right">{{ r.picked }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="empty">今日还没拣货数据</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

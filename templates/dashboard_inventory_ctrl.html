@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}库存控制员工作台{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">库存控制员工作台</span>{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h1>库存控制员工作台</h1>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 待审报损 {{ pending_damage|length }} · 库存预警 {{ low_stock|length }}</div>
+</div>
+
+<div class="stat-grid" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">在仓总数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_reserved }}</div><div class="label">已预占</div></div>
+    <div class="stat-card"><div class="num">{{ pending_damage|length }}</div><div class="label">待审报损</div></div>
+    <div class="stat-card"><div class="num">{{ low_stock|length }}</div><div class="label">缺货 SKU</div></div>
+</div>
+
+<div class="card">
+    <div class="card-header">待审报损单 · {{ pending_damage|length }} <a href="{{ url_for('damage_list') }}">全部审批 →</a></div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>SKU</th><th>批次</th><th>库位</th><th>原因</th><th class="text-right">数量</th><th>申请人</th><th></th></tr></thead>
+            <tbody>
+                {% for d in pending_damage %}
+                <tr>
+                    <td class="mono">{{ d.sku_code }}</td>
+                    <td class="mono" style="font-size:12px;">{{ d.batch_no }}</td>
+                    <td class="mono">{{ d.loc }}</td>
+                    <td><span class="tag">{{ {'broken':'破损','expired':'过期','lost':'丢失','stolen':'被盗','other':'其他'}.get(d.reason_type, d.reason_type) }}</span></td>
+                    <td class="mono text-right">{{ d.quantity }}</td>
+                    <td>{{ d.applicant or '-' }}</td>
+                    <td><a class="btn btn-sm" href="{{ url_for('damage_list') }}">审</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="empty">无待审报损</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">库存预警（低于安全库存） <a href="{{ url_for('inventory_list') }}">库存详情 →</a></div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>SKU</th><th>商品</th><th class="text-right">当前</th><th class="text-right">安全</th><th class="text-right">缺口</th></tr></thead>
+            <tbody>
+                {% for l in low_stock %}
+                <tr>
+                    <td class="mono">{{ l.code }}</td>
+                    <td>{{ l.name }}</td>
+                    <td class="mono text-right fw-bold">{{ l.on_hand }}</td>
+                    <td class="mono text-right">{{ l.safety_stock }}</td>
+                    <td class="mono text-right text-error fw-bold">{{ l.on_hand - l.safety_stock }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="empty">所有 SKU 库存充足</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

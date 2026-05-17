@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}收货员工作台{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">收货员工作台</span>{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h1>收货员工作台</h1>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 待验收入库 {{ pending_inbound|length }} 张</div>
+</div>
+
+<div class="stat-grid" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="num">{{ pending_inbound|length }}</div><div class="label">待验收单</div></div>
+    <div class="stat-card"><div class="num">{{ recent_log|length }}</div><div class="label">近期入库笔数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.batch }}</div><div class="label">在仓批次</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">在仓总数</div></div>
+</div>
+
+<div class="card">
+    <div class="card-header">待验收入库单 <a href="{{ url_for('inbound_new') }}">+ 新建入库</a></div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>单号</th><th>供应商</th><th class="text-right">总件数</th><th>创建时间</th><th></th></tr></thead>
+            <tbody>
+                {% for o in pending_inbound %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('inbound_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
+                    <td>{{ o.supplier or '-' }}</td>
+                    <td class="mono text-right fw-bold">{{ o.qty }}</td>
+                    <td class="mono text-secondary" style="font-size:12px;">{{ o.created_at }}</td>
+                    <td><a class="btn btn-sm btn-primary" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">验收</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="empty">无待验收单</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">近期入库流水 <a href="{{ url_for('stock_log_view') }}">完整流水 →</a></div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>时间</th><th>SKU</th><th>批次</th><th>库位</th><th class="text-right">数量</th></tr></thead>
+            <tbody>
+                {% for r in recent_log %}
+                <tr>
+                    <td class="mono text-secondary" style="font-size:12px;">{{ r.occurred_at }}</td>
+                    <td class="mono">{{ r.sku }}</td>
+                    <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
+                    <td class="mono">{{ r.loc }}</td>
+                    <td class="mono text-right fw-bold text-success">+{{ r.delta }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="empty">暂无入库流水</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

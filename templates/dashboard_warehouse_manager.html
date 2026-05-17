@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}决策驾驶舱{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">仓库经理工作台</span>{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:24px;">
+    <h1>决策驾驶舱</h1>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">早上好，{{ session.display_name }} · 今天是 2026-05-17 · 全仓 11 人在岗</div>
+</div>
+
+<div class="stat-grid" style="margin-bottom:24px;">
+    <div class="stat-card"><div class="num">¥{{ '{:,.0f}'.format(stats.today_revenue) }}</div><div class="label">今日营业额</div></div>
+    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日销售单</div></div>
+    <div class="stat-card"><div class="num">{{ stats.pending_damage + stats.draft_inbound }}</div><div class="label">待审批</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">在仓总数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">待拣货任务</div></div>
+    <div class="stat-card"><div class="num">{{ stats.expiry_warn }}</div><div class="label">临期/过期批次</div></div>
+    <div class="stat-card"><div class="num">{{ stats.open_return }}</div><div class="label">处理中退货</div></div>
+    <div class="stat-card"><div class="num">{{ stats.approved_today }}</div><div class="label">今日已审批</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="card">
+        <div class="card-header">待审批中心 · {{ pending_approvals|length }} <a href="{{ url_for('damage_list') }}">全部 →</a></div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead><tr><th>类型</th><th>单号</th><th>申请人</th><th class="text-right">数量</th><th></th></tr></thead>
+                <tbody>
+                    {% for a in pending_approvals %}
+                    <tr>
+                        <td><span class="tag">{{ a.type }}</span></td>
+                        <td class="mono" style="font-size:12px;">{{ a.id }}</td>
+                        <td>{{ a.by or '-' }}</td>
+                        <td class="mono text-right">{{ a.qty }}</td>
+                        <td><a class="btn btn-sm" href="{{ a.url }}">审</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty">无待审批</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">今日团队工作量</div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead><tr><th>员工</th><th>岗位</th><th class="text-right">拣货</th><th class="text-right">审批</th></tr></thead>
+                <tbody>
+                    {% for t in team_workload %}
+                    <tr>
+                        <td>{{ t.name }}</td>
+                        <td class="text-secondary" style="font-size:12px;">{{ POSITIONS.get(t.position, t.position) }}</td>
+                        <td class="mono text-right">{{ t.picked }}</td>
+                        <td class="mono text-right">{{ t.approved }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="empty">暂无数据</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

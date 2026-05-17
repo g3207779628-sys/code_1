@@ -10,6 +10,33 @@ app = Flask(__name__)
 app.secret_key = "code_1-dev-secret-change-in-prod"
 
 
+MENU_BY_POSITION = {
+    "warehouse_manager": "all",
+    "inventory_ctrl":    "all",
+    "purchaser":   ["dashboard", "report", "ai", "inbound", "inventory", "expiry", "log", "sku", "supplier"],
+    "receiver":    ["dashboard", "inbound", "inventory", "log", "supplier"],
+    "putaway":     ["dashboard", "inbound", "inventory", "location", "log"],
+    "cs":          ["dashboard", "sales", "return", "customer", "sku"],
+    "qc":          ["dashboard", "return", "damage", "inventory", "log"],
+    "picker":      ["dashboard", "pick", "inventory", "log"],
+    "packer":      ["dashboard", "pick", "sales"],
+    "shipping":    ["dashboard", "pick", "sales"],
+    "stocktaker":  ["dashboard", "stocktake", "inventory", "log"],
+}
+ALL_MENUS = {"dashboard", "report", "ai", "sales", "pick", "inbound", "return",
+             "inventory", "expiry", "damage", "stocktake", "log",
+             "sku", "customer", "supplier", "warehouse", "location"}
+
+
+@app.context_processor
+def inject_menus():
+    if "position" not in session:
+        return {"menus": set(), "POSITIONS": database.POSITIONS}
+    allowed = MENU_BY_POSITION.get(session["position"], "all")
+    menus = ALL_MENUS if allowed == "all" else set(allowed)
+    return {"menus": menus, "POSITIONS": database.POSITIONS}
+
+
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -49,6 +76,8 @@ def login():
             session["username"] = row["username"]
             session["role"] = row["role"]
             session["display_name"] = row["display_name"] or row["username"]
+            session["position"] = row["position"] or "warehouse_manager"
+            session["position_label"] = database.POSITIONS.get(session["position"], session["position"])
             flash(f"欢迎回来，{session['display_name']}", "success")
             return redirect(url_for("index"))
         flash("用户名或密码错误", "error")
@@ -64,30 +93,195 @@ def logout():
 
 # ============ 首页 ============
 
+def _global_stats(conn):
+    return {
+        "sku": conn.execute("SELECT COUNT(*) AS c FROM sku").fetchone()["c"],
+        "batch": conn.execute("SELECT COUNT(*) AS c FROM batch").fetchone()["c"],
+        "total_on_hand": conn.execute("SELECT COALESCE(SUM(on_hand),0) AS c FROM inventory").fetchone()["c"],
+        "total_reserved": conn.execute("SELECT COALESCE(SUM(reserved),0) AS c FROM inventory").fetchone()["c"],
+        "pending_pick": conn.execute("SELECT COUNT(*) AS c FROM outbound_order WHERE status='pending'").fetchone()["c"],
+        "pending_damage": conn.execute("SELECT COUNT(*) AS c FROM damage_log WHERE status='pending'").fetchone()["c"],
+        "expiry_warn": conn.execute(
+            "SELECT COUNT(*) AS c FROM inventory i JOIN batch b ON b.id=i.batch_id "
+            "WHERE i.on_hand>0 AND date(b.expiry_date) <= date('now','+30 days')"
+        ).fetchone()["c"],
+        "expired": conn.execute(
+            "SELECT COUNT(*) AS c FROM inventory i JOIN batch b ON b.id=i.batch_id "
+            "WHERE i.on_hand>0 AND date(b.expiry_date) < date('now')"
+        ).fetchone()["c"],
+        "expiry_urgent": conn.execute(
+            "SELECT COUNT(*) AS c FROM inventory i JOIN batch b ON b.id=i.batch_id "
+            "WHERE i.on_hand>0 AND date(b.expiry_date) BETWEEN date('now') AND date('now','+7 days')"
+        ).fetchone()["c"],
+        "open_return": conn.execute("SELECT COUNT(*) AS c FROM return_order WHERE status IN ('approved','received','qc_done')").fetchone()["c"],
+        "draft_inbound": conn.execute("SELECT COUNT(*) AS c FROM inbound_order WHERE status='draft'").fetchone()["c"],
+        "open_stocktake": conn.execute("SELECT COUNT(*) AS c FROM stocktake_order WHERE status='open'").fetchone()["c"],
+        "today_revenue": conn.execute("SELECT COALESCE(SUM(total_amount),0) AS c FROM sales_order WHERE date(created_at)=date('now')").fetchone()["c"],
+        "today_sales_orders": conn.execute("SELECT COUNT(*) AS c FROM sales_order WHERE date(created_at)=date('now')").fetchone()["c"],
+        "approved_today": conn.execute(
+            "SELECT COUNT(*) AS c FROM (SELECT id FROM damage_log WHERE date(approved_at)=date('now') AND status='approved' "
+            "UNION ALL SELECT id FROM inbound_order WHERE date(approved_at)=date('now') AND status='approved')"
+        ).fetchone()["c"],
+    }
+
+
+def _pending_approvals(conn, limit=10):
+    """全仓维度的待审批：报损 + 入库（草稿）+ 退货待退款。"""
+    items = []
+    for r in conn.execute(
+        "SELECT d.id, s.code AS sku_code, b.batch_no, d.quantity, u.display_name AS applicant, d.created_at "
+        "FROM damage_log d JOIN sku s ON s.id=d.sku_id JOIN batch b ON b.id=d.batch_id "
+        "LEFT JOIN user u ON u.id=d.applicant_id WHERE d.status='pending' ORDER BY d.id DESC LIMIT ?", (limit,)
+    ).fetchall():
+        items.append({"type": "报损", "id": f"DMG-{r['id']:03d}", "detail": f"{r['sku_code']} · {r['batch_no']}", "qty": r["quantity"], "by": r["applicant"], "at": r["created_at"], "url": "/damage"})
+    for r in conn.execute(
+        "SELECT o.order_no, s.name AS supplier_name, u.display_name AS creator, o.created_at, "
+        "(SELECT COALESCE(SUM(quantity),0) FROM inbound_item WHERE order_no=o.order_no) AS qty "
+        "FROM inbound_order o LEFT JOIN supplier s ON s.id=o.supplier_id LEFT JOIN user u ON u.id=o.creator_id "
+        "WHERE o.status='draft' ORDER BY o.id DESC LIMIT ?", (limit,)
+    ).fetchall():
+        items.append({"type": "入库", "id": r["order_no"], "detail": r["supplier_name"] or "-", "qty": r["qty"], "by": r["creator"], "at": r["created_at"], "url": f"/inbound/{r['order_no']}"})
+    return items[:limit]
+
+
 @app.route("/")
 @login_required
 def index():
+    """按 session.position 分发到 11 个 dashboard 模板之一。"""
+    pos = session.get("position") or "warehouse_manager"
+    if pos not in database.POSITIONS:
+        pos = "warehouse_manager"
+    template = f"dashboard_{pos}.html"
     with database.get_conn() as conn:
-        stats = {
-            "sku": conn.execute("SELECT COUNT(*) AS c FROM sku").fetchone()["c"],
-            "warehouse": conn.execute("SELECT COUNT(*) AS c FROM warehouse").fetchone()["c"],
-            "location": conn.execute("SELECT COUNT(*) AS c FROM location").fetchone()["c"],
-            "supplier": conn.execute("SELECT COUNT(*) AS c FROM supplier").fetchone()["c"],
-            "customer": conn.execute("SELECT COUNT(*) AS c FROM customer").fetchone()["c"],
-            "batch": conn.execute("SELECT COUNT(*) AS c FROM batch").fetchone()["c"],
-            "total_on_hand": conn.execute("SELECT COALESCE(SUM(on_hand), 0) AS c FROM inventory").fetchone()["c"],
-            "total_reserved": conn.execute("SELECT COALESCE(SUM(reserved), 0) AS c FROM inventory").fetchone()["c"],
-            "draft_inbound": conn.execute("SELECT COUNT(*) AS c FROM inbound_order WHERE status = 'draft'").fetchone()["c"],
-            "pending_pick": conn.execute("SELECT COUNT(*) AS c FROM outbound_order WHERE status = 'pending'").fetchone()["c"],
-            "expiry_warn": conn.execute(
-                "SELECT COUNT(*) AS c FROM inventory inv JOIN batch b ON b.id=inv.batch_id "
-                "WHERE inv.on_hand > 0 AND date(b.expiry_date) <= date('now', '+30 days')"
-            ).fetchone()["c"],
-            "pending_damage": conn.execute("SELECT COUNT(*) AS c FROM damage_log WHERE status = 'pending'").fetchone()["c"],
-            "open_stocktake": conn.execute("SELECT COUNT(*) AS c FROM stocktake_order WHERE status = 'open'").fetchone()["c"],
-            "open_return": conn.execute("SELECT COUNT(*) AS c FROM return_order WHERE status IN ('approved','received','qc_done')").fetchone()["c"],
-        }
-    return render_template("index.html", stats=stats)
+        ctx = {"stats": _global_stats(conn)}
+        # 各 dashboard 需要的角色化数据
+        if pos == "warehouse_manager":
+            ctx["pending_approvals"] = _pending_approvals(conn, 8)
+            ctx["team_workload"] = conn.execute(
+                "SELECT u.display_name AS name, u.position, "
+                "(SELECT COUNT(*) FROM outbound_order WHERE picker_id=u.id AND date(completed_at)=date('now')) AS picked, "
+                "(SELECT COUNT(*) FROM damage_log WHERE approver_id=u.id AND date(approved_at)=date('now')) AS approved "
+                "FROM user u WHERE u.position IS NOT NULL ORDER BY (picked + approved) DESC LIMIT 6"
+            ).fetchall()
+        elif pos == "inventory_ctrl":
+            ctx["pending_damage"] = conn.execute(
+                "SELECT d.id, s.code AS sku_code, s.name AS sku_name, b.batch_no, l.code AS loc, d.quantity, d.reason_type, u.display_name AS applicant "
+                "FROM damage_log d JOIN sku s ON s.id=d.sku_id JOIN batch b ON b.id=d.batch_id JOIN location l ON l.id=d.location_id "
+                "LEFT JOIN user u ON u.id=d.applicant_id WHERE d.status='pending' ORDER BY d.id DESC LIMIT 10"
+            ).fetchall()
+            ctx["low_stock"] = conn.execute(
+                "SELECT s.code, s.name, s.safety_stock, COALESCE(SUM(i.on_hand),0) AS on_hand "
+                "FROM sku s LEFT JOIN inventory i ON i.sku_id=s.id GROUP BY s.id "
+                "HAVING on_hand < s.safety_stock AND s.safety_stock > 0 ORDER BY (s.safety_stock - on_hand) DESC LIMIT 10"
+            ).fetchall()
+        elif pos == "purchaser":
+            ctx["low_stock"] = conn.execute(
+                "SELECT s.code, s.name, s.safety_stock, COALESCE(SUM(i.on_hand),0) AS on_hand "
+                "FROM sku s LEFT JOIN inventory i ON i.sku_id=s.id GROUP BY s.id "
+                "HAVING on_hand < s.safety_stock AND s.safety_stock > 0 ORDER BY (s.safety_stock - on_hand) DESC LIMIT 10"
+            ).fetchall()
+            ctx["suppliers"] = conn.execute("SELECT * FROM supplier ORDER BY quality_score DESC").fetchall()
+            ctx["recent_inbound"] = conn.execute(
+                "SELECT o.order_no, s.name AS supplier, o.status, o.created_at, "
+                "(SELECT COALESCE(SUM(quantity*unit_price),0) FROM inbound_item WHERE order_no=o.order_no) AS amount "
+                "FROM inbound_order o LEFT JOIN supplier s ON s.id=o.supplier_id ORDER BY o.id DESC LIMIT 8"
+            ).fetchall()
+        elif pos == "receiver":
+            ctx["pending_inbound"] = conn.execute(
+                "SELECT o.order_no, s.name AS supplier, o.status, o.created_at, "
+                "(SELECT COALESCE(SUM(quantity),0) FROM inbound_item WHERE order_no=o.order_no) AS qty "
+                "FROM inbound_order o LEFT JOIN supplier s ON s.id=o.supplier_id "
+                "WHERE o.status='draft' ORDER BY o.created_at DESC LIMIT 10"
+            ).fetchall()
+            ctx["recent_log"] = conn.execute(
+                "SELECT sl.delta, sl.occurred_at, s.code AS sku, b.batch_no, l.code AS loc "
+                "FROM stock_log sl JOIN sku s ON s.id=sl.sku_id JOIN batch b ON b.id=sl.batch_id JOIN location l ON l.id=sl.location_id "
+                "WHERE sl.event_type='inbound' ORDER BY sl.id DESC LIMIT 10"
+            ).fetchall()
+        elif pos == "putaway":
+            ctx["loc_occupancy"] = conn.execute(
+                "SELECT l.code, l.zone_type, COALESCE(SUM(i.on_hand),0) AS used "
+                "FROM location l LEFT JOIN inventory i ON i.location_id=l.id GROUP BY l.id ORDER BY l.code"
+            ).fetchall()
+            ctx["recent_inbound"] = conn.execute(
+                "SELECT o.order_no, s.name AS supplier, o.created_at, "
+                "(SELECT COALESCE(SUM(quantity),0) FROM inbound_item WHERE order_no=o.order_no) AS qty "
+                "FROM inbound_order o LEFT JOIN supplier s ON s.id=o.supplier_id "
+                "WHERE o.status='approved' AND date(o.approved_at)>=date('now','-1 day') "
+                "ORDER BY o.approved_at DESC LIMIT 8"
+            ).fetchall()
+        elif pos == "cs":
+            ctx["pending_returns"] = conn.execute(
+                "SELECT ro.order_no, ro.status, ro.reason, ro.sales_order_no, c.phone AS phone, c.name AS cust_name, "
+                "(SELECT COALESCE(SUM(quantity),0) FROM return_item WHERE order_no=ro.order_no) AS qty, ro.refund_amount "
+                "FROM return_order ro LEFT JOIN customer c ON c.id=ro.customer_id "
+                "WHERE ro.status IN ('approved','received','qc_done') ORDER BY ro.id DESC LIMIT 10"
+            ).fetchall()
+            ctx["recent_sales"] = conn.execute(
+                "SELECT order_no, channel, total_amount, status, created_at FROM sales_order ORDER BY id DESC LIMIT 8"
+            ).fetchall()
+        elif pos == "qc":
+            ctx["pending_qc_returns"] = conn.execute(
+                "SELECT ro.order_no, ro.reason, ro.created_at, c.phone, "
+                "(SELECT COUNT(*) FROM return_item WHERE order_no=ro.order_no) AS lines "
+                "FROM return_order ro LEFT JOIN customer c ON c.id=ro.customer_id "
+                "WHERE ro.status='received' ORDER BY ro.id LIMIT 10"
+            ).fetchall()
+            ctx["recent_qc"] = conn.execute(
+                "SELECT ri.qc_result, ri.quantity, s.code AS sku, b.batch_no, ro.order_no, ro.qc_at "
+                "FROM return_item ri JOIN sku s ON s.id=ri.sku_id JOIN batch b ON b.id=ri.batch_id "
+                "JOIN return_order ro ON ro.order_no=ri.order_no WHERE ri.qc_result IS NOT NULL "
+                "ORDER BY ri.id DESC LIMIT 8"
+            ).fetchall()
+        elif pos == "picker":
+            ctx["my_pending"] = conn.execute(
+                "SELECT ob.order_no, ob.sales_order_no, so.receiver_name, ob.created_at, "
+                "(SELECT COALESCE(SUM(quantity),0) FROM outbound_item WHERE order_no=ob.order_no) AS qty, "
+                "(SELECT COUNT(*) FROM outbound_item WHERE order_no=ob.order_no) AS lines "
+                "FROM outbound_order ob JOIN sales_order so ON so.order_no=ob.sales_order_no "
+                "WHERE ob.status='pending' ORDER BY ob.id LIMIT 10"
+            ).fetchall()
+            ctx["my_done_today"] = conn.execute(
+                "SELECT ob.order_no, ob.completed_at, "
+                "(SELECT COALESCE(SUM(quantity),0) FROM outbound_item WHERE order_no=ob.order_no) AS qty "
+                "FROM outbound_order ob WHERE ob.picker_id=? AND date(ob.completed_at)=date('now') "
+                "ORDER BY ob.id DESC LIMIT 8", (session["user_id"],)
+            ).fetchall()
+            ctx["pick_rank"] = conn.execute(
+                "SELECT u.display_name AS name, COUNT(ob.id) AS picked FROM user u "
+                "LEFT JOIN outbound_order ob ON ob.picker_id=u.id AND date(ob.completed_at)=date('now') "
+                "WHERE u.position='picker' GROUP BY u.id ORDER BY picked DESC LIMIT 5"
+            ).fetchall()
+        elif pos == "packer":
+            ctx["to_pack"] = conn.execute(
+                "SELECT ob.order_no, ob.sales_order_no, so.receiver_name, so.receiver_phone, so.channel, ob.completed_at "
+                "FROM outbound_order ob JOIN sales_order so ON so.order_no=ob.sales_order_no "
+                "WHERE ob.status='completed' ORDER BY ob.completed_at DESC LIMIT 12"
+            ).fetchall()
+        elif pos == "shipping":
+            ctx["to_ship"] = conn.execute(
+                "SELECT ob.order_no, ob.sales_order_no, so.receiver_name, so.receiver_phone, so.receiver_addr, so.channel, ob.completed_at "
+                "FROM outbound_order ob JOIN sales_order so ON so.order_no=ob.sales_order_no "
+                "WHERE ob.status='completed' ORDER BY ob.completed_at DESC LIMIT 12"
+            ).fetchall()
+            ctx["channel_dist"] = conn.execute(
+                "SELECT so.channel, COUNT(ob.id) AS cnt FROM outbound_order ob JOIN sales_order so ON so.order_no=ob.sales_order_no "
+                "WHERE date(ob.completed_at)=date('now') GROUP BY so.channel ORDER BY cnt DESC"
+            ).fetchall()
+        elif pos == "stocktaker":
+            ctx["open_orders"] = conn.execute(
+                "SELECT st.order_no, st.note, st.created_at, "
+                "(SELECT COUNT(*) FROM stocktake_item WHERE order_no=st.order_no) AS total, "
+                "(SELECT COUNT(*) FROM stocktake_item WHERE order_no=st.order_no AND actual_qty IS NOT NULL) AS counted, "
+                "(SELECT COUNT(*) FROM stocktake_item WHERE order_no=st.order_no AND actual_qty IS NOT NULL AND actual_qty != expected_qty) AS diff "
+                "FROM stocktake_order st WHERE st.status='open' ORDER BY st.id DESC LIMIT 5"
+            ).fetchall()
+            ctx["recent_closed"] = conn.execute(
+                "SELECT st.order_no, st.closed_at, "
+                "(SELECT COUNT(*) FROM stocktake_item WHERE order_no=st.order_no AND actual_qty != expected_qty) AS diff "
+                "FROM stocktake_order st WHERE st.status='closed' ORDER BY st.id DESC LIMIT 5"
+            ).fetchall()
+    return render_template(template, **ctx)
 
 
 # ============ SKU ============

@@ -255,10 +255,33 @@ CREATE TABLE IF NOT EXISTS return_item (
 """
 
 
+POSITIONS = {
+    "warehouse_manager": "仓库经理",
+    "inventory_ctrl":    "库存控制员",
+    "purchaser":         "采购员",
+    "receiver":          "收货员",
+    "putaway":           "上架员",
+    "cs":                "客服",
+    "qc":                "质检员",
+    "picker":            "拣货员",
+    "packer":            "打包员",
+    "shipping":          "出货协调员",
+    "stocktaker":        "盘点员",
+}
+
+# (username, password, role, display_name, position)
 SEED_USERS = [
-    ("admin", "admin123", "admin", "管理员"),
-    ("manager", "manager123", "manager", "经理"),
-    ("staff", "staff123", "staff", "普通员工"),
+    ("admin",       "admin123",   "admin",   "张经理", "warehouse_manager"),
+    ("manager",     "manager123", "manager", "陈姐",   "inventory_ctrl"),
+    ("staff",       "staff123",   "staff",   "张三",   "picker"),
+    ("purchaser1",  "demo123",    "manager", "林师傅", "purchaser"),
+    ("receiver1",   "demo123",    "staff",   "赵师傅", "receiver"),
+    ("putaway1",    "demo123",    "staff",   "钱师傅", "putaway"),
+    ("cs1",         "demo123",    "staff",   "孙姐",   "cs"),
+    ("qc1",         "demo123",    "staff",   "周师傅", "qc"),
+    ("packer1",     "demo123",    "staff",   "王师傅", "packer"),
+    ("shipping1",   "demo123",    "staff",   "徐姐",   "shipping"),
+    ("stocktaker1", "demo123",    "staff",   "郑老师", "stocktaker"),
 ]
 
 SEED_WAREHOUSE = ("主仓", "杭州市西湖区文三路 100 号")
@@ -296,6 +319,7 @@ SEED_CUSTOMERS = [
 def init_db():
     with get_conn() as conn:
         conn.executescript(SCHEMA)
+        _migrate(conn)
         _seed_users(conn)
         _seed_warehouse_and_locations(conn)
         _seed_suppliers(conn)
@@ -303,11 +327,23 @@ def init_db():
         _seed_customers(conn)
 
 
+def _migrate(conn):
+    """非破坏性 schema 迁移：仅 ADD COLUMN，无 DROP。"""
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(user)").fetchall()]
+    if "position" not in cols:
+        conn.execute("ALTER TABLE user ADD COLUMN position TEXT")
+
+
 def _seed_users(conn):
-    for username, password, role, display_name in SEED_USERS:
+    for username, password, role, display_name, position in SEED_USERS:
         conn.execute(
-            "INSERT OR IGNORE INTO user (username, password_hash, role, display_name) VALUES (?, ?, ?, ?)",
-            (username, generate_password_hash(password), role, display_name),
+            "INSERT OR IGNORE INTO user (username, password_hash, role, display_name, position) VALUES (?, ?, ?, ?, ?)",
+            (username, generate_password_hash(password), role, display_name, position),
+        )
+        # 兼容老种子（已存在但 position 为空时补上）
+        conn.execute(
+            "UPDATE user SET position = ?, display_name = ? WHERE username = ? AND (position IS NULL OR position = '')",
+            (position, display_name, username),
         )
 
 

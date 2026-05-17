@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 数据库（本地数据，不进版本库）
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# IDE / 编辑器
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# 日志和敏感信息
+*.log
+.env
+.env.local
+secrets.json
+
+# 操作系统
+Thumbs.db
+desktop.ini

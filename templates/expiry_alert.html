@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}临期预警{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>临期预警（今天 {{ today }}）</span>
+    </div>
+    <div class="card-body">
+        <div class="stat-grid">
+            <div class="stat-card" style="border-left:3px solid var(--color-out);">
+                <div class="num" style="color:var(--color-out);">{{ expired|length }}</div>
+                <div class="label">已过期批次</div>
+            </div>
+            <div class="stat-card" style="border-left:3px solid var(--color-out);">
+                <div class="num" style="color:var(--color-out);">{{ urgent|length }}</div>
+                <div class="label">紧急（7 天内）</div>
+            </div>
+            <div class="stat-card" style="border-left:3px solid var(--color-accent);">
+                <div class="num" style="color:var(--color-accent);">{{ warning|length }}</div>
+                <div class="label">预警（8-30 天）</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if expired %}
+<div class="card">
+    <div class="card-header" style="background:#F8DACF;">
+        <span style="color:var(--color-out);">已过期（应立即报损）</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>SKU</th><th>商品</th><th>批次</th><th>效期</th><th>过期天数</th><th>库位</th><th>在仓数</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for r in expired %}
+                <tr style="background:#FAE2D8;">
+                    <td class="mono">{{ r.sku_code }}</td>
+                    <td>{{ r.sku_name }} {% if r.sku_spec %}<span style="font-size:12px;color:var(--color-text-soft);">{{ r.sku_spec }}</span>{% endif %}</td>
+                    <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
+                    <td class="mono">{{ r.expiry_date }}</td>
+                    <td class="mono"><strong style="color:var(--color-out);">已过期 {{ -r.days_left }} 天</strong></td>
+                    <td class="mono">{{ r.location_code }}</td>
+                    <td class="mono"><strong>{{ r.on_hand }}</strong></td>
+                    <td><a class="btn btn-sm btn-danger" href="{{ url_for('damage_new') }}">去报损</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if urgent %}
+<div class="card">
+    <div class="card-header" style="background:#FBE9D0;">
+        <span style="color:var(--color-out);">紧急 — 7 天内过期（建议立即降级促销）</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>SKU</th><th>商品</th><th>批次</th><th>效期</th><th>剩余天数</th><th>库位</th><th>在仓数</th></tr></thead>
+            <tbody>
+                {% for r in urgent %}
+                <tr style="background:#FBE9D0;">
+                    <td class="mono">{{ r.sku_code }}</td>
+                    <td>{{ r.sku_name }}</td>
+                    <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
+                    <td class="mono">{{ r.expiry_date }}</td>
+                    <td class="mono"><strong>{{ r.days_left }} 天</strong></td>
+                    <td class="mono">{{ r.location_code }}</td>
+                    <td class="mono">{{ r.on_hand }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if warning %}
+<div class="card">
+    <div class="card-header">
+        <span>预警 — 8-30 天内过期（建议提前安排促销）</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>SKU</th><th>商品</th><th>批次</th><th>效期</th><th>剩余天数</th><th>库位</th><th>在仓数</th></tr></thead>
+            <tbody>
+                {% for r in warning %}
+                <tr>
+                    <td class="mono">{{ r.sku_code }}</td>
+                    <td>{{ r.sku_name }}</td>
+                    <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
+                    <td class="mono">{{ r.expiry_date }}</td>
+                    <td class="mono">{{ r.days_left }} 天</td>
+                    <td class="mono">{{ r.location_code }}</td>
+                    <td class="mono">{{ r.on_hand }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if not expired and not urgent and not warning %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty">没有临期/过期批次。所有库存效期都在 30 天以上。</div>
+    </div>
+</div>
+{% endif %}
+
+<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+    规则：30 天内 = 预警（橙）；7 天内 = 紧急（红）；已过期 = 红色背景。<br>
+    FIFO 拣货策略已经保证"老批次先出"，临期预警是补充手段（提前促销/降级）。
+</div>
+
+{% endblock %}

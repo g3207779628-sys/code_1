@@ -15,12 +15,13 @@
         <a href="{{ url_for('sales_list') }}" class="{% if request.endpoint and request.endpoint.startswith('sales') %}active{% endif %}">销售</a>
         <a href="{{ url_for('pick_list') }}" class="{% if request.endpoint and request.endpoint.startswith('pick') %}active{% endif %}">拣货</a>
         <a href="{{ url_for('inbound_list') }}" class="{% if request.endpoint and request.endpoint.startswith('inbound') %}active{% endif %}">入库</a>
-        <a href="{{ url_for('inventory_list') }}" class="{% if request.endpoint and (request.endpoint.startswith('inventory') or request.endpoint == 'stock_log_view') %}active{% endif %}">库存</a>
+        <a href="{{ url_for('inventory_list') }}" class="{% if request.endpoint and request.endpoint.startswith('inventory') %}active{% endif %}">库存</a>
+        <a href="{{ url_for('expiry_alert') }}" class="{% if request.endpoint == 'expiry_alert' %}active{% endif %}">临期</a>
+        <a href="{{ url_for('damage_list') }}" class="{% if request.endpoint and request.endpoint.startswith('damage') %}active{% endif %}">报损</a>
+        <a href="{{ url_for('stocktake_list') }}" class="{% if request.endpoint and request.endpoint.startswith('stocktake') %}active{% endif %}">盘点</a>
+        <a href="{{ url_for('stock_log_view') }}" class="{% if request.endpoint == 'stock_log_view' %}active{% endif %}">流水</a>
         <a href="{{ url_for('sku_list') }}" class="{% if request.endpoint and request.endpoint.startswith('sku') %}active{% endif %}">商品</a>
-        <a href="{{ url_for('supplier_list') }}" class="{% if request.endpoint and request.endpoint.startswith('supplier') %}active{% endif %}">供应商</a>
         <a href="{{ url_for('customer_list') }}" class="{% if request.endpoint and request.endpoint.startswith('customer') %}active{% endif %}">客户</a>
-        <a href="{{ url_for('warehouse_list') }}" class="{% if request.endpoint and request.endpoint.startswith('warehouse') %}active{% endif %}">仓库</a>
-        <a href="{{ url_for('location_list') }}" class="{% if request.endpoint and request.endpoint.startswith('location') %}active{% endif %}">库位</a>
     </div>
     <div class="navbar-user">
         {{ session.display_name }} <span class="role-{{ session.role }}">[{{ session.role }}]</span>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}报损管理{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>报损记录（共 {{ rows|length }} 条，待审批优先）</span>
+        <a class="btn" href="{{ url_for('damage_new') }}">+ 提交报损</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if rows %}
+        <table>
+            <thead>
+                <tr><th>#</th><th>状态</th><th>SKU</th><th>批次</th><th>库位</th><th>数量</th><th>原因</th><th>说明</th><th>申请人</th><th>申请时间</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="mono">#{{ r.id }}</td>
+                    <td>
+                        {% if r.status == 'pending' %}<span class="badge badge-downgrade">待审批</span>
+                        {% elif r.status == 'approved' %}<span class="badge badge-out">已核销</span>
+                        {% else %}<span class="badge badge-normal">已驳回</span>{% endif %}
+                    </td>
+                    <td class="mono">{{ r.sku_code }}</td>
+                    <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
+                    <td class="mono">{{ r.location_code }}</td>
+                    <td class="mono"><strong style="color:var(--color-out);">{{ r.quantity }}</strong></td>
+                    <td><span class="badge badge-normal">{{ reason_label[r.reason_type] }}</span></td>
+                    <td style="max-width:200px; font-size:12px;">{{ r.reason_note or '-' }}{% if r.photo_note %}<br><span style="color:var(--color-text-soft);">附：{{ r.photo_note }}</span>{% endif %}</td>
+                    <td>{{ r.applicant_name }}</td>
+                    <td class="mono" style="font-size:12px;">{{ r.created_at }}</td>
+                    <td>
+                        {% if r.status == 'pending' and session.role in ['admin', 'manager'] %}
+                        <form method="post" action="{{ url_for('damage_approve', damage_id=r.id) }}" style="display:inline;" onsubmit="return confirm('审批通过会立即扣减库存。确认？');">
+                            <button class="btn btn-sm" type="submit">通过</button>
+                        </form>
+                        <form method="post" action="{{ url_for('damage_reject', damage_id=r.id) }}" style="display:inline;">
+                            <button class="btn btn-sm btn-danger" type="submit">驳回</button>
+                        </form>
+                        {% elif r.status == 'approved' %}
+                        <span style="font-size:12px;color:var(--color-text-soft);">{{ r.approver_name }}<br>{{ r.approved_at }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">还没有报损记录。<br>发现损耗时点 <a href="{{ url_for('damage_new') }}">提交报损</a>。</div>
+        {% endif %}
+    </div>
+</div>
+<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+    报损流程：员工发现 → 拍照存证 → 主管审批 → 系统扣库存 + 写损耗流水。<br>
+    主管审批是关键防线（防内盗）。
+</div>
+
+{% endblock %}

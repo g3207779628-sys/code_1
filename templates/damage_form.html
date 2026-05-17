@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}提交报损{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">提交报损申请</div>
+    <div class="card-body">
+        {% if not invs %}
+        <div class="empty">当前没有可报损的库存（所有批次 on_hand=0）。先做几张入库单。</div>
+        {% else %}
+        <form method="post">
+            <div class="form-row">
+                <label>选择批次（必须是有库存的批次） <span style="color:var(--color-out);">*</span></label>
+                <select name="inv_id" required style="min-width:600px;">
+                    <option value="">— 选择 SKU + 批次 + 库位 —</option>
+                    {% for i in invs %}
+                    <option value="{{ i.id }}">
+                        {{ i.sku_code }} | {{ i.sku_name }} {% if i.sku_spec %}({{ i.sku_spec }}){% endif %} · 批次 {{ i.batch_no }} · 库位 {{ i.location_code }} · 在仓 {{ i.on_hand }} · 效期 {{ i.expiry_date }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <label>报损数量 <span style="color:var(--color-out);">*</span></label>
+                <input type="number" name="quantity" min="1" required>
+            </div>
+            <div class="form-row">
+                <label>原因分类 <span style="color:var(--color-out);">*</span></label>
+                <select name="reason_type" required>
+                    {% for k, v in reasons.items() %}
+                    <option value="{{ k }}">{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <label>详细说明</label>
+                <textarea name="reason_note" rows="3" placeholder="如：叉车撞坏 / 包装漏液 / 巡检发现破袋"></textarea>
+            </div>
+            <div class="form-row">
+                <label>照片存证（写存放位置/链接，本 MVP 不做文件上传）</label>
+                <input type="text" name="photo_note" placeholder="如：拍照存企业微信群 5/17 19:30 消息 / OneDrive .../damage_001.jpg">
+            </div>
+            <button class="btn" type="submit">提交申请</button>
+            <a class="btn btn-secondary" href="{{ url_for('damage_list') }}">取消</a>
+        </form>
+        <div style="margin-top:16px; font-size:12px; color:var(--color-text-soft);">
+            提交后状态为"待审批"，要等主管（admin/manager）审批通过才会扣库存。
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

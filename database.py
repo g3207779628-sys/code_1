@@ -184,6 +184,45 @@ CREATE TABLE IF NOT EXISTS outbound_item (
     location_id INTEGER NOT NULL REFERENCES location(id),
     quantity INTEGER NOT NULL CHECK(quantity > 0)
 );
+
+CREATE TABLE IF NOT EXISTS damage_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    batch_id INTEGER NOT NULL REFERENCES batch(id),
+    location_id INTEGER NOT NULL REFERENCES location(id),
+    quantity INTEGER NOT NULL CHECK(quantity > 0),
+    reason_type TEXT NOT NULL CHECK(reason_type IN ('broken','expired','lost','stolen','other')),
+    reason_note TEXT,
+    photo_note TEXT,
+    applicant_id INTEGER NOT NULL REFERENCES user(id),
+    approver_id INTEGER REFERENCES user(id),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    approved_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS stocktake_order (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT UNIQUE NOT NULL,
+    scope TEXT NOT NULL DEFAULT 'all',
+    status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed','cancelled')),
+    creator_id INTEGER NOT NULL REFERENCES user(id),
+    closer_id INTEGER REFERENCES user(id),
+    note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    closed_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS stocktake_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT NOT NULL REFERENCES stocktake_order(order_no),
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    batch_id INTEGER NOT NULL REFERENCES batch(id),
+    location_id INTEGER NOT NULL REFERENCES location(id),
+    expected_qty INTEGER NOT NULL,
+    actual_qty INTEGER,
+    diff_handled INTEGER DEFAULT 0
+);
 """
 
 

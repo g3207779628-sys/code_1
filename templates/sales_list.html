@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}销售订单{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>销售订单列表（共 {{ orders|length }} 张）</span>
+        <a class="btn" href="{{ url_for('sales_new') }}">新建销售订单</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if orders %}
+        <table>
+            <thead>
+                <tr><th>单号</th><th>渠道</th><th>客户</th><th>收件人</th><th>状态</th><th>明细行</th><th>总数量</th><th>金额</th><th>创建时间</th></tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('sales_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
+                    <td><span class="badge badge-normal">{{ {'manual':'手工','tmall':'天猫','jd':'京东','douyin':'抖音','applet':'小程序'}[o.channel] }}</span></td>
+                    <td>{{ o.customer_phone or '-' }} <span style="color:var(--color-text-soft);">{{ o.customer_name or '' }}</span></td>
+                    <td>{{ o.receiver_name or '-' }}</td>
+                    <td>
+                        {% if o.status == 'new' %}<span class="badge badge-normal">新建</span>
+                        {% elif o.status == 'reserved' %}<span class="badge badge-downgrade">已预占·待拣货</span>
+                        {% elif o.status == 'completed' %}<span class="badge badge-in">已完成</span>
+                        {% elif o.status == 'cancelled' %}<span class="badge badge-out">已取消</span>{% endif %}
+                    </td>
+                    <td class="mono">{{ o.line_count }}</td>
+                    <td class="mono">{{ o.total_qty }}</td>
+                    <td class="mono">¥{{ '%.2f'|format(o.total_amount) }}</td>
+                    <td class="mono" style="font-size:12px;">{{ o.created_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">还没有销售订单。点击"新建销售订单"创建一张。</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

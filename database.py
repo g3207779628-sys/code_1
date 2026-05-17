@@ -140,6 +140,50 @@ CREATE TABLE IF NOT EXISTS inbound_item (
     unit_price REAL DEFAULT 0,
     batch_id INTEGER REFERENCES batch(id)
 );
+
+CREATE TABLE IF NOT EXISTS sales_order (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT UNIQUE NOT NULL,
+    channel TEXT NOT NULL DEFAULT 'manual' CHECK(channel IN ('manual','tmall','jd','douyin','applet')),
+    platform_order_no TEXT,
+    customer_id INTEGER REFERENCES customer(id),
+    total_amount REAL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','reserved','completed','cancelled')),
+    receiver_name TEXT,
+    receiver_phone TEXT,
+    receiver_addr TEXT,
+    creator_id INTEGER REFERENCES user(id),
+    note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sales_order_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT NOT NULL REFERENCES sales_order(order_no),
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    quantity INTEGER NOT NULL CHECK(quantity > 0),
+    unit_price REAL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS outbound_order (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT UNIQUE NOT NULL,
+    sales_order_no TEXT NOT NULL REFERENCES sales_order(order_no),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','completed','cancelled')),
+    picker_id INTEGER REFERENCES user(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS outbound_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT NOT NULL REFERENCES outbound_order(order_no),
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    batch_id INTEGER NOT NULL REFERENCES batch(id),
+    location_id INTEGER NOT NULL REFERENCES location(id),
+    quantity INTEGER NOT NULL CHECK(quantity > 0)
+);
 """
 
 

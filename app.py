@@ -76,7 +76,9 @@ def index():
             "customer": conn.execute("SELECT COUNT(*) AS c FROM customer").fetchone()["c"],
             "batch": conn.execute("SELECT COUNT(*) AS c FROM batch").fetchone()["c"],
             "total_on_hand": conn.execute("SELECT COALESCE(SUM(on_hand), 0) AS c FROM inventory").fetchone()["c"],
+            "total_reserved": conn.execute("SELECT COALESCE(SUM(reserved), 0) AS c FROM inventory").fetchone()["c"],
             "draft_inbound": conn.execute("SELECT COUNT(*) AS c FROM inbound_order WHERE status = 'draft'").fetchone()["c"],
+            "pending_pick": conn.execute("SELECT COUNT(*) AS c FROM outbound_order WHERE status = 'pending'").fetchone()["c"],
         }
     return render_template("index.html", stats=stats)
 
@@ -598,6 +600,357 @@ def inventory_by_batch():
         ).fetchall()
     return render_template("inventory_by_batch.html", rows=rows)
 
+
+# ============ 销售订单 ============
+
+class StockNotEnoughError(Exception):
+    pass
+
+
+def _allocate_fifo(conn, sku_id, qty_needed):
+    """FIFO 算法：按效期升序找批次，返回 [(batch_id, location_id, take_qty), ...]"""
+    batches = conn.execute(
+        """SELECT inv.id AS inv_id, inv.batch_id, inv.location_id,
+                  inv.on_hand, inv.reserved, b.expiry_date
+           FROM inventory inv
+           JOIN batch b ON b.id = inv.batch_id
+           WHERE inv.sku_id = ? AND (inv.on_hand - inv.reserved) > 0
+           ORDER BY b.expiry_date ASC, inv.id ASC""",
+        (sku_id,),
+    ).fetchall()
+    allocations = []
+    remaining = qty_needed
+    for row in batches:
+        if remaining <= 0:
+            break
+        available = row["on_hand"] - row["reserved"]
+        take = min(remaining, available)
+        allocations.append((row["batch_id"], row["location_id"], take, row["inv_id"]))
+        remaining -= take
+    if remaining > 0:
+        return None
+    return allocations
+
+
+@app.route("/sales")
+@login_required
+def sales_list():
+    with database.get_conn() as conn:
+        orders = conn.execute(
+            """SELECT so.*, c.phone AS customer_phone, c.name AS customer_name,
+                      uc.display_name AS creator_name,
+                      (SELECT COUNT(*) FROM sales_order_item WHERE order_no = so.order_no) AS line_count,
+                      (SELECT COALESCE(SUM(quantity), 0) FROM sales_order_item WHERE order_no = so.order_no) AS total_qty
+               FROM sales_order so
+               LEFT JOIN customer c ON c.id = so.customer_id
+               LEFT JOIN user uc ON uc.id = so.creator_id
+               ORDER BY so.id DESC"""
+        ).fetchall()
+    return render_template("sales_list.html", orders=orders)
+
+
+@app.route("/sales/new", methods=["GET", "POST"])
+@login_required
+def sales_new():
+    with database.get_conn() as conn:
+        customers = conn.execute("SELECT * FROM customer ORDER BY id DESC").fetchall()
+        skus = conn.execute("SELECT * FROM sku ORDER BY code").fetchall()
+
+        if request.method == "POST":
+            customer_id = int(request.form["customer_id"])
+            channel = request.form.get("channel", "manual")
+            platform_no = request.form.get("platform_order_no", "").strip()
+            receiver_name = request.form.get("receiver_name", "").strip()
+            receiver_phone = request.form.get("receiver_phone", "").strip()
+            receiver_addr = request.form.get("receiver_addr", "").strip()
+            note = request.form.get("note", "").strip()
+
+            sku_ids = request.form.getlist("sku_id[]")
+            quantities = request.form.getlist("quantity[]")
+            unit_prices = request.form.getlist("unit_price[]")
+
+            valid_rows = []
+            for i in range(len(sku_ids)):
+                if not sku_ids[i] or not quantities[i]:
+                    continue
+                try:
+                    qty = int(quantities[i])
+                    if qty <= 0:
+                        continue
+                except ValueError:
+                    continue
+                valid_rows.append({
+                    "sku_id": int(sku_ids[i]),
+                    "quantity": qty,
+                    "unit_price": float(unit_prices[i] or 0),
+                })
+
+            if not valid_rows:
+                flash("至少要填一行商品明细", "error")
+                return render_template("sales_form.html", customers=customers, skus=skus)
+
+            # 如果未填收件人，用客户默认地址
+            if customer_id and not receiver_addr:
+                cust = conn.execute("SELECT * FROM customer WHERE id = ?", (customer_id,)).fetchone()
+                if cust:
+                    receiver_name = receiver_name or cust["name"]
+                    receiver_phone = receiver_phone or cust["phone"]
+                    receiver_addr = receiver_addr or cust["default_address"]
+
+            total = sum(r["quantity"] * r["unit_price"] for r in valid_rows)
+            order_no = database.gen_order_no(conn, "XSD", "sales_order")
+            conn.execute(
+                """INSERT INTO sales_order (order_no, channel, platform_order_no, customer_id, total_amount,
+                                            status, receiver_name, receiver_phone, receiver_addr, creator_id, note)
+                   VALUES (?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?)""",
+                (order_no, channel, platform_no, customer_id, total,
+                 receiver_name, receiver_phone, receiver_addr, session["user_id"], note),
+            )
+            for r in valid_rows:
+                conn.execute(
+                    "INSERT INTO sales_order_item (order_no, sku_id, quantity, unit_price) VALUES (?, ?, ?, ?)",
+                    (order_no, r["sku_id"], r["quantity"], r["unit_price"]),
+                )
+            flash(f"销售订单 {order_no} 已创建，状态：新建。下一步点击确认进行库存预占。", "success")
+            return redirect(url_for("sales_detail", order_no=order_no))
+
+    return render_template("sales_form.html", customers=customers, skus=skus)
+
+
+@app.route("/sales/<order_no>")
+@login_required
+def sales_detail(order_no):
+    with database.get_conn() as conn:
+        order = conn.execute(
+            """SELECT so.*, c.phone AS customer_phone, c.name AS customer_name,
+                      uc.display_name AS creator_name
+               FROM sales_order so
+               LEFT JOIN customer c ON c.id = so.customer_id
+               LEFT JOIN user uc ON uc.id = so.creator_id
+               WHERE so.order_no = ?""",
+            (order_no,),
+        ).fetchone()
+        if not order:
+            flash("销售单不存在", "error")
+            return redirect(url_for("sales_list"))
+        items = conn.execute(
+            """SELECT si.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec, s.unit AS sku_unit
+               FROM sales_order_item si JOIN sku s ON s.id = si.sku_id
+               WHERE si.order_no = ? ORDER BY si.id""",
+            (order_no,),
+        ).fetchall()
+        # 关联出库单
+        outbounds = conn.execute(
+            """SELECT ob.*, up.display_name AS picker_name
+               FROM outbound_order ob LEFT JOIN user up ON up.id = ob.picker_id
+               WHERE ob.sales_order_no = ? ORDER BY ob.id""",
+            (order_no,),
+        ).fetchall()
+        outbound_items = {}
+        for ob in outbounds:
+            ob_items = conn.execute(
+                """SELECT oi.*, s.code AS sku_code, s.name AS sku_name,
+                          b.batch_no, b.expiry_date, l.code AS location_code
+                   FROM outbound_item oi
+                   JOIN sku s ON s.id = oi.sku_id
+                   JOIN batch b ON b.id = oi.batch_id
+                   JOIN location l ON l.id = oi.location_id
+                   WHERE oi.order_no = ? ORDER BY oi.id""",
+                (ob["order_no"],),
+            ).fetchall()
+            outbound_items[ob["order_no"]] = ob_items
+    return render_template("sales_detail.html", order=order, items=items, outbounds=outbounds, outbound_items=outbound_items)
+
+
+@app.route("/sales/<order_no>/confirm", methods=["POST"])
+@login_required
+def sales_confirm(order_no):
+    """确认销售单 → 校验库存 → 预占 + FIFO 派批次 → 生成出库单（拣货任务）"""
+    with database.get_conn() as conn:
+        order = conn.execute("SELECT * FROM sales_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not order:
+            flash("销售单不存在", "error")
+            return redirect(url_for("sales_list"))
+        if order["status"] != "new":
+            flash(f"只能确认新建状态的销售单（当前：{order['status']}）", "error")
+            return redirect(url_for("sales_detail", order_no=order_no))
+
+        items = conn.execute("SELECT * FROM sales_order_item WHERE order_no = ?", (order_no,)).fetchall()
+
+        # 1. 先全量校验 + FIFO 分配（任一不足则整单失败，全有再下手）
+        plan = []
+        for item in items:
+            allocations = _allocate_fifo(conn, item["sku_id"], item["quantity"])
+            if allocations is None:
+                sku = conn.execute("SELECT code, name FROM sku WHERE id = ?", (item["sku_id"],)).fetchone()
+                flash(f"库存不足：{sku['code']} {sku['name']} 需要 {item['quantity']}", "error")
+                return redirect(url_for("sales_detail", order_no=order_no))
+            plan.append((item, allocations))
+
+        # 2. 生成出库单
+        outbound_no = database.gen_order_no(conn, "CKD", "outbound_order")
+        conn.execute(
+            "INSERT INTO outbound_order (order_no, sales_order_no, status) VALUES (?, ?, 'pending')",
+            (outbound_no, order_no),
+        )
+
+        # 3. 执行预占 + 写出库明细
+        for item, allocations in plan:
+            for batch_id, location_id, take, inv_id in allocations:
+                conn.execute(
+                    "UPDATE inventory SET reserved = reserved + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (take, inv_id),
+                )
+                conn.execute(
+                    "INSERT INTO outbound_item (order_no, sku_id, batch_id, location_id, quantity) VALUES (?, ?, ?, ?, ?)",
+                    (outbound_no, item["sku_id"], batch_id, location_id, take),
+                )
+
+        # 4. 更新销售单
+        conn.execute(
+            "UPDATE sales_order SET status='reserved', updated_at=CURRENT_TIMESTAMP WHERE order_no=?",
+            (order_no,),
+        )
+
+    flash(f"销售单 {order_no} 已确认，库存已预占。拣货任务 {outbound_no} 已派单。", "success")
+    return redirect(url_for("sales_detail", order_no=order_no))
+
+
+@app.route("/sales/<order_no>/cancel", methods=["POST"])
+@login_required
+def sales_cancel(order_no):
+    """取消销售单 → 释放预占"""
+    with database.get_conn() as conn:
+        order = conn.execute("SELECT * FROM sales_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not order:
+            flash("销售单不存在", "error")
+            return redirect(url_for("sales_list"))
+        if order["status"] in ("completed", "cancelled"):
+            flash("已完成或已取消的单据不能再取消", "error")
+            return redirect(url_for("sales_detail", order_no=order_no))
+
+        # 找出 pending 的出库单，释放预占
+        outbound = conn.execute(
+            "SELECT * FROM outbound_order WHERE sales_order_no = ? AND status = 'pending'",
+            (order_no,),
+        ).fetchone()
+        if outbound:
+            ob_items = conn.execute(
+                "SELECT * FROM outbound_item WHERE order_no = ?",
+                (outbound["order_no"],),
+            ).fetchall()
+            for it in ob_items:
+                conn.execute(
+                    "UPDATE inventory SET reserved = reserved - ?, updated_at = CURRENT_TIMESTAMP WHERE sku_id=? AND batch_id=? AND location_id=?",
+                    (it["quantity"], it["sku_id"], it["batch_id"], it["location_id"]),
+                )
+            conn.execute(
+                "UPDATE outbound_order SET status='cancelled' WHERE order_no=?",
+                (outbound["order_no"],),
+            )
+
+        conn.execute(
+            "UPDATE sales_order SET status='cancelled', updated_at=CURRENT_TIMESTAMP WHERE order_no=?",
+            (order_no,),
+        )
+
+    flash(f"销售单 {order_no} 已取消，预占库存已释放", "success")
+    return redirect(url_for("sales_detail", order_no=order_no))
+
+
+# ============ 拣货 ============
+
+@app.route("/pick")
+@login_required
+def pick_list():
+    with database.get_conn() as conn:
+        orders = conn.execute(
+            """SELECT ob.*, so.receiver_name, so.receiver_phone,
+                      up.display_name AS picker_name,
+                      (SELECT COUNT(*) FROM outbound_item WHERE order_no = ob.order_no) AS line_count,
+                      (SELECT COALESCE(SUM(quantity),0) FROM outbound_item WHERE order_no = ob.order_no) AS total_qty
+               FROM outbound_order ob
+               JOIN sales_order so ON so.order_no = ob.sales_order_no
+               LEFT JOIN user up ON up.id = ob.picker_id
+               ORDER BY (CASE ob.status WHEN 'pending' THEN 0 ELSE 1 END), ob.id DESC"""
+        ).fetchall()
+    return render_template("pick_list.html", orders=orders)
+
+
+@app.route("/pick/<order_no>")
+@login_required
+def pick_detail(order_no):
+    with database.get_conn() as conn:
+        ob = conn.execute(
+            """SELECT ob.*, so.receiver_name, so.receiver_phone, so.receiver_addr,
+                      up.display_name AS picker_name
+               FROM outbound_order ob
+               JOIN sales_order so ON so.order_no = ob.sales_order_no
+               LEFT JOIN user up ON up.id = ob.picker_id
+               WHERE ob.order_no = ?""",
+            (order_no,),
+        ).fetchone()
+        if not ob:
+            flash("拣货任务不存在", "error")
+            return redirect(url_for("pick_list"))
+        items = conn.execute(
+            """SELECT oi.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec,
+                      b.batch_no, b.expiry_date, b.production_date,
+                      l.code AS location_code, l.zone_type
+               FROM outbound_item oi
+               JOIN sku s ON s.id = oi.sku_id
+               JOIN batch b ON b.id = oi.batch_id
+               JOIN location l ON l.id = oi.location_id
+               WHERE oi.order_no = ?
+               ORDER BY l.code, b.expiry_date""",
+            (order_no,),
+        ).fetchall()
+    return render_template("pick_detail.html", ob=ob, items=items)
+
+
+@app.route("/pick/<order_no>/complete", methods=["POST"])
+@login_required
+def pick_complete(order_no):
+    """拣货完成 → 实扣库存 + 写流水 + 销售单转完成"""
+    with database.get_conn() as conn:
+        ob = conn.execute("SELECT * FROM outbound_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not ob:
+            flash("拣货任务不存在", "error")
+            return redirect(url_for("pick_list"))
+        if ob["status"] != "pending":
+            flash(f"该任务已经是 {ob['status']} 状态，不能重复完成", "error")
+            return redirect(url_for("pick_detail", order_no=order_no))
+
+        items = conn.execute("SELECT * FROM outbound_item WHERE order_no = ?", (order_no,)).fetchall()
+        for it in items:
+            # 先写流水（负数 = 出库）
+            conn.execute(
+                """INSERT INTO stock_log (sku_id, batch_id, location_id, delta, source_doc, event_type, operator_id)
+                   VALUES (?, ?, ?, ?, ?, 'outbound', ?)""",
+                (it["sku_id"], it["batch_id"], it["location_id"], -it["quantity"], order_no, session["user_id"]),
+            )
+            # 实扣：on_hand -= N, reserved -= N（同时把预占也释放）
+            conn.execute(
+                """UPDATE inventory
+                   SET on_hand = on_hand - ?, reserved = reserved - ?, updated_at = CURRENT_TIMESTAMP
+                   WHERE sku_id = ? AND batch_id = ? AND location_id = ?""",
+                (it["quantity"], it["quantity"], it["sku_id"], it["batch_id"], it["location_id"]),
+            )
+
+        conn.execute(
+            "UPDATE outbound_order SET status='completed', picker_id=?, completed_at=CURRENT_TIMESTAMP WHERE order_no=?",
+            (session["user_id"], order_no),
+        )
+        conn.execute(
+            "UPDATE sales_order SET status='completed', updated_at=CURRENT_TIMESTAMP WHERE order_no=?",
+            (ob["sales_order_no"],),
+        )
+
+    flash(f"拣货任务 {order_no} 已完成，库存已实扣，销售单已完成", "success")
+    return redirect(url_for("pick_detail", order_no=order_no))
+
+
+# ============ 库存流水（阶段 2 已建，路由保留） ============
 
 @app.route("/stock-log")
 @login_required

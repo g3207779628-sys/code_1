@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{% if warehouse %}编辑{% else %}新增{% endif %}仓库{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">{% if warehouse %}编辑仓库：{{ warehouse.name }}{% else %}新增仓库{% endif %}</div>
+    <div class="card-body">
+        <form method="post">
+            <div class="form-row">
+                <label>仓库名称 <span style="color:var(--color-out);">*</span></label>
+                <input type="text" name="name" required value="{{ warehouse.name if warehouse else '' }}">
+            </div>
+            <div class="form-row">
+                <label>地址</label>
+                <input type="text" name="address" value="{{ warehouse.address if warehouse else '' }}">
+            </div>
+            <button class="btn" type="submit">保存</button>
+            <a class="btn btn-secondary" href="{{ url_for('warehouse_list') }}">取消</a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

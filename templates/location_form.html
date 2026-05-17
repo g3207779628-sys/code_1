@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}新增库位{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">新增库位</div>
+    <div class="card-body">
+        <form method="post">
+            <div class="form-row">
+                <label>所属仓库 <span style="color:var(--color-out);">*</span></label>
+                <select name="warehouse_id" required>
+                    {% for w in warehouses %}
+                    <option value="{{ w.id }}">{{ w.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <label>库位编码 <span style="color:var(--color-out);">*</span></label>
+                <input type="text" name="code" required placeholder="如 A-01-01">
+            </div>
+            <div class="form-row">
+                <label>分区类型 <span style="color:var(--color-out);">*</span></label>
+                <select name="zone_type" required>
+                    <option value="normal">常温区</option>
+                    <option value="cold" selected>冷藏区</option>
+                    <option value="freeze">冷冻区</option>
+                    <option value="isolation">隔离区（不良品/待处理）</option>
+                    <option value="downgrade">降级区（临期/退货品）</option>
+                </select>
+            </div>
+            <button class="btn" type="submit">保存</button>
+            <a class="btn btn-secondary" href="{{ url_for('location_list') }}">取消</a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

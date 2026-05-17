@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}code_1{% endblock %} — 预制菜 B2C 仓</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% if session.user_id %}
+<nav class="navbar">
+    <a class="navbar-brand" href="{{ url_for('index') }}">CODE_1 仓储</a>
+    <div class="navbar-menu">
+        <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">首页</a>
+        <a href="{{ url_for('sku_list') }}" class="{% if request.endpoint and request.endpoint.startswith('sku') %}active{% endif %}">商品</a>
+        <a href="{{ url_for('warehouse_list') }}" class="{% if request.endpoint and request.endpoint.startswith('warehouse') %}active{% endif %}">仓库</a>
+        <a href="{{ url_for('location_list') }}" class="{% if request.endpoint and request.endpoint.startswith('location') %}active{% endif %}">库位</a>
+        <a href="{{ url_for('supplier_list') }}" class="{% if request.endpoint and request.endpoint.startswith('supplier') %}active{% endif %}">供应商</a>
+        <a href="{{ url_for('customer_list') }}" class="{% if request.endpoint and request.endpoint.startswith('customer') %}active{% endif %}">客户</a>
+    </div>
+    <div class="navbar-user">
+        {{ session.display_name }} <span class="role-{{ session.role }}">[{{ session.role }}]</span>
+        <a href="{{ url_for('logout') }}">退出</a>
+    </div>
+</nav>
+{% endif %}
+
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-list">
+            {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>

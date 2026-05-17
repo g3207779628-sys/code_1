@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{% if sku %}编辑{% else %}新增{% endif %} SKU{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">{% if sku %}编辑 SKU：{{ sku.code }}{% else %}新增 SKU{% endif %}</div>
+    <div class="card-body">
+        <form method="post">
+            <div class="form-row">
+                <label>SKU 编码 <span style="color:var(--color-out);">*</span></label>
+                <input type="text" name="code" required value="{{ sku.code if sku else '' }}" placeholder="如 YCY-350-N（酸菜鱼-350克-正常版）">
+            </div>
+            <div class="form-row">
+                <label>商品名 <span style="color:var(--color-out);">*</span></label>
+                <input type="text" name="name" required value="{{ sku.name if sku else '' }}" placeholder="如 酸菜鱼预制菜">
+            </div>
+            <div class="form-row">
+                <label>规格</label>
+                <input type="text" name="spec" value="{{ sku.spec if sku else '' }}" placeholder="如 350g·正常辣">
+            </div>
+            <div class="form-row">
+                <label>单位</label>
+                <input type="text" name="unit" value="{{ sku.unit if sku else '份' }}">
+            </div>
+            <div class="form-row">
+                <label>存储区 <span style="color:var(--color-out);">*</span></label>
+                <select name="storage_zone" required>
+                    <option value="normal" {% if sku and sku.storage_zone=='normal' %}selected{% endif %}>常温</option>
+                    <option value="cold" {% if sku and sku.storage_zone=='cold' %}selected{% endif %}>冷藏</option>
+                    <option value="freeze" {% if sku and sku.storage_zone=='freeze' %}selected{% endif %}>冷冻</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>安全库存</label>
+                <input type="number" name="safety_stock" min="0" value="{{ sku.safety_stock if sku else 0 }}">
+            </div>
+            <div class="form-row">
+                <label>成本价</label>
+                <input type="number" name="cost_price" min="0" step="0.01" value="{{ sku.cost_price if sku else 0 }}">
+            </div>
+            <div class="form-row">
+                <label>售价</label>
+                <input type="number" name="sale_price" min="0" step="0.01" value="{{ sku.sale_price if sku else 0 }}">
+            </div>
+            <button class="btn" type="submit">保存</button>
+            <a class="btn btn-secondary" href="{{ url_for('sku_list') }}">取消</a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

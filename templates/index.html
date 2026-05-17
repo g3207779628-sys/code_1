@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}首页{% endblock %}
+{% block content %}
+
+<div class="entry-grid">
+    <a class="entry-card" href="{{ url_for('sku_list') }}">
+        <h3>商品 (SKU)</h3>
+        <p>管理预制菜商品的编码、规格、存储区</p>
+    </a>
+    <a class="entry-card" href="{{ url_for('warehouse_list') }}">
+        <h3>仓库</h3>
+        <p>管理仓库基础信息</p>
+    </a>
+    <a class="entry-card" href="{{ url_for('location_list') }}">
+        <h3>库位</h3>
+        <p>管理仓库内的库位和分区</p>
+    </a>
+    <a class="entry-card" href="{{ url_for('supplier_list') }}">
+        <h3>供应商</h3>
+        <p>管理预制菜上游供应商</p>
+    </a>
+    <a class="entry-card" href="{{ url_for('customer_list') }}">
+        <h3>客户</h3>
+        <p>B2C 客户档案</p>
+    </a>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="num">{{ stats.sku }}</div><div class="label">商品种数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.warehouse }}</div><div class="label">仓库数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.location }}</div><div class="label">库位数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.supplier }}</div><div class="label">供应商数</div></div>
+    <div class="stat-card"><div class="num">{{ stats.customer }}</div><div class="label">客户数</div></div>
+</div>
+
+<div class="card" style="margin-top:24px;">
+    <div class="card-header">阶段进度</div>
+    <div class="card-body">
+        <ul style="margin:0; padding-left:20px; color:var(--color-text-soft);">
+            <li>✓ 阶段 0：项目初始化 + Git</li>
+            <li><strong>✓ 阶段 1：主数据 + 登录（当前）</strong></li>
+            <li>○ 阶段 2：入库链 + 批次管理</li>
+            <li>○ 阶段 3：销售链 + FIFO 拣货</li>
+            <li>○ 阶段 4：报损 + 临期预警 + 盘点</li>
+            <li>○ 阶段 5：退换货 + 质检</li>
+            <li>○ 阶段 6：报表 + AI 亮点</li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}

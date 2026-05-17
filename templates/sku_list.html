@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}商品管理{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>商品 SKU 列表（共 {{ skus|length }} 个）</span>
+        {% if session.role in ['admin', 'manager'] %}
+        <a class="btn" href="{{ url_for('sku_new') }}">新增 SKU</a>
+        {% endif %}
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if skus %}
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU 编码</th>
+                    <th>商品名</th>
+                    <th>规格</th>
+                    <th>单位</th>
+                    <th>存储区</th>
+                    <th>安全库存</th>
+                    <th>成本价</th>
+                    <th>售价</th>
+                    {% if session.role in ['admin', 'manager'] %}<th>操作</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in skus %}
+                <tr>
+                    <td class="mono">{{ s.code }}</td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.spec or '-' }}</td>
+                    <td>{{ s.unit }}</td>
+                    <td><span class="badge badge-{{ s.storage_zone }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻'}[s.storage_zone] }}</span></td>
+                    <td class="mono">{{ s.safety_stock }}</td>
+                    <td class="mono">¥{{ '%.2f'|format(s.cost_price) }}</td>
+                    <td class="mono">¥{{ '%.2f'|format(s.sale_price) }}</td>
+                    {% if session.role in ['admin', 'manager'] %}
+                    <td class="actions">
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('sku_edit', sku_id=s.id) }}">编辑</a>
+                        {% if session.role == 'admin' %}
+                        <form method="post" action="{{ url_for('sku_delete', sku_id=s.id) }}" style="display:inline;" onsubmit="return confirm('确认删除 {{ s.code }}？');">
+                            <button class="btn btn-sm btn-danger" type="submit">删</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">还没有商品。点击右上角"新增 SKU"开始。</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

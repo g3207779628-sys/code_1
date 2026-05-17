@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}仓库管理{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>仓库列表（共 {{ warehouses|length }} 个）</span>
+        {% if session.role == 'admin' %}
+        <a class="btn" href="{{ url_for('warehouse_new') }}">新增仓库</a>
+        {% endif %}
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if warehouses %}
+        <table>
+            <thead><tr><th>名称</th><th>地址</th><th>库位数</th><th>创建时间</th>{% if session.role == 'admin' %}<th>操作</th>{% endif %}</tr></thead>
+            <tbody>
+                {% for w in warehouses %}
+                <tr>
+                    <td>{{ w.name }}</td>
+                    <td>{{ w.address or '-' }}</td>
+                    <td class="mono">{{ w.location_count }}</td>
+                    <td class="mono">{{ w.created_at }}</td>
+                    {% if session.role == 'admin' %}
+                    <td class="actions">
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('warehouse_edit', warehouse_id=w.id) }}">编辑</a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">还没有仓库。</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

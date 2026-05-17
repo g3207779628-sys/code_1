@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}库位管理{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>库位列表（共 {{ locations|length }} 个）</span>
+        {% if session.role in ['admin', 'manager'] %}
+        <a class="btn" href="{{ url_for('location_new') }}">新增库位</a>
+        {% endif %}
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if locations %}
+        <table>
+            <thead><tr><th>所属仓库</th><th>库位编码</th><th>分区类型</th>{% if session.role in ['admin', 'manager'] %}<th>操作</th>{% endif %}</tr></thead>
+            <tbody>
+                {% for l in locations %}
+                <tr>
+                    <td>{{ l.warehouse_name }}</td>
+                    <td class="mono">{{ l.code }}</td>
+                    <td><span class="badge badge-{{ l.zone_type }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻','isolation':'隔离','downgrade':'降级'}[l.zone_type] }}</span></td>
+                    {% if session.role in ['admin', 'manager'] %}
+                    <td class="actions">
+                        {% if session.role == 'admin' %}
+                        <form method="post" action="{{ url_for('location_delete', location_id=l.id) }}" style="display:inline;" onsubmit="return confirm('确认删除库位 {{ l.code }}？');">
+                            <button class="btn btn-sm btn-danger" type="submit">删</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">还没有库位。</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

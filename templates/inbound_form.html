@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}新建入库单{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">新建入库单（草稿）</div>
+    <div class="card-body">
+        <form method="post" id="inbound-form">
+            <div class="form-row">
+                <label>供应商 <span style="color:var(--color-out);">*</span></label>
+                <select name="supplier_id" required>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <label>备注</label>
+                <input type="text" name="note" placeholder="可选">
+            </div>
+
+            <div style="margin: 24px 0 12px 0; font-weight:600; color:var(--color-primary);">入库明细</div>
+            <table id="item-table">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>批次号</th>
+                        <th>生产日期</th>
+                        <th>效期</th>
+                        <th>入库位</th>
+                        <th>数量</th>
+                        <th>单价</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="item-rows">
+                    <!-- 模板行（不提交，给 JS 复制用） -->
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow()" style="margin-top:8px;">+ 添加一行</button>
+
+            <div style="margin-top:24px;">
+                <button class="btn" type="submit">保存草稿</button>
+                <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const SKU_OPTIONS = `
+    <option value="">— 选择 SKU —</option>
+    {% for s in skus %}
+    <option value="{{ s.id }}" data-code="{{ s.code }}">{{ s.code }} | {{ s.name }} {% if s.spec %}({{ s.spec }}){% endif %}</option>
+    {% endfor %}
+`;
+const LOC_OPTIONS = `
+    <option value="">— 选择库位 —</option>
+    {% for l in locations %}
+    <option value="{{ l.id }}">{{ l.code }} [{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻'}[l.zone_type] }}]</option>
+    {% endfor %}
+`;
+
+function addRow() {
+    const tbody = document.getElementById('item-rows');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><select name="sku_id[]" style="min-width:200px;" onchange="suggestBatchNo(this)">${SKU_OPTIONS}</select></td>
+        <td><input type="text" name="batch_no[]" placeholder="如 YCY-350-N-20260517-01" style="min-width:200px;"></td>
+        <td><input type="date" name="production_date[]"></td>
+        <td><input type="date" name="expiry_date[]"></td>
+        <td><select name="location_id[]">${LOC_OPTIONS}</select></td>
+        <td><input type="number" name="quantity[]" min="1" style="width:80px;"></td>
+        <td><input type="number" name="unit_price[]" min="0" step="0.01" value="0" style="width:80px;"></td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">删</button></td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function suggestBatchNo(skuSelect) {
+    // 选了 SKU 后，自动给批次号一个建议（用户可改）
+    const code = skuSelect.options[skuSelect.selectedIndex].dataset.code;
+    if (!code) return;
+    const row = skuSelect.closest('tr');
+    const batchInput = row.querySelector('input[name="batch_no[]"]');
+    if (batchInput.value) return;
+    const today = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    batchInput.value = `${code}-${today}-01`;
+}
+
+// 默认加一行
+addRow();
+</script>
+
+{% endblock %}

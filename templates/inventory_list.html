@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}库存（按 SKU）{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>库存（按 SKU 汇总）</span>
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('inventory_by_batch') }}">按批次查看</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>商品</th>
+                    <th>存储区</th>
+                    <th>在仓数</th>
+                    <th>已预占</th>
+                    <th>可用</th>
+                    <th>安全库存</th>
+                    <th>批次数</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr {% if r.total_on_hand - r.total_reserved < r.safety_stock and r.safety_stock > 0 %}style="background:#FBE9D0;"{% endif %}>
+                    <td class="mono">{{ r.code }}</td>
+                    <td>{{ r.name }} {% if r.spec %}<span style="color:var(--color-text-soft);font-size:12px;">{{ r.spec }}</span>{% endif %}</td>
+                    <td><span class="badge badge-{{ r.storage_zone }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻'}[r.storage_zone] }}</span></td>
+                    <td class="mono"><strong>{{ r.total_on_hand }}</strong></td>
+                    <td class="mono" style="color:var(--color-text-soft);">{{ r.total_reserved }}</td>
+                    <td class="mono"><strong>{{ r.total_on_hand - r.total_reserved }}</strong> {{ r.unit }}</td>
+                    <td class="mono">{{ r.safety_stock }}</td>
+                    <td class="mono">{{ r.batch_count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+    橙色背景 = 可用量低于安全库存。"可用 = 在仓数 - 已预占"。
+</div>
+
+{% endblock %}

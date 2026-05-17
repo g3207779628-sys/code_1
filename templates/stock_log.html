@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}库存流水{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>库存流水（最近 200 条）</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>时间</th>
+                    <th>类型</th>
+                    <th>SKU</th>
+                    <th>批次</th>
+                    <th>库位</th>
+                    <th>变动</th>
+                    <th>来源单据</th>
+                    <th>操作人</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="mono" style="font-size:12px;">{{ r.occurred_at }}</td>
+                    <td>
+                        {% if r.event_type == 'inbound' %}<span class="badge badge-in">入库</span>
+                        {% elif r.event_type == 'outbound' %}<span class="badge badge-out">出库</span>
+                        {% elif r.event_type == 'damage' %}<span class="badge badge-out">报损</span>
+                        {% elif r.event_type == 'transfer' %}<span class="badge badge-normal">调拨</span>
+                        {% elif r.event_type == 'adjust' %}<span class="badge badge-normal">盘点调整</span>
+                        {% elif r.event_type == 'return_in' %}<span class="badge badge-in">退货入</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono">{{ r.sku_code }}</td>
+                    <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
+                    <td class="mono">{{ r.location_code }}</td>
+                    <td class="mono"><strong style="color:{% if r.delta > 0 %}var(--color-in){% else %}var(--color-out){% endif %};">{% if r.delta > 0 %}+{% endif %}{{ r.delta }}</strong></td>
+                    <td class="mono" style="font-size:12px;">{{ r.source_doc or '-' }}</td>
+                    <td>{{ r.operator_name or '系统' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">还没有库存流水。审核第一张入库单后这里会出现记录。</div>
+        {% endif %}
+    </div>
+</div>
+<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+    流水表是"事件日志"——所有库存变化都先在这里登记，再更新到库存快照。出错时来这里追溯。
+</div>
+
+{% endblock %}

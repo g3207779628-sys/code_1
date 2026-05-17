@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from werkzeug.security import generate_password_hash
 
@@ -10,6 +11,19 @@ def get_conn():
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def gen_order_no(conn, prefix, table):
+    today = datetime.now().strftime("%Y%m%d")
+    like_pattern = f"{prefix}{today}%"
+    row = conn.execute(
+        f"SELECT order_no FROM {table} WHERE order_no LIKE ? ORDER BY order_no DESC LIMIT 1",
+        (like_pattern,),
+    ).fetchone()
+    if row:
+        last_seq = int(row["order_no"][-3:])
+        return f"{prefix}{today}{last_seq + 1:03d}"
+    return f"{prefix}{today}001"
 
 
 SCHEMA = """
@@ -65,6 +79,66 @@ CREATE TABLE IF NOT EXISTS customer (
     name TEXT,
     default_address TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS batch (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_no TEXT UNIQUE NOT NULL,
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    production_date DATE NOT NULL,
+    expiry_date DATE NOT NULL,
+    supplier_id INTEGER REFERENCES supplier(id),
+    inbound_order_no TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS inventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    location_id INTEGER NOT NULL REFERENCES location(id),
+    batch_id INTEGER NOT NULL REFERENCES batch(id),
+    on_hand INTEGER NOT NULL DEFAULT 0,
+    reserved INTEGER NOT NULL DEFAULT 0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(sku_id, location_id, batch_id)
+);
+
+CREATE TABLE IF NOT EXISTS stock_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    batch_id INTEGER NOT NULL REFERENCES batch(id),
+    location_id INTEGER NOT NULL REFERENCES location(id),
+    delta INTEGER NOT NULL,
+    source_doc TEXT,
+    event_type TEXT NOT NULL CHECK(event_type IN ('inbound','outbound','damage','adjust','transfer','return_in')),
+    operator_id INTEGER REFERENCES user(id),
+    occurred_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS inbound_order (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT UNIQUE NOT NULL,
+    supplier_id INTEGER REFERENCES supplier(id),
+    status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','approved','rejected')),
+    creator_id INTEGER NOT NULL REFERENCES user(id),
+    approver_id INTEGER REFERENCES user(id),
+    note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    approved_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS inbound_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT NOT NULL REFERENCES inbound_order(order_no),
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    batch_no TEXT NOT NULL,
+    production_date DATE NOT NULL,
+    expiry_date DATE NOT NULL,
+    location_id INTEGER NOT NULL REFERENCES location(id),
+    quantity INTEGER NOT NULL CHECK(quantity > 0),
+    unit_price REAL DEFAULT 0,
+    batch_id INTEGER REFERENCES batch(id)
 );
 """
 

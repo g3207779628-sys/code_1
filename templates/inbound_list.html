@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}入库单{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>入库单列表（共 {{ orders|length }} 张）</span>
+        <a class="btn" href="{{ url_for('inbound_new') }}">新建入库单</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if orders %}
+        <table>
+            <thead>
+                <tr><th>单号</th><th>供应商</th><th>状态</th><th>总数量</th><th>创建人</th><th>创建时间</th><th>审核人</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('inbound_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
+                    <td>{{ o.supplier_name or '-' }}</td>
+                    <td>
+                        {% if o.status == 'draft' %}<span class="badge badge-normal">草稿</span>
+                        {% elif o.status == 'approved' %}<span class="badge badge-in">已审核</span>
+                        {% else %}<span class="badge badge-out">已驳回</span>{% endif %}
+                    </td>
+                    <td class="mono">{{ o.total_qty }}</td>
+                    <td>{{ o.creator_name or '-' }}</td>
+                    <td class="mono">{{ o.created_at }}</td>
+                    <td>{{ o.approver_name or '-' }}</td>
+                    <td><a class="btn btn-sm btn-secondary" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">查看</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">还没有入库单。点击"新建入库单"开始。</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

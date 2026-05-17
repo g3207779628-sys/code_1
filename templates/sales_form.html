@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}新建销售订单{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">新建销售订单</div>
+    <div class="card-body">
+        <form method="post">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-row">
+                    <label>客户 <span style="color:var(--color-out);">*</span></label>
+                    <select name="customer_id" required>
+                        {% for c in customers %}
+                        <option value="{{ c.id }}">{{ c.phone }} · {{ c.name or '' }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>来源渠道</label>
+                    <select name="channel">
+                        <option value="manual">手工录入</option>
+                        <option value="tmall">天猫</option>
+                        <option value="jd">京东</option>
+                        <option value="douyin">抖音</option>
+                        <option value="applet">小程序</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>平台订单号</label>
+                    <input type="text" name="platform_order_no" placeholder="如 1234567890（对账用）">
+                </div>
+                <div class="form-row">
+                    <label>备注</label>
+                    <input type="text" name="note">
+                </div>
+                <div class="form-row">
+                    <label>收件人姓名</label>
+                    <input type="text" name="receiver_name" placeholder="留空则用客户默认信息">
+                </div>
+                <div class="form-row">
+                    <label>收件人电话</label>
+                    <input type="text" name="receiver_phone">
+                </div>
+                <div class="form-row" style="grid-column:1/-1;">
+                    <label>收件地址</label>
+                    <input type="text" name="receiver_addr">
+                </div>
+            </div>
+
+            <div style="margin: 24px 0 12px 0; font-weight:600; color:var(--color-primary);">商品明细</div>
+            <table id="item-table">
+                <thead>
+                    <tr><th>SKU</th><th>数量</th><th>单价</th><th>小计</th><th></th></tr>
+                </thead>
+                <tbody id="item-rows"></tbody>
+            </table>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow()" style="margin-top:8px;">+ 添加一行</button>
+
+            <div style="margin-top:24px;">
+                <button class="btn" type="submit">保存</button>
+                <a class="btn btn-secondary" href="{{ url_for('sales_list') }}">取消</a>
+            </div>
+            <div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+                保存后状态为"新建"。下一步在详情页点"确认订单"，系统会校验库存、做 FIFO 预占、生成拣货任务。
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const SKU_OPTIONS = `
+    <option value="">— 选择 SKU —</option>
+    {% for s in skus %}
+    <option value="{{ s.id }}" data-price="{{ s.sale_price }}">{{ s.code }} | {{ s.name }} {% if s.spec %}({{ s.spec }}){% endif %} ¥{{ s.sale_price }}</option>
+    {% endfor %}
+`;
+
+function addRow() {
+    const tbody = document.getElementById('item-rows');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><select name="sku_id[]" style="min-width:280px;" onchange="fillPrice(this)">${SKU_OPTIONS}</select></td>
+        <td><input type="number" name="quantity[]" min="1" style="width:80px;" oninput="updateSubtotal(this)"></td>
+        <td><input type="number" name="unit_price[]" min="0" step="0.01" value="0" style="width:80px;" oninput="updateSubtotal(this)"></td>
+        <td class="mono subtotal">¥0.00</td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">删</button></td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function fillPrice(skuSelect) {
+    const price = skuSelect.options[skuSelect.selectedIndex].dataset.price;
+    if (!price) return;
+    const row = skuSelect.closest('tr');
+    const priceInput = row.querySelector('input[name="unit_price[]"]');
+    priceInput.value = price;
+    updateSubtotal(priceInput);
+}
+
+function updateSubtotal(input) {
+    const row = input.closest('tr');
+    const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+    const price = parseFloat(row.querySelector('input[name="unit_price[]"]').value) || 0;
+    row.querySelector('.subtotal').textContent = '¥' + (qty * price).toFixed(2);
+}
+
+addRow();
+</script>
+
+{% endblock %}

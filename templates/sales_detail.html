@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}销售单 {{ order.order_no }}{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>销售订单 <span class="mono">{{ order.order_no }}</span></span>
+        <span>
+            {% if order.status == 'new' %}<span class="badge badge-normal">新建</span>
+            {% elif order.status == 'reserved' %}<span class="badge badge-downgrade">已预占·待拣货</span>
+            {% elif order.status == 'completed' %}<span class="badge badge-in">已完成</span>
+            {% elif order.status == 'cancelled' %}<span class="badge badge-out">已取消</span>{% endif %}
+        </span>
+    </div>
+    <div class="card-body">
+        <table style="margin-bottom:24px;">
+            <tbody>
+                <tr>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">客户</th>
+                    <td>{{ order.customer_phone }} {{ order.customer_name or '' }}</td>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">来源渠道</th>
+                    <td>{{ {'manual':'手工','tmall':'天猫','jd':'京东','douyin':'抖音','applet':'小程序'}[order.channel] }} {% if order.platform_order_no %}<span class="mono" style="font-size:12px;color:var(--color-text-soft);">[{{ order.platform_order_no }}]</span>{% endif %}</td>
+                </tr>
+                <tr>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">收件人</th><td>{{ order.receiver_name or '-' }}</td>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">电话</th><td class="mono">{{ order.receiver_phone or '-' }}</td>
+                </tr>
+                <tr>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">地址</th><td colspan="3">{{ order.receiver_addr or '-' }}</td>
+                </tr>
+                <tr>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">总金额</th><td class="mono">¥{{ '%.2f'|format(order.total_amount) }}</td>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">创建</th><td>{{ order.creator_name }} <span class="mono" style="font-size:12px;">{{ order.created_at }}</span></td>
+                </tr>
+                {% if order.note %}<tr><th style="background:var(--color-bg-alt);color:var(--color-text);">备注</th><td colspan="3">{{ order.note }}</td></tr>{% endif %}
+            </tbody>
+        </table>
+
+        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px;">订单明细（客户要的）</h3>
+        <table>
+            <thead><tr><th>SKU</th><th>数量</th><th>单价</th><th>小计</th></tr></thead>
+            <tbody>
+                {% for it in items %}
+                <tr>
+                    <td><span class="mono">{{ it.sku_code }}</span> · {{ it.sku_name }} {% if it.sku_spec %}({{ it.sku_spec }}){% endif %}</td>
+                    <td class="mono">{{ it.quantity }} {{ it.sku_unit }}</td>
+                    <td class="mono">¥{{ '%.2f'|format(it.unit_price) }}</td>
+                    <td class="mono">¥{{ '%.2f'|format(it.quantity * it.unit_price) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if outbounds %}
+        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px; margin-top:24px;">拣货任务（FIFO 派的具体批次）</h3>
+        {% for ob in outbounds %}
+        <div style="margin-bottom:16px; border:1px solid var(--color-border); padding:12px;">
+            <div style="margin-bottom:8px;">
+                出库单 <a class="mono" href="{{ url_for('pick_detail', order_no=ob.order_no) }}">{{ ob.order_no }}</a>
+                {% if ob.status == 'pending' %}<span class="badge badge-downgrade">待拣货</span>
+                {% elif ob.status == 'completed' %}<span class="badge badge-in">已拣完</span>
+                {% elif ob.status == 'cancelled' %}<span class="badge badge-out">已取消</span>{% endif %}
+                {% if ob.picker_name %}<span style="color:var(--color-text-soft);font-size:12px;">拣货员：{{ ob.picker_name }}</span>{% endif %}
+            </div>
+            <table>
+                <thead><tr><th>SKU</th><th>批次（按效期升序）</th><th>效期</th><th>库位</th><th>数量</th></tr></thead>
+                <tbody>
+                    {% for oi in outbound_items[ob.order_no] %}
+                    <tr>
+                        <td class="mono">{{ oi.sku_code }}</td>
+                        <td class="mono" style="font-size:12px;">{{ oi.batch_no }}</td>
+                        <td class="mono">{{ oi.expiry_date }}</td>
+                        <td class="mono">{{ oi.location_code }}</td>
+                        <td class="mono"><strong>{{ oi.quantity }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+            {% if order.status == 'new' %}
+            <form method="post" action="{{ url_for('sales_confirm', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('确认订单后将自动校验库存、做 FIFO 预占、派发拣货任务。');">
+                <button class="btn" type="submit">确认订单（FIFO 派单）</button>
+            </form>
+            <form method="post" action="{{ url_for('sales_cancel', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('确认取消？');">
+                <button class="btn btn-danger" type="submit">取消</button>
+            </form>
+            {% elif order.status == 'reserved' %}
+            <form method="post" action="{{ url_for('sales_cancel', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('取消会释放已预占的库存，确认？');">
+                <button class="btn btn-danger" type="submit">取消（释放预占）</button>
+            </form>
+            <span style="color:var(--color-text-soft); margin-left:12px; font-size:13px;">→ 拣货员去 <a href="{{ url_for('pick_list') }}">拣货任务</a> 页执行拣货</span>
+            {% endif %}
+            <a class="btn btn-secondary" href="{{ url_for('sales_list') }}">返回列表</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

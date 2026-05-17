@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}拣货 {{ ob.order_no }}{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>拣货任务 <span class="mono">{{ ob.order_no }}</span> · 关联销售单 <a class="mono" href="{{ url_for('sales_detail', order_no=ob.sales_order_no) }}">{{ ob.sales_order_no }}</a></span>
+        <span>
+            {% if ob.status == 'pending' %}<span class="badge badge-downgrade">待拣货</span>
+            {% elif ob.status == 'completed' %}<span class="badge badge-in">已完成</span>
+            {% else %}<span class="badge badge-out">已取消</span>{% endif %}
+        </span>
+    </div>
+    <div class="card-body">
+        <div style="margin-bottom:16px; padding:12px; background:var(--color-bg-alt); border-left:3px solid var(--color-primary);">
+            <strong>收件人：</strong>{{ ob.receiver_name }} · <span class="mono">{{ ob.receiver_phone }}</span><br>
+            <strong>地址：</strong>{{ ob.receiver_addr or '-' }}
+        </div>
+
+        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-accent); padding-left:10px;">
+            🔻 按 FIFO 派的批次（系统已自动选老批次）
+        </h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>库位</th>
+                    <th>SKU</th>
+                    <th>商品</th>
+                    <th>批次号</th>
+                    <th>生产日期</th>
+                    <th>效期</th>
+                    <th>要拣数量</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for it in items %}
+                <tr>
+                    <td class="mono"><strong>{{ it.location_code }}</strong> <span class="badge badge-{{ it.zone_type }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻','isolation':'隔离','downgrade':'降级'}[it.zone_type] }}</span></td>
+                    <td class="mono">{{ it.sku_code }}</td>
+                    <td>{{ it.sku_name }} {% if it.sku_spec %}<span style="color:var(--color-text-soft);font-size:12px;">{{ it.sku_spec }}</span>{% endif %}</td>
+                    <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
+                    <td class="mono">{{ it.production_date }}</td>
+                    <td class="mono">{{ it.expiry_date }}</td>
+                    <td class="mono"><strong style="font-size:18px;color:var(--color-out);">{{ it.quantity }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+            {% if ob.status == 'pending' %}
+            <form method="post" action="{{ url_for('pick_complete', order_no=ob.order_no) }}" onsubmit="return confirm('确认所有商品已按上表拣好？提交后会实扣库存。');">
+                <button class="btn" type="submit">✓ 我已拣完（实扣库存）</button>
+            </form>
+            <div style="margin-top:8px; font-size:12px; color:var(--color-text-soft);">
+                完成时系统会做：①写出库流水（每行一条） ②实扣 inventory.on_hand 同时释放 reserved ③销售单和出库单都转为"已完成"。
+            </div>
+            {% else %}
+            <div style="color:var(--color-text-soft);">
+                拣货员：{{ ob.picker_name }} · 完成时间：<span class="mono">{{ ob.completed_at }}</span>
+            </div>
+            {% endif %}
+            <div style="margin-top:12px;">
+                <a class="btn btn-secondary" href="{{ url_for('pick_list') }}">返回任务列表</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

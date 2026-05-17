@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}新建退货单{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">新建退货单（基于已完成销售单）</div>
+    <div class="card-body">
+        <form method="get" action="{{ url_for('return_new') }}" style="margin-bottom:20px;">
+            <div class="form-row">
+                <label>选择要退货的销售单（仅显示已完成的）</label>
+                <select name="sales_order_no" onchange="this.form.submit()" style="min-width:400px;">
+                    <option value="">— 选择销售单 —</option>
+                    {% for so in sales_orders %}
+                    <option value="{{ so.order_no }}" {% if sales and sales.order_no == so.order_no %}selected{% endif %}>
+                        {{ so.order_no }} · ¥{{ '%.2f'|format(so.total_amount) }} · {{ so.created_at }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        {% if sales %}
+        <form method="post">
+            <input type="hidden" name="sales_order_no" value="{{ sales.order_no }}">
+
+            <div class="form-row">
+                <label>退货原因 <span style="color:var(--color-out);">*</span></label>
+                <select name="reason" required>
+                    {% for k, v in reasons.items() %}
+                    <option value="{{ k }}">{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <label>详细说明（客户描述）</label>
+                <textarea name="reason_note" rows="2" placeholder="客户反馈的具体问题，如：包装漏液、口味不对、收到的是过期品..."></textarea>
+            </div>
+
+            <div style="margin: 24px 0 12px 0; font-weight:600; color:var(--color-primary);">
+                销售单 {{ sales.order_no }} 的发货明细 — 选要退的行 + 填退货数量
+            </div>
+            {% if outbound_items %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>商品</th>
+                        <th>批次</th>
+                        <th>原发数量</th>
+                        <th>原单价</th>
+                        <th>本次退货数量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in outbound_items %}
+                    <tr>
+                        <td class="mono">{{ it.sku_code }}</td>
+                        <td>{{ it.sku_name }} {% if it.sku_spec %}<span style="font-size:12px;color:var(--color-text-soft);">{{ it.sku_spec }}</span>{% endif %}</td>
+                        <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
+                        <td class="mono">{{ it.quantity }}</td>
+                        <td class="mono">¥{{ '%.2f'|format(it.unit_price or 0) }}</td>
+                        <td>
+                            <input type="hidden" name="ob_item_id[]" value="{{ it.id }}">
+                            <input type="number" name="return_qty[]" min="0" max="{{ it.quantity }}" value="0" style="width:80px;">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="margin-top:24px;">
+                <button class="btn" type="submit">建退货单（客服已批准）</button>
+                <a class="btn btn-secondary" href="{{ url_for('return_list') }}">取消</a>
+            </div>
+            <div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+                提交后状态 = <strong>已批准</strong>，告知客户退货地址。等客户寄回后在详情页点"确认收到"。<br>
+                只能退原批次（追溯需要）。
+            </div>
+            {% else %}
+            <div class="empty">这张销售单没有已完成的出库明细。</div>
+            {% endif %}
+        </form>
+        {% else %}
+        <div class="empty">请先在上方选一张销售单。</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

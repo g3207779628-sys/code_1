@@ -93,6 +93,9 @@
                 <button class="btn btn-danger" type="submit">取消（释放预占）</button>
             </form>
             <span style="color:var(--color-text-soft); margin-left:12px; font-size:13px;">→ 拣货员去 <a href="{{ url_for('pick_list') }}">拣货任务</a> 页执行拣货</span>
+            {% elif order.status == 'completed' %}
+            <a class="btn btn-secondary" href="{{ url_for('return_new', sales_order_no=order.order_no) }}">申请退货</a>
+            <span style="color:var(--color-text-soft); margin-left:12px; font-size:13px;">→ 客户申请退货时由客服建退货单</span>
             {% endif %}
             <a class="btn btn-secondary" href="{{ url_for('sales_list') }}">返回列表</a>
         </div>

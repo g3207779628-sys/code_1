@@ -85,6 +85,7 @@ def index():
             ).fetchone()["c"],
             "pending_damage": conn.execute("SELECT COUNT(*) AS c FROM damage_log WHERE status = 'pending'").fetchone()["c"],
             "open_stocktake": conn.execute("SELECT COUNT(*) AS c FROM stocktake_order WHERE status = 'open'").fetchone()["c"],
+            "open_return": conn.execute("SELECT COUNT(*) AS c FROM return_order WHERE status IN ('approved','received','qc_done')").fetchone()["c"],
         }
     return render_template("index.html", stats=stats)
 
@@ -1262,6 +1263,296 @@ def stocktake_close(order_no):
         )
     flash(f"盘点 {order_no} 已关闭，{adjusts} 条差异已写入调整流水", "success")
     return redirect(url_for("stocktake_detail", order_no=order_no))
+
+
+# ============ 退换货 ============
+
+RETURN_REASON_LABEL = {
+    "quality": "商品质量问题",
+    "wrong": "发错货",
+    "dislike": "客户不满意",
+    "damaged_in_transit": "运输破损",
+    "other": "其他",
+}
+
+QC_RESULT_LABEL = {
+    "good": "完好可入库",
+    "downgrade": "可降级销售",
+    "damaged": "已损坏销毁",
+}
+
+
+@app.route("/return")
+@login_required
+def return_list():
+    with database.get_conn() as conn:
+        orders = conn.execute(
+            """SELECT ro.*, c.phone AS customer_phone, c.name AS customer_name,
+                      ucs.display_name AS cs_name, uqc.display_name AS qc_name,
+                      (SELECT COUNT(*) FROM return_item WHERE order_no = ro.order_no) AS line_count,
+                      (SELECT COALESCE(SUM(quantity),0) FROM return_item WHERE order_no = ro.order_no) AS total_qty
+               FROM return_order ro
+               LEFT JOIN customer c ON c.id = ro.customer_id
+               LEFT JOIN user ucs ON ucs.id = ro.cs_user_id
+               LEFT JOIN user uqc ON uqc.id = ro.qc_user_id
+               ORDER BY ro.id DESC"""
+        ).fetchall()
+    return render_template("return_list.html", orders=orders, reason_label=RETURN_REASON_LABEL)
+
+
+@app.route("/return/new", methods=["GET", "POST"])
+@login_required
+def return_new():
+    """客服建退货单：基于一张已完成的销售单选要退的明细行"""
+    sales_no = request.args.get("sales_order_no", "").strip() or request.form.get("sales_order_no", "").strip()
+
+    with database.get_conn() as conn:
+        # 候选销售单：已完成的
+        sales_orders = conn.execute(
+            "SELECT order_no, customer_id, total_amount, created_at FROM sales_order WHERE status='completed' ORDER BY id DESC LIMIT 50"
+        ).fetchall()
+
+        sales = None
+        outbound_items = []
+        if sales_no:
+            sales = conn.execute("SELECT * FROM sales_order WHERE order_no = ?", (sales_no,)).fetchone()
+            if sales:
+                # 找出这张销售单对应的出库明细（已发的具体批次）
+                outbound_items = conn.execute(
+                    """SELECT oi.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec, s.unit AS sku_unit,
+                              b.batch_no, b.expiry_date,
+                              soi.unit_price
+                       FROM outbound_item oi
+                       JOIN outbound_order oo ON oo.order_no = oi.order_no
+                       JOIN sku s ON s.id = oi.sku_id
+                       JOIN batch b ON b.id = oi.batch_id
+                       LEFT JOIN sales_order_item soi ON soi.order_no = oo.sales_order_no AND soi.sku_id = oi.sku_id
+                       WHERE oo.sales_order_no = ? AND oo.status = 'completed'""",
+                    (sales_no,),
+                ).fetchall()
+
+        if request.method == "POST" and sales:
+            reason = request.form["reason"]
+            reason_note = request.form.get("reason_note", "").strip()
+
+            ob_item_ids = request.form.getlist("ob_item_id[]")
+            return_qtys = request.form.getlist("return_qty[]")
+
+            valid_rows = []
+            for ob_id, qty_str in zip(ob_item_ids, return_qtys):
+                if not ob_id or not qty_str:
+                    continue
+                try:
+                    qty = int(qty_str)
+                except ValueError:
+                    continue
+                if qty <= 0:
+                    continue
+                ob_item = next((r for r in outbound_items if str(r["id"]) == ob_id), None)
+                if not ob_item:
+                    continue
+                if qty > ob_item["quantity"]:
+                    flash(f"{ob_item['sku_code']} 退货数量 {qty} 超过原发数量 {ob_item['quantity']}", "error")
+                    return render_template("return_form.html", sales_orders=sales_orders, sales=sales,
+                                           outbound_items=outbound_items, reasons=RETURN_REASON_LABEL)
+                valid_rows.append({
+                    "sku_id": ob_item["sku_id"],
+                    "batch_id": ob_item["batch_id"],
+                    "quantity": qty,
+                    "unit_price": ob_item["unit_price"] or 0,
+                })
+
+            if not valid_rows:
+                flash("至少选一行要退的商品并填数量", "error")
+                return render_template("return_form.html", sales_orders=sales_orders, sales=sales,
+                                       outbound_items=outbound_items, reasons=RETURN_REASON_LABEL)
+
+            return_no = database.gen_order_no(conn, "THD", "return_order")
+            conn.execute(
+                """INSERT INTO return_order (order_no, sales_order_no, customer_id, reason, reason_note, status, cs_user_id)
+                   VALUES (?, ?, ?, ?, ?, 'approved', ?)""",
+                (return_no, sales_no, sales["customer_id"], reason, reason_note, session["user_id"]),
+            )
+            for r in valid_rows:
+                conn.execute(
+                    """INSERT INTO return_item (order_no, sku_id, batch_id, quantity, unit_price)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (return_no, r["sku_id"], r["batch_id"], r["quantity"], r["unit_price"]),
+                )
+            flash(f"退货单 {return_no} 已创建（已通过客服审核），等待客户寄回。", "success")
+            return redirect(url_for("return_detail", order_no=return_no))
+
+    return render_template("return_form.html", sales_orders=sales_orders, sales=sales,
+                           outbound_items=outbound_items, reasons=RETURN_REASON_LABEL)
+
+
+@app.route("/return/<order_no>")
+@login_required
+def return_detail(order_no):
+    with database.get_conn() as conn:
+        order = conn.execute(
+            """SELECT ro.*, c.phone AS customer_phone, c.name AS customer_name,
+                      ucs.display_name AS cs_name, uqc.display_name AS qc_name
+               FROM return_order ro
+               LEFT JOIN customer c ON c.id = ro.customer_id
+               LEFT JOIN user ucs ON ucs.id = ro.cs_user_id
+               LEFT JOIN user uqc ON uqc.id = ro.qc_user_id
+               WHERE ro.order_no = ?""",
+            (order_no,),
+        ).fetchone()
+        if not order:
+            flash("退货单不存在", "error")
+            return redirect(url_for("return_list"))
+        items = conn.execute(
+            """SELECT ri.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec, s.unit AS sku_unit,
+                      b.batch_no, b.expiry_date,
+                      l.code AS return_location_code, l.zone_type AS return_location_zone
+               FROM return_item ri
+               JOIN sku s ON s.id = ri.sku_id
+               JOIN batch b ON b.id = ri.batch_id
+               LEFT JOIN location l ON l.id = ri.return_location_id
+               WHERE ri.order_no = ?
+               ORDER BY ri.id""",
+            (order_no,),
+        ).fetchall()
+        # 候选退入库位（仅在质检时需要）
+        normal_locations = conn.execute(
+            "SELECT id, code, zone_type FROM location WHERE zone_type IN ('normal','cold','freeze') ORDER BY code"
+        ).fetchall()
+        downgrade_locations = conn.execute(
+            "SELECT id, code, zone_type FROM location WHERE zone_type='downgrade' ORDER BY code"
+        ).fetchall()
+    return render_template("return_detail.html", order=order, items=items,
+                           reason_label=RETURN_REASON_LABEL, qc_label=QC_RESULT_LABEL,
+                           normal_locations=normal_locations, downgrade_locations=downgrade_locations)
+
+
+@app.route("/return/<order_no>/receive", methods=["POST"])
+@login_required
+def return_receive(order_no):
+    """仓库收货员：标记已收到客户寄回的包裹"""
+    with database.get_conn() as conn:
+        order = conn.execute("SELECT * FROM return_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not order or order["status"] != "approved":
+            flash("只能对 approved 状态的退货单收货", "error")
+            return redirect(url_for("return_detail", order_no=order_no))
+        conn.execute(
+            "UPDATE return_order SET status='received', received_at=CURRENT_TIMESTAMP WHERE order_no=?",
+            (order_no,),
+        )
+    flash(f"已确认收到客户包裹，下一步质检员开箱判定", "success")
+    return redirect(url_for("return_detail", order_no=order_no))
+
+
+@app.route("/return/<order_no>/qc", methods=["POST"])
+@login_required
+def return_qc(order_no):
+    """质检员：录入每行的 QC 三分支结果（good/downgrade/damaged）+ 退入库位"""
+    with database.get_conn() as conn:
+        order = conn.execute("SELECT * FROM return_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not order or order["status"] != "received":
+            flash("只能对 received 状态的退货单做质检", "error")
+            return redirect(url_for("return_detail", order_no=order_no))
+
+        items = conn.execute("SELECT * FROM return_item WHERE order_no = ?", (order_no,)).fetchall()
+        # 校验所有行都填了 qc_result
+        for it in items:
+            qc_result = request.form.get(f"qc_result_{it['id']}", "").strip()
+            if qc_result not in ("good", "downgrade", "damaged"):
+                flash(f"行 #{it['id']} 必须选一个质检结果", "error")
+                return redirect(url_for("return_detail", order_no=order_no))
+            if qc_result in ("good", "downgrade"):
+                loc_id = request.form.get(f"return_location_{it['id']}", "").strip()
+                if not loc_id:
+                    flash(f"行 #{it['id']} 完好/降级时必须选退入库位", "error")
+                    return redirect(url_for("return_detail", order_no=order_no))
+
+        # 执行
+        for it in items:
+            qc_result = request.form[f"qc_result_{it['id']}"]
+            loc_id = request.form.get(f"return_location_{it['id']}", "").strip()
+
+            if qc_result == "good" or qc_result == "downgrade":
+                location_id = int(loc_id)
+                # 写流水（+N，return_in）
+                note = "完好上架" if qc_result == "good" else "降级处理"
+                conn.execute(
+                    """INSERT INTO stock_log (sku_id, batch_id, location_id, delta, source_doc, event_type, operator_id, note)
+                       VALUES (?, ?, ?, ?, ?, 'return_in', ?, ?)""",
+                    (it["sku_id"], it["batch_id"], location_id, it["quantity"], order_no, session["user_id"], note),
+                )
+                # upsert inventory
+                ex = conn.execute(
+                    "SELECT id FROM inventory WHERE sku_id=? AND location_id=? AND batch_id=?",
+                    (it["sku_id"], location_id, it["batch_id"]),
+                ).fetchone()
+                if ex:
+                    conn.execute(
+                        "UPDATE inventory SET on_hand = on_hand + ?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        (it["quantity"], ex["id"]),
+                    )
+                else:
+                    conn.execute(
+                        "INSERT INTO inventory (sku_id, location_id, batch_id, on_hand) VALUES (?, ?, ?, ?)",
+                        (it["sku_id"], location_id, it["batch_id"], it["quantity"]),
+                    )
+                conn.execute(
+                    "UPDATE return_item SET qc_result=?, return_location_id=? WHERE id=?",
+                    (qc_result, location_id, it["id"]),
+                )
+            elif qc_result == "damaged":
+                # 不动库存，只在 return_item 留痕
+                conn.execute(
+                    "UPDATE return_item SET qc_result='damaged', return_location_id=NULL WHERE id=?",
+                    (it["id"],),
+                )
+
+        conn.execute(
+            "UPDATE return_order SET status='qc_done', qc_user_id=?, qc_at=CURRENT_TIMESTAMP WHERE order_no=?",
+            (session["user_id"], order_no),
+        )
+    flash(f"质检完成。完好/降级的批次已自动入库，损坏的直接销毁。下一步客服录入退款金额。", "success")
+    return redirect(url_for("return_detail", order_no=order_no))
+
+
+@app.route("/return/<order_no>/refund", methods=["POST"])
+@login_required
+def return_refund(order_no):
+    """客服：录入退款金额并标记完成"""
+    with database.get_conn() as conn:
+        order = conn.execute("SELECT * FROM return_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not order or order["status"] != "qc_done":
+            flash("只能对 qc_done 状态的退货单退款", "error")
+            return redirect(url_for("return_detail", order_no=order_no))
+        try:
+            amount = float(request.form.get("refund_amount", "0"))
+        except ValueError:
+            amount = 0
+        if amount < 0:
+            flash("退款金额不能为负", "error")
+            return redirect(url_for("return_detail", order_no=order_no))
+        conn.execute(
+            "UPDATE return_order SET status='refunded', refund_amount=?, refunded_at=CURRENT_TIMESTAMP WHERE order_no=?",
+            (amount, order_no),
+        )
+    flash(f"已标记退款 ¥{amount:.2f}，退货流程关闭", "success")
+    return redirect(url_for("return_detail", order_no=order_no))
+
+
+@app.route("/return/<order_no>/reject", methods=["POST"])
+@role_required("admin", "manager")
+def return_reject(order_no):
+    with database.get_conn() as conn:
+        order = conn.execute("SELECT * FROM return_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not order or order["status"] not in ("approved", "received"):
+            flash("只能拒绝 approved/received 状态的退货单", "error")
+            return redirect(url_for("return_detail", order_no=order_no))
+        conn.execute(
+            "UPDATE return_order SET status='rejected' WHERE order_no=?",
+            (order_no,),
+        )
+    flash(f"退货单 {order_no} 已拒绝", "success")
+    return redirect(url_for("return_detail", order_no=order_no))
 
 
 # ============ 库存流水（阶段 2 已建，路由保留） ============

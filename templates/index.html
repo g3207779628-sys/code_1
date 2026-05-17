@@ -27,6 +27,10 @@
         <h3>盘点</h3>
         <p>账实核对，差异自动调账</p>
     </a>
+    <a class="entry-card" href="{{ url_for('return_list') }}">
+        <h3>退换货</h3>
+        <p>客户退货 → 质检三分支 → 退款</p>
+    </a>
     <a class="entry-card" href="{{ url_for('inventory_list') }}">
         <h3>库存查询</h3>
         <p>按 SKU / 批次查看</p>
@@ -56,6 +60,10 @@
         <div class="label">待审报损</div>
     </div>
     <div class="stat-card"><div class="num">{{ stats.open_stocktake }}</div><div class="label">进行中盘点</div></div>
+    <div class="stat-card" {% if stats.open_return > 0 %}style="border-left:3px solid var(--color-accent);"{% endif %}>
+        <div class="num" {% if stats.open_return > 0 %}style="color:var(--color-accent);"{% endif %}>{{ stats.open_return }}</div>
+        <div class="label">处理中退货</div>
+    </div>
 </div>
 
 <div class="card" style="margin-top:24px;">
@@ -66,8 +74,8 @@
             <li>✓ 阶段 1：主数据 + 登录</li>
             <li>✓ 阶段 2：入库链 + 批次管理</li>
             <li>✓ 阶段 3：销售链 + FIFO 拣货</li>
-            <li><strong>✓ 阶段 4：报损 + 临期预警 + 盘点（当前）</strong></li>
-            <li>○ 阶段 5：退换货 + 质检</li>
+            <li>✓ 阶段 4：报损 + 临期预警 + 盘点</li>
+            <li><strong>✓ 阶段 5：退换货 + 质检（当前）</strong></li>
             <li>○ 阶段 6：报表 + AI 亮点</li>
         </ul>
     </div>

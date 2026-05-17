@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}退货单 {{ order.order_no }}{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>退货单 <span class="mono">{{ order.order_no }}</span> · 原销售单 <a class="mono" href="{{ url_for('sales_detail', order_no=order.sales_order_no) }}">{{ order.sales_order_no }}</a></span>
+        <span>
+            {% if order.status == 'approved' %}<span class="badge badge-normal">已批准·待收货</span>
+            {% elif order.status == 'received' %}<span class="badge badge-downgrade">已收货·待质检</span>
+            {% elif order.status == 'qc_done' %}<span class="badge badge-downgrade">已质检·待退款</span>
+            {% elif order.status == 'refunded' %}<span class="badge badge-in">已退款·关闭</span>
+            {% elif order.status == 'rejected' %}<span class="badge badge-out">已拒绝</span>{% endif %}
+        </span>
+    </div>
+    <div class="card-body">
+        <table style="margin-bottom:24px;">
+            <tbody>
+                <tr>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">客户</th>
+                    <td>{{ order.customer_phone }} {{ order.customer_name or '' }}</td>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">退货原因</th>
+                    <td>{{ reason_label.get(order.reason, '-') }}</td>
+                </tr>
+                <tr>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">受理客服</th>
+                    <td>{{ order.cs_name or '-' }}</td>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">质检员</th>
+                    <td>{{ order.qc_name or '-' }}</td>
+                </tr>
+                <tr>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">建单时间</th>
+                    <td class="mono" style="font-size:12px;">{{ order.created_at }}</td>
+                    <th style="background:var(--color-bg-alt);color:var(--color-text);">退款金额</th>
+                    <td class="mono">{% if order.refund_amount %}¥{{ '%.2f'|format(order.refund_amount) }}{% else %}-{% endif %}</td>
+                </tr>
+                {% if order.reason_note %}
+                <tr><th style="background:var(--color-bg-alt);color:var(--color-text);">客户反馈</th><td colspan="3">{{ order.reason_note }}</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px;">退货明细</h3>
+
+        {% if order.status == 'received' %}
+        <!-- 质检表单 -->
+        <form method="post" action="{{ url_for('return_qc', order_no=order.order_no) }}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>商品</th>
+                        <th>批次</th>
+                        <th>退货量</th>
+                        <th>质检判定 <span style="color:var(--color-out);">*</span></th>
+                        <th>退入库位（完好/降级时）</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in items %}
+                    <tr>
+                        <td class="mono">{{ it.sku_code }}</td>
+                        <td>{{ it.sku_name }} {% if it.sku_spec %}<span style="font-size:12px;color:var(--color-text-soft);">{{ it.sku_spec }}</span>{% endif %}</td>
+                        <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
+                        <td class="mono"><strong>{{ it.quantity }}</strong></td>
+                        <td>
+                            <select name="qc_result_{{ it.id }}" required onchange="toggleLoc(this, {{ it.id }})">
+                                <option value="">— 选择 —</option>
+                                <option value="good">完好可入库（回原批次）</option>
+                                <option value="downgrade">可降级销售（入降级区）</option>
+                                <option value="damaged">已损坏销毁（不入库）</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select name="return_location_{{ it.id }}" id="loc_{{ it.id }}">
+                                <option value="">— 先选判定 —</option>
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="margin-top:24px;">
+                <button class="btn" type="submit" onclick="return confirm('质检完成后会立即更新库存（完好/降级入库），不可撤销。');">提交质检结果</button>
+            </div>
+        </form>
+
+        <script>
+        const NORMAL_LOC_OPTS = `
+            <option value="">— 选择库位 —</option>
+            {% for l in normal_locations %}
+            <option value="{{ l.id }}">{{ l.code }} [{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻'}[l.zone_type] }}]</option>
+            {% endfor %}
+        `;
+        const DG_LOC_OPTS = `
+            <option value="">— 选择库位 —</option>
+            {% for l in downgrade_locations %}
+            <option value="{{ l.id }}">{{ l.code }} [降级]</option>
+            {% endfor %}
+        `;
+        function toggleLoc(qcSelect, itemId) {
+            const locSelect = document.getElementById('loc_' + itemId);
+            const v = qcSelect.value;
+            if (v === 'good') {
+                locSelect.innerHTML = NORMAL_LOC_OPTS;
+                locSelect.required = true;
+            } else if (v === 'downgrade') {
+                locSelect.innerHTML = DG_LOC_OPTS;
+                locSelect.required = true;
+            } else {
+                locSelect.innerHTML = '<option value="">— 损坏品不入库 —</option>';
+                locSelect.required = false;
+            }
+        }
+        </script>
+
+        {% else %}
+        <!-- 普通查看（非质检状态） -->
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>商品</th>
+                    <th>批次</th>
+                    <th>退货量</th>
+                    <th>单价</th>
+                    <th>质检结果</th>
+                    <th>退入库位</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for it in items %}
+                <tr>
+                    <td class="mono">{{ it.sku_code }}</td>
+                    <td>{{ it.sku_name }}</td>
+                    <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
+                    <td class="mono">{{ it.quantity }}</td>
+                    <td class="mono">¥{{ '%.2f'|format(it.unit_price or 0) }}</td>
+                    <td>
+                        {% if it.qc_result == 'good' %}<span class="badge badge-in">完好上架</span>
+                        {% elif it.qc_result == 'downgrade' %}<span class="badge badge-downgrade">降级</span>
+                        {% elif it.qc_result == 'damaged' %}<span class="badge badge-out">销毁</span>
+                        {% else %}<span class="badge badge-normal">待质检</span>{% endif %}
+                    </td>
+                    <td class="mono">{{ it.return_location_code or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+            {% if order.status == 'approved' %}
+                <form method="post" action="{{ url_for('return_receive', order_no=order.order_no) }}" style="display:inline;">
+                    <button class="btn" type="submit">✓ 已收到客户包裹</button>
+                </form>
+                <form method="post" action="{{ url_for('return_reject', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('拒绝该退货？');">
+                    <button class="btn btn-danger" type="submit">拒绝退货</button>
+                </form>
+            {% elif order.status == 'qc_done' %}
+                <form method="post" action="{{ url_for('return_refund', order_no=order.order_no) }}" style="display:inline;">
+                    退款金额：<input type="number" name="refund_amount" min="0" step="0.01" value="{{ '%.2f'|format(items|sum(attribute='unit_price')) }}" style="width:120px;">
+                    <button class="btn" type="submit">✓ 标记已退款</button>
+                </form>
+            {% endif %}
+            <a class="btn btn-secondary" href="{{ url_for('return_list') }}">返回列表</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -223,6 +223,35 @@ CREATE TABLE IF NOT EXISTS stocktake_item (
     actual_qty INTEGER,
     diff_handled INTEGER DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS return_order (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT UNIQUE NOT NULL,
+    sales_order_no TEXT NOT NULL REFERENCES sales_order(order_no),
+    customer_id INTEGER REFERENCES customer(id),
+    reason TEXT CHECK(reason IN ('quality','wrong','dislike','damaged_in_transit','other')),
+    reason_note TEXT,
+    status TEXT NOT NULL DEFAULT 'approved' CHECK(status IN ('approved','received','qc_done','refunded','rejected')),
+    refund_amount REAL DEFAULT 0,
+    cs_user_id INTEGER REFERENCES user(id),
+    qc_user_id INTEGER REFERENCES user(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    received_at DATETIME,
+    qc_at DATETIME,
+    refunded_at DATETIME,
+    note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS return_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_no TEXT NOT NULL REFERENCES return_order(order_no),
+    sku_id INTEGER NOT NULL REFERENCES sku(id),
+    batch_id INTEGER NOT NULL REFERENCES batch(id),
+    quantity INTEGER NOT NULL CHECK(quantity > 0),
+    qc_result TEXT CHECK(qc_result IN ('good','downgrade','damaged')),
+    return_location_id INTEGER REFERENCES location(id),
+    unit_price REAL DEFAULT 0
+);
 """
 
 

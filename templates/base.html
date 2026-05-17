@@ -18,6 +18,7 @@
         <a href="{{ url_for('inventory_list') }}" class="{% if request.endpoint and request.endpoint.startswith('inventory') %}active{% endif %}">库存</a>
         <a href="{{ url_for('expiry_alert') }}" class="{% if request.endpoint == 'expiry_alert' %}active{% endif %}">临期</a>
         <a href="{{ url_for('damage_list') }}" class="{% if request.endpoint and request.endpoint.startswith('damage') %}active{% endif %}">报损</a>
+        <a href="{{ url_for('return_list') }}" class="{% if request.endpoint and request.endpoint.startswith('return') %}active{% endif %}">退货</a>
         <a href="{{ url_for('stocktake_list') }}" class="{% if request.endpoint and request.endpoint.startswith('stocktake') %}active{% endif %}">盘点</a>
         <a href="{{ url_for('stock_log_view') }}" class="{% if request.endpoint == 'stock_log_view' %}active{% endif %}">流水</a>
         <a href="{{ url_for('sku_list') }}" class="{% if request.endpoint and request.endpoint.startswith('sku') %}active{% endif %}">商品</a>

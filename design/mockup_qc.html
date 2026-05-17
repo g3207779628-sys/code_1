@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>质检员 · 抽检与退货验质 — code_1 UI Mockup v1</title>
+<link rel="stylesheet" href="mockup_shared.css">
+</head>
+<body>
+<div class="demo-banner"><strong>UI Mockup v1</strong> · 当前角色：<strong>质检员</strong> · <a href="UI_redesign_v1_ant_pro.md" style="color:var(--ant-primary);">返回方案文档</a></div>
+<div class="layout">
+
+<aside class="sider">
+    <div class="sider-logo"><div class="sider-logo-mark">K</div><div class="sider-logo-text">KClaw 仓储</div></div>
+    <div class="sider-section">我的工作</div>
+    <ul class="sider-menu">
+        <li><a href="#" class="active">⊙ 我的工作台</a></li>
+        <li><a href="#">🔍 来货抽检 <span class="tag tag-warning" style="margin-left:auto;font-size:11px;padding:0 5px;">2</span></a></li>
+        <li><a href="#">↩️ 退货质检 <span class="tag tag-error" style="margin-left:auto;font-size:11px;padding:0 5px;">3</span></a></li>
+        <li><a href="#">⚠️ 不良品处理</a></li>
+    </ul>
+    <div class="sider-section">查询</div>
+    <ul class="sider-menu">
+        <li><a href="#">📜 质检记录</a></li>
+        <li><a href="#">🏭 供应商评分</a></li>
+        <li><a href="#">🗃️ 隔离区库存</a></li>
+    </ul>
+</aside>
+
+<div class="main">
+    <header class="header">
+        <div class="breadcrumb"><span>首页</span><span class="sep">/</span><span class="current">质检员工作台</span></div>
+        <div class="header-actions">
+            <input type="text" class="search-box" placeholder="🔍 单号 / SKU">
+            <div class="header-icon">🔔<span class="badge-dot">5</span></div>
+            <div class="avatar" style="background:#2F54EB;">周</div>
+        </div>
+    </header>
+
+    <div class="page-header">
+        <div class="page-title">
+            <h1>质检员工作台</h1>
+            <div class="subtitle">周师傅，待抽检 <strong class="text-warning">2 批来货</strong>，<strong class="text-error">3 笔退货</strong>待质检</div>
+        </div>
+        <div class="page-actions">
+            <button class="btn">📜 我的记录</button>
+            <button class="btn btn-primary">🔍 开始抽检</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <div class="grid grid-4 mb-16">
+            <div class="stat fade-in highlight-primary">
+                <div class="stat-title">今日抽检批数</div>
+                <div class="stat-value"><span>5</span><span class="unit">批</span></div>
+                <div class="stat-suffix">合计 256 件，抽 28 件</div>
+                <div class="stat-deco">🔍</div>
+            </div>
+            <div class="stat fade-in highlight-warning">
+                <div class="stat-title">不良品发现率</div>
+                <div class="stat-value"><span>1.6</span><span class="unit">%</span></div>
+                <div class="stat-suffix">较周均 <span class="trend-down">↓ 0.4%</span></div>
+                <div class="stat-deco">📊</div>
+            </div>
+            <div class="stat fade-in highlight-error">
+                <div class="stat-title">待质检退货</div>
+                <div class="stat-value"><span>3</span><span class="unit">笔</span></div>
+                <div class="stat-suffix">最早 5/16 寄到</div>
+                <div class="stat-deco">↩️</div>
+            </div>
+            <div class="stat fade-in highlight-success">
+                <div class="stat-title">隔离区库存</div>
+                <div class="stat-value"><span>12</span><span class="unit">件</span></div>
+                <div class="stat-suffix">3 批待处理</div>
+                <div class="stat-deco">🚧</div>
+            </div>
+        </div>
+
+        <div class="grid grid-2 mb-16">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">🔍 来货待抽检</div>
+                    <div class="card-head-extra"><a href="#">抽检规则 →</a></div>
+                </div>
+                <div class="card-body flush">
+                    <table class="table">
+                        <thead><tr><th>采购单</th><th>供应商</th><th>SKU</th><th>件数</th><th>应抽</th><th></th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">CGD-#013</td><td>味之源</td>
+                                <td class="mono">MGZ-280-N</td>
+                                <td class="mono">80</td>
+                                <td class="mono fw-bold">8</td>
+                                <td><button class="btn btn-sm btn-primary">抽检</button></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">CGD-#014</td><td>鲜达</td>
+                                <td class="mono">BHJ-450-N</td>
+                                <td class="mono">60</td>
+                                <td class="mono fw-bold">6</td>
+                                <td><button class="btn btn-sm btn-primary">抽检</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">↩️ 退货待质检（三分支判定）</div>
+                    <div class="card-head-extra"><a href="#">规则 →</a></div>
+                </div>
+                <div class="card-body flush">
+                    <table class="table">
+                        <thead><tr><th>退货单</th><th>SKU/批次</th><th>客户原因</th><th>数量</th><th></th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">THD20260517003</td>
+                                <td class="mono">YCY-350-N / OLD</td>
+                                <td><span class="tag tag-warning">质量</span> 包装漏</td>
+                                <td class="mono fw-bold">1</td>
+                                <td><button class="btn btn-sm btn-primary">判定</button></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">THD20260516005</td>
+                                <td class="mono">FQNF-500 / FQNF-A</td>
+                                <td><span class="tag tag-default">不喜欢</span></td>
+                                <td class="mono fw-bold">2</td>
+                                <td><button class="btn btn-sm btn-primary">判定</button></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">THD20260516004</td>
+                                <td class="mono">MLXJ-400 / MLXJ-A</td>
+                                <td><span class="tag tag-error">运输破损</span></td>
+                                <td class="mono fw-bold">1</td>
+                                <td><button class="btn btn-sm btn-primary">判定</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-16">
+            <div class="card-head">
+                <div class="card-head-title">📜 最近不良品判定</div>
+            </div>
+            <div class="card-body">
+                <ul class="timeline">
+                    <li class="error">
+                        <div class="timeline-time">5/17 10:35 · CGD-#013</div>
+                            <div class="timeline-content">味之源 MGZ-280-N 抽 8/80 → 2 件包装破损 → 判定 <span class="tag tag-warning">降级销售</span> → 入 DG-01</div>
+                    </li>
+                    <li class="success">
+                        <div class="timeline-time">5/17 09:25 · CGD-#012</div>
+                        <div class="timeline-content">味之源 FQNF-500 抽 12/120 → <span class="text-success">全部合格</span> → 整批入库</div>
+                    </li>
+                    <li class="warning">
+                        <div class="timeline-time">5/16 15:42 · THD20260516001</div>
+                        <div class="timeline-content">退货 KLR-300-N 判定 <span class="tag tag-success">完好</span> → 入回 A-01-02</div>
+                    </li>
+                    <li class="error">
+                        <div class="timeline-time">5/16 14:10 · THD20260516002</div>
+                        <div class="timeline-content">退货 BHJ-450-N 判定 <span class="tag tag-error">已损坏</span> → 直接销毁，不入库</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><div class="card-head-title">⚡ 常用操作</div></div>
+            <div class="card-body">
+                <div class="action-grid">
+                    <a class="action-chip"><div class="action-chip-icon">🔍</div><div class="action-chip-text">来货抽检</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">↩️</div><div class="action-chip-text">退货质检</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">🚧</div><div class="action-chip-text">隔离区</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">📜</div><div class="action-chip-text">质检记录</div></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>样板 · 建筑黑白橙 — 仓库经理首页</title>
+<style>
+:root {
+    --bg: #FFFFFF;
+    --bg-alt: #F2F2F2;
+    --ink: #111111;
+    --ink-soft: #555555;
+    --ink-quiet: #999999;
+    --line: #111111;
+    --line-soft: #DDDDDD;
+    --accent: #E85D04;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: 0.01em;
+}
+a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); }
+a:hover { color: var(--accent); border-color: var(--accent); }
+.mono { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+strong { font-weight: 700; }
+
+.banner { background: var(--ink); color: #FFF; padding: 8px 32px; font-size: 11px; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; }
+.banner a { color: var(--accent); border-color: var(--accent); }
+
+.layout { display: flex; min-height: 100vh; }
+
+.sider {
+    width: 200px;
+    background: var(--bg);
+    border-right: 2px solid var(--ink);
+    padding: 0;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.brand {
+    padding: 28px 24px;
+    border-bottom: 2px solid var(--ink);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 800;
+}
+.brand small { display: block; font-size: 10px; font-weight: 500; letter-spacing: 0.2em; color: var(--ink-soft); margin-top: 4px; }
+.menu { list-style: none; padding: 0; }
+.menu li { border-bottom: 1px solid var(--line-soft); }
+.menu a {
+    display: block;
+    padding: 14px 24px;
+    color: var(--ink);
+    border-bottom: none;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    transition: background 0.1s, color 0.1s, padding-left 0.15s;
+}
+.menu a:hover { background: var(--bg-alt); padding-left: 30px; }
+.menu a.on { background: var(--ink); color: #FFF; }
+.menu a.on:hover { padding-left: 24px; background: var(--ink); }
+.menu-section {
+    padding: 24px 24px 8px;
+    font-size: 10px;
+    color: var(--ink-quiet);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.main { flex: 1; padding: 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 24px 48px; border-bottom: 2px solid var(--ink); }
+.crumb { font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ink-soft); }
+.actions { display: flex; gap: 0; }
+.actions .btn:not(:last-child) { border-right: none; }
+
+h1 { font-size: 56px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin-bottom: 12px; text-transform: uppercase; }
+.subtitle { font-size: 13px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 56px; }
+
+.page-section { padding: 48px;}
+.page-section.top { padding-bottom: 0; }
+
+.btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: var(--bg);
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
+}
+.btn:hover { background: var(--ink); color: #FFF; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #FFF; }
+.btn-primary:hover { background: var(--ink); border-color: var(--ink); color: #FFF; }
+.btn-sm { padding: 4px 10px; font-size: 10px; border-width: 1px; }
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 0 -48px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+}
+.kpi {
+    padding: 32px 48px;
+    border-right: 2px solid var(--ink);
+}
+.kpi:last-child { border-right: none; }
+.kpi.accent { background: var(--accent); color: #FFF; }
+.kpi-num {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    margin-bottom: 4px;
+}
+.kpi-num .unit { font-size: 14px; font-weight: 500; letter-spacing: 0; margin-left: 4px; text-transform: lowercase; }
+.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; margin-bottom: 16px; }
+.kpi-meta { font-size: 11px; color: var(--ink-soft); margin-top: 8px; }
+.kpi.accent .kpi-meta { color: rgba(255,255,255,0.8); }
+
+.section { margin-top: 48px; }
+.section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 0;
+}
+.section-title {
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.section-link { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--ink); }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.grid-2 > .section + .section { border-left: 2px solid var(--ink); padding-left: 48px; margin-left: -1px; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 14px 0; text-align: left; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
+.table th { color: var(--ink); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; }
+.table tbody tr:hover td { background: var(--bg-alt); }
+.table .col-right { text-align: right; }
+
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+}
+.tag.accent { background: var(--accent); color: #FFF; border-color: var(--accent); }
+.tag.dim { color: var(--ink-quiet); border-color: var(--ink-quiet); }
+
+.event { padding: 16px 0; border-bottom: 1px solid var(--line-soft); display: flex; gap: 16px; }
+.event-num { font-size: 22px; font-weight: 800; font-family: "SF Mono", monospace; color: var(--ink); min-width: 32px; line-height: 1; }
+.event.warn .event-num { color: var(--accent); }
+.event-text { font-size: 13px; color: var(--ink); }
+.event-time { font-size: 10px; color: var(--ink-quiet); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+
+.chart-block { padding: 24px 0; }
+.chart-block svg { width: 100%; height: 220px; display: block; }
+
+.team-row { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
+.team-rank { font-size: 22px; font-weight: 800; min-width: 32px; }
+.team-name { flex: 1; font-size: 13px; }
+.team-name small { display: block; font-size: 10px; color: var(--ink-quiet); text-transform: uppercase; letter-spacing: 0.1em; }
+.team-bar { width: 120px; height: 8px; background: var(--bg-alt); border: 1px solid var(--line-soft); position: relative; overflow: hidden; }
+.team-bar > div { height: 100%; background: var(--ink); }
+.team-num { font-family: "SF Mono", monospace; font-size: 18px; font-weight: 700; min-width: 36px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="banner">SAMPLE V2 · <strong>ARCHITECTURE — BLACK / WHITE / ORANGE</strong> · <a href="UI_redesign_v2_styles.md">返回风格对比</a></div>
+<div class="layout">
+
+<aside class="sider">
+    <div class="brand">KCLAW<small>WAREHOUSE OS</small></div>
+    <div class="menu-section">驾驶舱</div>
+    <ul class="menu">
+        <li><a class="on">工作台</a></li>
+        <li><a>经营报表</a></li>
+        <li><a>智能查询</a></li>
+    </ul>
+    <div class="menu-section">业务</div>
+    <ul class="menu">
+        <li><a>审批中心</a></li>
+        <li><a>销售订单</a></li>
+        <li><a>拣货任务</a></li>
+        <li><a>入库管理</a></li>
+        <li><a>退换货</a></li>
+    </ul>
+    <div class="menu-section">库存</div>
+    <ul class="menu">
+        <li><a>库存查询</a></li>
+        <li><a>临期预警</a></li>
+        <li><a>报损管理</a></li>
+        <li><a>盘点</a></li>
+        <li><a>流水</a></li>
+    </ul>
+</aside>
+
+<div class="main">
+
+    <div class="topbar">
+        <div class="crumb">驾驶舱 // 仓库经理工作台</div>
+        <div class="actions">
+            <button class="btn">导出</button>
+            <button class="btn">日期</button>
+            <button class="btn btn-primary">审批中心 / 8</button>
+        </div>
+    </div>
+
+    <div class="page-section top">
+        <h1>决策驾驶舱</h1>
+        <div class="subtitle">早上好 / 张经理 / 2026-05-17 / 全仓 20 人在岗</div>
+    </div>
+
+    <div style="padding: 0 48px;">
+        <div class="kpi-grid">
+            <div class="kpi">
+                <div class="kpi-label">今日营业额</div>
+                <div class="kpi-num">¥12.3<span class="unit">K</span></div>
+                <div class="kpi-meta">较昨日 +12.5%</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">待审批</div>
+                <div class="kpi-num">08</div>
+                <div class="kpi-meta">报损 5 · 入库 2 · 退货 1</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">在仓总数</div>
+                <div class="kpi-num">1,001<span class="unit">件</span></div>
+                <div class="kpi-meta">已预占 16 · 可用 985</div>
+            </div>
+            <div class="kpi accent">
+                <div class="kpi-label">临期 / 过期</div>
+                <div class="kpi-num">12</div>
+                <div class="kpi-meta">过期 3 · 紧急 5 · 预警 4</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-section">
+        <div class="grid-2">
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">待审批 / 8</div>
+                    <a class="section-link">全部</a>
+                </div>
+                <table class="table">
+                    <thead><tr><th>类型</th><th>单号</th><th>申请人</th><th class="col-right">数量</th><th></th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="tag">报损</span></td><td class="mono">DMG-012 MLXJ-A</td><td>李四</td><td class="mono col-right">5</td><td class="col-right"><button class="btn btn-sm">审</button></td></tr>
+                        <tr><td><span class="tag">报损</span></td><td class="mono">DMG-013 FQNF-B</td><td>王五</td><td class="mono col-right">2</td><td class="col-right"><button class="btn btn-sm">审</button></td></tr>
+                        <tr><td><span class="tag">入库</span></td><td class="mono">RKD20260517009</td><td>赵六</td><td class="mono col-right">120</td><td class="col-right"><button class="btn btn-sm">审</button></td></tr>
+                        <tr><td><span class="tag">入库</span></td><td class="mono">RKD20260517010</td><td>赵六</td><td class="mono col-right">80</td><td class="col-right"><button class="btn btn-sm">审</button></td></tr>
+                        <tr><td><span class="tag">退货</span></td><td class="mono">THD20260517003</td><td>客服孙</td><td class="mono col-right">1</td><td class="col-right"><button class="btn btn-sm">审</button></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">异常告警</div>
+                    <a class="section-link">设置</a>
+                </div>
+                <div class="event warn">
+                    <div class="event-num">03</div>
+                    <div>
+                        <div class="event-time">5月17日 09:02</div>
+                        <div class="event-text">已过期 <strong>3 个批次</strong>，估值 ¥860，建议立即报损</div>
+                    </div>
+                </div>
+                <div class="event warn">
+                    <div class="event-num">05</div>
+                    <div>
+                        <div class="event-time">5月17日 08:45</div>
+                        <div class="event-text">临期 7 天内 <strong>5 个批次</strong>，建议降级促销</div>
+                    </div>
+                </div>
+                <div class="event">
+                    <div class="event-num">01</div>
+                    <div>
+                        <div class="event-time">5月17日 08:30</div>
+                        <div class="event-text">YCY-350-L 库存 <strong>18 &lt; 50</strong>，建议补货</div>
+                    </div>
+                </div>
+                <div class="event">
+                    <div class="event-num">01</div>
+                    <div>
+                        <div class="event-time">5月17日 07:50</div>
+                        <div class="event-text">CKD20260517005 拣货等待超 2 小时，已转李四</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2" style="margin-top: 48px;">
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">销售趋势 · 14 天</div>
+                    <a class="section-link">日 · 周 · 月</a>
+                </div>
+                <div class="chart-block">
+                    <svg viewBox="0 0 400 200" preserveAspectRatio="none">
+                        <line x1="0" y1="50" x2="400" y2="50" stroke="#DDDDDD"/>
+                        <line x1="0" y1="100" x2="400" y2="100" stroke="#DDDDDD"/>
+                        <line x1="0" y1="150" x2="400" y2="150" stroke="#DDDDDD"/>
+                        <line x1="0" y1="200" x2="400" y2="200" stroke="#111111" stroke-width="2"/>
+                        <polyline points="0,160 30,140 60,150 90,110 120,130 150,90 180,100 210,70 240,85 270,60 300,80 330,45 360,55 400,40" stroke="#111111" stroke-width="2" fill="none"/>
+                        <circle cx="180" cy="100" r="4" fill="#E85D04"/>
+                        <circle cx="330" cy="45" r="4" fill="#E85D04"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">今日团队</div>
+                    <a class="section-link">详细</a>
+                </div>
+                <div class="team-row"><div class="team-rank">01</div><div class="team-name">张三<small>拣货员</small></div><div class="team-bar"><div style="width:100%"></div></div><div class="team-num">86</div></div>
+                <div class="team-row"><div class="team-rank">02</div><div class="team-name">李四<small>拣货员</small></div><div class="team-bar"><div style="width:84%"></div></div><div class="team-num">72</div></div>
+                <div class="team-row"><div class="team-rank">03</div><div class="team-name">王五<small>打包员</small></div><div class="team-bar"><div style="width:76%"></div></div><div class="team-num">65</div></div>
+                <div class="team-row"><div class="team-rank">04</div><div class="team-name">赵六<small>收货员</small></div><div class="team-bar"><div style="width:56%"></div></div><div class="team-num">48</div></div>
+                <div class="team-row"><div class="team-rank">05</div><div class="team-name">孙七<small>客服</small></div><div class="team-bar"><div style="width:64%"></div></div><div class="team-num">55</div></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+</body>
+</html>

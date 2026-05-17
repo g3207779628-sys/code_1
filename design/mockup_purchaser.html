@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>采购员 · 供应商与补货 — code_1 UI Mockup v1</title>
+<link rel="stylesheet" href="mockup_shared.css">
+</head>
+<body>
+<div class="demo-banner"><strong>UI Mockup v1</strong> · 当前角色：<strong>采购员</strong> · <a href="UI_redesign_v1_ant_pro.md" style="color:var(--ant-primary);">返回方案文档</a></div>
+<div class="layout">
+
+<aside class="sider">
+    <div class="sider-logo"><div class="sider-logo-mark">K</div><div class="sider-logo-text">KClaw 仓储</div></div>
+    <div class="sider-section">我的工作</div>
+    <ul class="sider-menu">
+        <li><a href="#" class="active">⊙ 我的工作台</a></li>
+        <li><a href="#">📥 采购单 <span class="tag tag-warning" style="margin-left:auto;font-size:11px;padding:0 5px;">3</span></a></li>
+        <li><a href="#">↩️ 退供处理</a></li>
+        <li><a href="#">⚠️ 补货建议</a></li>
+    </ul>
+    <div class="sider-section">主数据</div>
+    <ul class="sider-menu">
+        <li><a href="#">🏭 供应商管理</a></li>
+        <li><a href="#">🏷️ 商品 SKU</a></li>
+        <li><a href="#">📊 供应商评分</a></li>
+    </ul>
+</aside>
+
+<div class="main">
+    <header class="header">
+        <div class="breadcrumb"><span>首页</span><span class="sep">/</span><span class="current">采购员工作台</span></div>
+        <div class="header-actions">
+            <input type="text" class="search-box" placeholder="🔍 供应商 / SKU">
+            <div class="header-icon">🔔<span class="badge-dot">3</span></div>
+            <div class="avatar" style="background:#FA541C;">林</div>
+        </div>
+    </header>
+
+    <div class="page-header">
+        <div class="page-title">
+            <h1>采购员工作台</h1>
+            <div class="subtitle">林师傅，<strong class="text-warning">2 个 SKU 已缺货</strong>，建议立即下采购单</div>
+        </div>
+        <div class="page-actions">
+            <button class="btn">📈 采购报表</button>
+            <button class="btn btn-primary">+ 新建采购单</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <div class="grid grid-4 mb-16">
+            <div class="stat fade-in highlight-primary">
+                <div class="stat-title">本月采购金额</div>
+                <div class="stat-value">¥<span>48,200</span></div>
+                <div class="stat-suffix">较上月 <span class="trend-up">↑ 8.3%</span></div>
+                <div class="stat-deco">💰</div>
+            </div>
+            <div class="stat fade-in highlight-warning">
+                <div class="stat-title">在途采购单</div>
+                <div class="stat-value"><span>3</span><span class="unit">单</span></div>
+                <div class="stat-suffix">最近到货 5/19</div>
+                <div class="stat-deco">🚚</div>
+            </div>
+            <div class="stat fade-in highlight-success">
+                <div class="stat-title">合作供应商</div>
+                <div class="stat-value"><span>2</span><span class="unit">家</span></div>
+                <div class="stat-suffix">平均评分 91.5</div>
+                <div class="stat-deco">🏭</div>
+            </div>
+            <div class="stat fade-in highlight-error">
+                <div class="stat-title">退供处理中</div>
+                <div class="stat-value"><span>1</span><span class="unit">单</span></div>
+                <div class="stat-suffix">味之源 · 待对接</div>
+                <div class="stat-deco">↩️</div>
+            </div>
+        </div>
+
+        <div class="grid grid-2 mb-16">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">⚠️ 待补货 SKU（低于安全库存）</div>
+                    <div class="card-head-extra"><a href="#">一键生成采购单 →</a></div>
+                </div>
+                <div class="card-body flush">
+                    <table class="table">
+                        <thead><tr><th>SKU</th><th>商品</th><th>当前</th><th>建议采购</th><th>推荐供应商</th><th></th></tr></thead>
+                        <tbody>
+                            <tr style="background:#FFF1F0;">
+                                <td class="mono">YCY-350-L</td><td>酸菜鱼·少辣</td>
+                                <td class="mono text-error fw-bold">18</td>
+                                <td class="mono">100</td>
+                                <td>味之源食品厂 ★95</td>
+                                <td><button class="btn btn-sm btn-primary">采</button></td>
+                            </tr>
+                            <tr style="background:#FFFBE6;">
+                                <td class="mono">BHJ-450-N</td><td>白菜煎饺</td>
+                                <td class="mono text-warning fw-bold">15</td>
+                                <td class="mono">60</td>
+                                <td>鲜达预制菜 ★88</td>
+                                <td><button class="btn btn-sm btn-primary">采</button></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">MGZ-280-N</td><td>蘑菇炸</td>
+                                <td class="mono">28</td>
+                                <td class="mono">50</td>
+                                <td>味之源食品厂 ★95</td>
+                                <td><button class="btn btn-sm">采</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">🚚 在途采购单</div>
+                    <div class="card-head-extra"><a href="#">全部 →</a></div>
+                </div>
+                <div class="card-body flush">
+                    <table class="table">
+                        <thead><tr><th>采购单</th><th>供应商</th><th>金额</th><th>预到</th><th>状态</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">CGD-#015</td><td>味之源</td><td class="mono">¥3,200</td><td class="mono">5/19</td><td><span class="tag tag-info">已发货</span></td></tr>
+                            <tr><td class="mono">CGD-#016</td><td>鲜达</td><td class="mono">¥1,800</td><td class="mono">5/20</td><td><span class="tag tag-warning">备货中</span></td></tr>
+                            <tr><td class="mono">CGD-#017</td><td>味之源</td><td class="mono">¥2,400</td><td class="mono">5/22</td><td><span class="tag tag-default">已下单</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-16">
+            <div class="card-head">
+                <div class="card-head-title">🏭 供应商质量评分（实时）</div>
+                <div class="card-head-extra"><a href="#">详细评估 →</a></div>
+            </div>
+            <div class="card-body">
+                <ul class="list">
+                    <li class="list-item">
+                        <div class="avatar" style="background:#52C41A;">味</div>
+                        <div class="list-item-main">
+                            <div class="list-item-title">味之源食品厂 <span class="tag tag-success" style="margin-left:8px;">优质</span></div>
+                            <div class="list-item-desc">本月合作 12 单 · 抽检合格率 99.2%</div>
+                            <div class="progress mt-16"><div class="progress-bar success" style="width:95%"></div></div>
+                        </div>
+                        <span class="mono fw-bold" style="font-size:18px;">95</span>
+                    </li>
+                    <li class="list-item">
+                        <div class="avatar" style="background:#1677FF;">鲜</div>
+                        <div class="list-item-main">
+                            <div class="list-item-title">鲜达预制菜 <span class="tag tag-info" style="margin-left:8px;">良好</span></div>
+                            <div class="list-item-desc">本月合作 8 单 · 抽检合格率 96.5%</div>
+                            <div class="progress mt-16"><div class="progress-bar" style="width:88%"></div></div>
+                        </div>
+                        <span class="mono fw-bold" style="font-size:18px;">88</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><div class="card-head-title">⚡ 常用操作</div></div>
+            <div class="card-body">
+                <div class="action-grid">
+                    <a class="action-chip"><div class="action-chip-icon">📥</div><div class="action-chip-text">新建采购单</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">🏭</div><div class="action-chip-text">供应商管理</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">↩️</div><div class="action-chip-text">处理退供</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">📊</div><div class="action-chip-text">采购报表</div></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+</body>
+</html>

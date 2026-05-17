@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>拣货员 · 待拣任务 — code_1 UI Mockup v1</title>
+<link rel="stylesheet" href="mockup_shared.css">
+</head>
+<body>
+<div class="demo-banner"><strong>UI Mockup v1</strong> · 当前角色：<strong>拣货员</strong> · <a href="UI_redesign_v1_ant_pro.md" style="color:var(--ant-primary);">返回方案文档</a></div>
+<div class="layout">
+
+<aside class="sider">
+    <div class="sider-logo"><div class="sider-logo-mark">K</div><div class="sider-logo-text">KClaw 仓储</div></div>
+    <div class="sider-section">我的工作</div>
+    <ul class="sider-menu">
+        <li><a href="#" class="active">⊙ 我的工作台</a></li>
+        <li><a href="#">📋 我的拣货任务 <span class="tag tag-warning" style="margin-left:auto;font-size:11px;padding:0 5px;">5</span></a></li>
+        <li><a href="#">✓ 今日已完成</a></li>
+        <li><a href="#">🏆 拣货排行</a></li>
+    </ul>
+    <div class="sider-section">查询</div>
+    <ul class="sider-menu">
+        <li><a href="#">🗺️ 库位地图</a></li>
+        <li><a href="#">🗃️ 库存查询</a></li>
+    </ul>
+</aside>
+
+<div class="main">
+    <header class="header">
+        <div class="breadcrumb"><span>首页</span><span class="sep">/</span><span class="current">拣货员工作台</span></div>
+        <div class="header-actions">
+            <input type="text" class="search-box" placeholder="🔍 出库单号">
+            <div class="header-icon">🔔<span class="badge-dot">5</span></div>
+            <div class="avatar green">张</div>
+        </div>
+    </header>
+
+    <div class="page-header">
+        <div class="page-title">
+            <h1>拣货员工作台</h1>
+            <div class="subtitle">张三，今日已拣 <strong class="text-success">12 单</strong>·剩余 <strong class="text-warning">5 单</strong>·当前排行第 <strong class="text-primary">1</strong></div>
+        </div>
+        <div class="page-actions">
+            <button class="btn">🏆 排行榜</button>
+            <button class="btn btn-primary">📷 扫码拣货</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <div class="grid grid-4 mb-16">
+            <div class="stat fade-in highlight-success">
+                <div class="stat-title">今日已拣单数</div>
+                <div class="stat-value"><span>12</span><span class="unit">单</span></div>
+                <div class="stat-suffix">86 件 · 准确率 100%</div>
+                <div class="stat-deco">✓</div>
+            </div>
+            <div class="stat fade-in highlight-warning">
+                <div class="stat-title">待拣任务</div>
+                <div class="stat-value"><span>5</span><span class="unit">单</span></div>
+                <div class="stat-suffix">42 件 · 最久等 18 分钟</div>
+                <div class="stat-deco">📋</div>
+            </div>
+            <div class="stat fade-in highlight-primary">
+                <div class="stat-title">效率（单/小时）</div>
+                <div class="stat-value"><span>4.2</span></div>
+                <div class="stat-suffix">较周均 <span class="trend-up">↑ 0.5</span></div>
+                <div class="stat-deco">⚡</div>
+            </div>
+            <div class="stat fade-in highlight-error">
+                <div class="stat-title">我的排名</div>
+                <div class="stat-value"><span>#1</span></div>
+                <div class="stat-suffix">8 名拣货员中</div>
+                <div class="stat-deco">🥇</div>
+            </div>
+        </div>
+
+        <div class="card mb-16">
+            <div class="card-head">
+                <div class="card-head-title">📋 我的待拣任务（按 FIFO 派的批次，按库位排序）</div>
+                <div class="card-head-extra"><a href="#">领取新任务 →</a></div>
+            </div>
+            <div class="card-body flush">
+                <table class="table">
+                    <thead><tr><th>出库单</th><th>库位</th><th>SKU</th><th>批次</th><th>效期</th><th>数量</th><th>等待</th><th></th></tr></thead>
+                    <tbody>
+                        <tr style="background:#FFF1F0;">
+                            <td class="mono">CKD20260517005</td>
+                            <td class="mono fw-bold">A-01-01</td>
+                            <td class="mono">YCY-350-N</td>
+                            <td class="mono" style="font-size:11px;">BATCH-OLD</td>
+                            <td class="mono text-error">5/22 (5天)</td>
+                            <td class="mono fw-bold" style="font-size:16px;">10</td>
+                            <td class="text-error mono">18 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">开始</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517006</td>
+                            <td class="mono fw-bold">A-01-02</td>
+                            <td class="mono">MLXJ-400</td>
+                            <td class="mono" style="font-size:11px;">MLXJ-A</td>
+                            <td class="mono">5/27 (10天)</td>
+                            <td class="mono fw-bold" style="font-size:16px;">8</td>
+                            <td class="mono text-tertiary">12 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">开始</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517006</td>
+                            <td class="mono fw-bold">A-02-01</td>
+                            <td class="mono">MLXJ-400</td>
+                            <td class="mono" style="font-size:11px;">MLXJ-B</td>
+                            <td class="mono">6/11 (25天)</td>
+                            <td class="mono fw-bold" style="font-size:16px;">2</td>
+                            <td class="mono text-tertiary">12 分钟</td>
+                            <td><button class="btn btn-sm">合并</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517007</td>
+                            <td class="mono fw-bold">B-01-01</td>
+                            <td class="mono">FQNF-500</td>
+                            <td class="mono" style="font-size:11px;">FQNF-A</td>
+                            <td class="mono">7/16 (60天)</td>
+                            <td class="mono fw-bold" style="font-size:16px;">15</td>
+                            <td class="mono text-tertiary">8 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">开始</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517008</td>
+                            <td class="mono fw-bold">A-01-02</td>
+                            <td class="mono">KLR-300-N</td>
+                            <td class="mono" style="font-size:11px;">KLR-A</td>
+                            <td class="mono">6/06 (20天)</td>
+                            <td class="mono fw-bold" style="font-size:16px;">7</td>
+                            <td class="mono text-tertiary">5 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">开始</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid grid-2 mb-16">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">🏆 今日拣货排行</div>
+                </div>
+                <div class="card-body">
+                    <ul class="list">
+                        <li class="list-item">
+                            <span style="width:30px;font-size:20px;">🥇</span>
+                            <div class="avatar green">张</div>
+                            <div class="list-item-main">
+                                <div class="list-item-title fw-bold">张三 (我)</div>
+                                <div class="progress"><div class="progress-bar success" style="width:100%"></div></div>
+                            </div>
+                            <span class="mono fw-bold" style="font-size:18px;">86</span>
+                        </li>
+                        <li class="list-item">
+                            <span style="width:30px;font-size:20px;">🥈</span>
+                            <div class="avatar orange">李</div>
+                            <div class="list-item-main">
+                                <div class="list-item-title">李四</div>
+                                <div class="progress"><div class="progress-bar" style="width:84%"></div></div>
+                            </div>
+                            <span class="mono fw-bold">72</span>
+                        </li>
+                        <li class="list-item">
+                            <span style="width:30px;font-size:20px;">🥉</span>
+                            <div class="avatar purple">刘</div>
+                            <div class="list-item-main">
+                                <div class="list-item-title">刘强</div>
+                                <div class="progress"><div class="progress-bar" style="width:74%"></div></div>
+                            </div>
+                            <span class="mono fw-bold">64</span>
+                        </li>
+                        <li class="list-item">
+                            <span style="width:30px;font-size:14px;color:var(--ant-text-tertiary);">#4</span>
+                            <div class="avatar">陈</div>
+                            <div class="list-item-main">
+                                <div class="list-item-title">陈晨</div>
+                                <div class="progress"><div class="progress-bar" style="width:60%"></div></div>
+                            </div>
+                            <span class="mono fw-bold">52</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">✓ 我今日完成</div>
+                </div>
+                <div class="card-body">
+                    <ul class="timeline">
+                        <li class="success"><div class="timeline-time">15:18 · CKD20260517004</div><div class="timeline-content">FQNF-500 × 5 · 准确率 ✓</div></li>
+                        <li class="success"><div class="timeline-time">14:45 · CKD20260517003</div><div class="timeline-content">MGZ-280-N × 8 · 准确率 ✓</div></li>
+                        <li class="success"><div class="timeline-time">14:10 · CKD20260517002</div><div class="timeline-content">YCY-350-N × 10 · 准确率 ✓</div></li>
+                        <li class="success"><div class="timeline-time">13:30 · CKD20260517001</div><div class="timeline-content">MLXJ-400 × 8 · 准确率 ✓</div></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+</body>
+</html>

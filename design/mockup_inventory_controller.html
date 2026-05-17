@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>库存控制员 · 调拨与报损 — code_1 UI Mockup v1</title>
+<link rel="stylesheet" href="mockup_shared.css">
+</head>
+<body>
+<div class="demo-banner"><strong>UI Mockup v1</strong> · 当前角色：<strong>库存控制员</strong> · <a href="UI_redesign_v1_ant_pro.md" style="color:var(--ant-primary);">返回方案文档</a></div>
+<div class="layout">
+
+<aside class="sider">
+    <div class="sider-logo"><div class="sider-logo-mark">K</div><div class="sider-logo-text">KClaw 仓储</div></div>
+    <div class="sider-section">我的工作</div>
+    <ul class="sider-menu">
+        <li><a href="#" class="active">⊙ 我的工作台</a></li>
+        <li><a href="#">📋 待审报损 <span class="tag tag-error" style="margin-left:auto;font-size:11px;padding:0 5px;">5</span></a></li>
+        <li><a href="#">🔄 调拨任务</a></li>
+        <li><a href="#">⚠️ 库存预警</a></li>
+    </ul>
+    <div class="sider-section">库存</div>
+    <ul class="sider-menu">
+        <li><a href="#">🗃️ 库存查询</a></li>
+        <li><a href="#">⏰ 临期预警</a></li>
+        <li><a href="#">📊 盘点协助</a></li>
+        <li><a href="#">📜 库存流水</a></li>
+    </ul>
+</aside>
+
+<div class="main">
+    <header class="header">
+        <div class="breadcrumb"><span>首页</span><span class="sep">/</span><span class="current">库存控制员工作台</span></div>
+        <div class="header-actions">
+            <input type="text" class="search-box" placeholder="🔍 SKU / 批次 / 库位">
+            <div class="header-icon">🔔<span class="badge-dot">5</span></div>
+            <div class="avatar" style="background:#722ED1;">陈</div>
+        </div>
+    </header>
+
+    <div class="page-header">
+        <div class="page-title">
+            <h1>库存控制员工作台</h1>
+            <div class="subtitle">陈姐，今天有 <strong class="text-error">5 笔报损待你审批</strong>，库存预警 2 个 SKU</div>
+        </div>
+        <div class="page-actions">
+            <button class="btn">📜 库存流水</button>
+            <button class="btn">🔄 发起调拨</button>
+            <button class="btn btn-primary">→ 立即审批 (5)</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <div class="grid grid-4 mb-16">
+            <div class="stat fade-in highlight-primary">
+                <div class="stat-title">在仓总数</div>
+                <div class="stat-value"><span>1,001</span><span class="unit">件</span></div>
+                <div class="stat-suffix">9 个 SKU · 12 个批次</div>
+                <div class="stat-deco">📦</div>
+            </div>
+            <div class="stat fade-in highlight-warning">
+                <div class="stat-title">已预占</div>
+                <div class="stat-value"><span>16</span><span class="unit">件</span></div>
+                <div class="stat-suffix">销售单占用中</div>
+                <div class="stat-deco">🔒</div>
+            </div>
+            <div class="stat fade-in highlight-error">
+                <div class="stat-title">待审报损</div>
+                <div class="stat-value"><span>5</span><span class="unit">单</span></div>
+                <div class="stat-suffix">合计 22 份 · 估值 ¥430</div>
+                <div class="stat-deco">⚠️</div>
+            </div>
+            <div class="stat fade-in highlight-success">
+                <div class="stat-title">调拨在途</div>
+                <div class="stat-value"><span>3</span><span class="unit">单</span></div>
+                <div class="stat-suffix">A→B 区 2 · 隔离→正常 1</div>
+                <div class="stat-deco">🔄</div>
+            </div>
+        </div>
+
+        <div class="grid grid-2 mb-16">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">⚠️ 待审报损单 (5)</div>
+                    <div class="card-head-extra"><a href="#">全部审批 →</a></div>
+                </div>
+                <div class="card-body flush">
+                    <table class="table">
+                        <thead><tr><th>SKU</th><th>批次</th><th>原因</th><th>数量</th><th>申请人</th><th></th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono">MLXJ-400</td><td class="mono">MLXJ-A</td><td><span class="tag tag-warning">破损</span></td><td class="mono fw-bold">5</td><td>李四</td><td><button class="btn btn-sm btn-primary">审</button></td></tr>
+                            <tr><td class="mono">FQNF-500</td><td class="mono">FQNF-B</td><td><span class="tag tag-warning">破损</span></td><td class="mono fw-bold">2</td><td>王五</td><td><button class="btn btn-sm btn-primary">审</button></td></tr>
+                            <tr><td class="mono">YCY-350-N</td><td class="mono">BATCH-OLD</td><td><span class="tag tag-error">过期</span></td><td class="mono fw-bold">10</td><td>系统</td><td><button class="btn btn-sm btn-primary">审</button></td></tr>
+                            <tr><td class="mono">MGZ-280-N</td><td class="mono">MGZ-A</td><td><span class="tag tag-default">丢失</span></td><td class="mono fw-bold">2</td><td>赵六</td><td><button class="btn btn-sm btn-primary">审</button></td></tr>
+                            <tr><td class="mono">KLR-300-N</td><td class="mono">KLR-A</td><td><span class="tag tag-warning">破损</span></td><td class="mono fw-bold">3</td><td>李四</td><td><button class="btn btn-sm btn-primary">审</button></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">📉 库存预警 — 低于安全库存</div>
+                    <div class="card-head-extra"><a href="#">通知采购 →</a></div>
+                </div>
+                <div class="card-body flush">
+                    <table class="table">
+                        <thead><tr><th>SKU</th><th>商品</th><th>当前</th><th>安全</th><th>缺口</th></tr></thead>
+                        <tbody>
+                            <tr style="background:#FFF1F0;">
+                                <td class="mono">YCY-350-L</td>
+                                <td>酸菜鱼 350g·少辣</td>
+                                <td class="mono"><strong class="text-error">18</strong></td>
+                                <td class="mono">50</td>
+                                <td class="mono text-error">-32</td>
+                            </tr>
+                            <tr style="background:#FFFBE6;">
+                                <td class="mono">BHJ-450-N</td>
+                                <td>白菜煎饺 450g</td>
+                                <td class="mono"><strong class="text-warning">15</strong></td>
+                                <td class="mono">20</td>
+                                <td class="mono text-warning">-5</td>
+                            </tr>
+                            <tr>
+                                <td class="mono">MGZ-280-N</td>
+                                <td>蘑菇炸 280g</td>
+                                <td class="mono">28</td>
+                                <td class="mono">30</td>
+                                <td class="mono">-2</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-16">
+            <div class="card-head">
+                <div class="card-head-title">🔄 调拨任务（在途/待发起）</div>
+                <div class="card-head-extra"><a href="#">+ 发起新调拨</a></div>
+            </div>
+            <div class="card-body flush">
+                <table class="table">
+                    <thead><tr><th>调拨单</th><th>SKU/批次</th><th>从</th><th>到</th><th>数量</th><th>状态</th><th>发起时间</th></tr></thead>
+                    <tbody>
+                        <tr><td class="mono">DBO-#021</td><td class="mono">FQNF-500 / FQNF-A</td><td>B-01-01</td><td>B-01-02</td><td class="mono">20</td><td><span class="tag tag-info">在途</span></td><td class="mono text-tertiary">5/17 09:15</td></tr>
+                        <tr><td class="mono">DBO-#022</td><td class="mono">MLXJ-400 / MLXJ-B</td><td>A-02-01</td><td>A-01-02</td><td class="mono">30</td><td><span class="tag tag-info">在途</span></td><td class="mono text-tertiary">5/17 08:50</td></tr>
+                        <tr><td class="mono">DBO-#023</td><td class="mono">YCY-700-N / YCY700-A</td><td>ISO-01</td><td>A-01-01</td><td class="mono">5</td><td><span class="tag tag-warning">待发起</span></td><td class="mono text-tertiary">建议</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><div class="card-head-title">⚡ 常用操作</div></div>
+            <div class="card-body">
+                <div class="action-grid">
+                    <a class="action-chip"><div class="action-chip-icon">📋</div><div class="action-chip-text">报损审批</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">🔄</div><div class="action-chip-text">发起调拨</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">🗃️</div><div class="action-chip-text">库存查询</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">📜</div><div class="action-chip-text">库存流水</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">⏰</div><div class="action-chip-text">临期预警</div></a>
+                    <a class="action-chip"><div class="action-chip-icon">📊</div><div class="action-chip-text">协助盘点</div></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+</body>
+</html>

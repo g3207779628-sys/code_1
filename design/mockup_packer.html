@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>打包员 · 待打包 — code_1 UI Mockup v1</title>
+<link rel="stylesheet" href="mockup_shared.css">
+</head>
+<body>
+<div class="demo-banner"><strong>UI Mockup v1</strong> · 当前角色：<strong>打包员</strong> · <a href="UI_redesign_v1_ant_pro.md" style="color:var(--ant-primary);">返回方案文档</a></div>
+<div class="layout">
+
+<aside class="sider">
+    <div class="sider-logo"><div class="sider-logo-mark">K</div><div class="sider-logo-text">KClaw 仓储</div></div>
+    <div class="sider-section">我的工作</div>
+    <ul class="sider-menu">
+        <li><a href="#" class="active">⊙ 我的工作台</a></li>
+        <li><a href="#">📦 待打包 <span class="tag tag-warning" style="margin-left:auto;font-size:11px;padding:0 5px;">9</span></a></li>
+        <li><a href="#">🖨️ 打印面单</a></li>
+        <li><a href="#">⚠️ 异常包裹</a></li>
+    </ul>
+    <div class="sider-section">查询</div>
+    <ul class="sider-menu">
+        <li><a href="#">📜 打包记录</a></li>
+        <li><a href="#">🚚 快递配置</a></li>
+    </ul>
+</aside>
+
+<div class="main">
+    <header class="header">
+        <div class="breadcrumb"><span>首页</span><span class="sep">/</span><span class="current">打包员工作台</span></div>
+        <div class="header-actions">
+            <input type="text" class="search-box" placeholder="🔍 出库单 / 客户">
+            <div class="header-icon">🔔<span class="badge-dot">2</span></div>
+            <div class="avatar purple">王</div>
+        </div>
+    </header>
+
+    <div class="page-header">
+        <div class="page-title">
+            <h1>打包员工作台</h1>
+            <div class="subtitle">王师傅，今日已打 <strong>22 包</strong>·待打 <strong class="text-warning">9 包</strong>·平均耗时 2 分 18 秒</div>
+        </div>
+        <div class="page-actions">
+            <button class="btn">🖨️ 批量打印</button>
+            <button class="btn btn-primary">📦 开始打包</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <div class="grid grid-4 mb-16">
+            <div class="stat fade-in highlight-success">
+                <div class="stat-title">今日已打包</div>
+                <div class="stat-value"><span>22</span><span class="unit">包</span></div>
+                <div class="stat-suffix">较昨日 <span class="trend-up">↑ 4</span></div>
+                <div class="stat-deco">✓</div>
+            </div>
+            <div class="stat fade-in highlight-warning">
+                <div class="stat-title">待打包</div>
+                <div class="stat-value"><span>9</span><span class="unit">包</span></div>
+                <div class="stat-suffix">最早 13:45 拣完</div>
+                <div class="stat-deco">📦</div>
+            </div>
+            <div class="stat fade-in highlight-error">
+                <div class="stat-title">打包错误率</div>
+                <div class="stat-value"><span>0.2</span><span class="unit">%</span></div>
+                <div class="stat-suffix">本月 1 次 · 已整改</div>
+                <div class="stat-deco">⚠️</div>
+            </div>
+            <div class="stat fade-in highlight-primary">
+                <div class="stat-title">平均耗时</div>
+                <div class="stat-value"><span>2'18"</span></div>
+                <div class="stat-suffix">较周均 <span class="trend-down">↓ 15"</span></div>
+                <div class="stat-deco">⏱️</div>
+            </div>
+        </div>
+
+        <div class="card mb-16">
+            <div class="card-head">
+                <div class="card-head-title">📦 待打包列表（拣货已完成）</div>
+                <div class="card-head-extra"><a href="#">异常处理 →</a></div>
+            </div>
+            <div class="card-body flush">
+                <table class="table">
+                    <thead><tr><th>出库单</th><th>客户</th><th>件数</th><th>渠道</th><th>快递</th><th>等待</th><th></th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td class="mono">CKD20260517001</td>
+                            <td>张三 · 13900001111</td>
+                            <td class="mono fw-bold">3</td>
+                            <td><span class="tag tag-info">天猫</span></td>
+                            <td>顺丰</td>
+                            <td class="text-tertiary mono">25 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">打包</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517002</td>
+                            <td>李四 · 13900002222</td>
+                            <td class="mono fw-bold">2</td>
+                            <td><span class="tag tag-info">京东</span></td>
+                            <td>京东物流</td>
+                            <td class="text-tertiary mono">22 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">打包</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517003</td>
+                            <td>王芳 · 13911100001</td>
+                            <td class="mono fw-bold">5</td>
+                            <td><span class="tag tag-warning">抖音</span></td>
+                            <td>圆通</td>
+                            <td class="text-tertiary mono">18 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">打包</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517004</td>
+                            <td>刘强 · 13911100002</td>
+                            <td class="mono fw-bold">1</td>
+                            <td><span class="tag tag-default">小程序</span></td>
+                            <td>顺丰</td>
+                            <td class="text-tertiary mono">15 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">打包</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">CKD20260517005</td>
+                            <td>陈晨 · 13922200003</td>
+                            <td class="mono fw-bold">8</td>
+                            <td><span class="tag tag-info">天猫</span></td>
+                            <td>顺丰</td>
+                            <td class="text-tertiary mono">12 分钟</td>
+                            <td><button class="btn btn-sm btn-primary">打包</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid grid-2 mb-16">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">🖨️ 面单打印队列</div>
+                    <div class="card-head-extra"><a href="#">打印机配置</a></div>
+                </div>
+                <div class="card-body">
+                    <ul class="timeline">
+                        <li class="success"><div class="timeline-time">15:42 · 顺丰</div><div class="timeline-content">CKD20260517001 面单已打印 ✓</div></li>
+                        <li class="success"><div class="timeline-time">15:40 · 京东物流</div><div class="timeline-content">CKD20260517002 面单已打印 ✓</div></li>
+                        <li class="warning"><div class="timeline-time">15:38 · 圆通</div><div class="timeline-content">CKD20260517003 面单打印中</div></li>
+                        <li><div class="timeline-time">待打</div><div class="timeline-content">CKD20260517004-005 队列中</div></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">⚠️ 异常包裹</div>
+                </div>
+                <div class="card-body flush">
+                    <table class="table">
+                        <thead><tr><th>单号</th><th>异常</th><th></th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">CKD20260516015</td>
+                                <td><span class="tag tag-warning">面单打印失败</span></td>
+                                <td><button class="btn btn-sm">重打</button></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">CKD20260516016</td>
+                                <td><span class="tag tag-error">客户改地址</span></td>
+                                <td><button class="btn btn-sm">联客服</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+</body>
+</html>

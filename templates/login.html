@@ -2,31 +2,43 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>登录 — code_1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 · KClaw 仓储</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<div class="login-box">
-    <h1>CODE_1 仓储</h1>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, msg in messages %}
-        <div class="flash {{ category }}">{{ msg }}</div>
-        {% endfor %}
-    {% endwith %}
-    <form method="post">
-        <div class="form-row">
-            <label>用户名</label>
-            <input type="text" name="username" required autofocus>
+
+<div class="login-wrap">
+    <div class="login-box">
+        <h1>KClaw 仓储</h1>
+        <div class="login-sub">Warehouse OS · 内部使用</div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, msg in messages %}
+            <div class="flash {{ category }}" style="margin-bottom:16px;">{{ msg }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="post">
+            <div class="form-row">
+                <label>用户名</label>
+                <input type="text" name="username" required autofocus autocomplete="username">
+            </div>
+            <div class="form-row">
+                <label>密码</label>
+                <input type="password" name="password" required autocomplete="current-password">
+            </div>
+            <button class="btn btn-primary" type="submit">登 录</button>
+        </form>
+
+        <div class="login-hint">
+            测试账号<br>
+            admin / admin123<br>
+            manager / manager123<br>
+            staff / staff123
         </div>
-        <div class="form-row">
-            <label>密码</label>
-            <input type="password" name="password" required>
-        </div>
-        <button class="btn" type="submit" style="width:100%;">登 录</button>
-    </form>
-    <div style="margin-top:24px; font-size:12px; color:var(--color-text-soft);">
-        测试账号：admin/admin123 · manager/manager123 · staff/staff123
     </div>
 </div>
+
 </body>
 </html>

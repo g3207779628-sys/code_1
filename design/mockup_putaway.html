@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>上架员 · 库位与上架 — code_1 UI Mockup v1</title>
+<link rel="stylesheet" href="mockup_shared.css">
+</head>
+<body>
+<div class="demo-banner"><strong>UI Mockup v1</strong> · 当前角色：<strong>上架员</strong> · <a href="UI_redesign_v1_ant_pro.md" style="color:var(--ant-primary);">返回方案文档</a></div>
+<div class="layout">
+
+<aside class="sider">
+    <div class="sider-logo"><div class="sider-logo-mark">K</div><div class="sider-logo-text">KClaw 仓储</div></div>
+    <div class="sider-section">我的工作</div>
+    <ul class="sider-menu">
+        <li><a href="#" class="active">⊙ 我的工作台</a></li>
+        <li><a href="#">📥 待上架 <span class="tag tag-warning" style="margin-left:auto;font-size:11px;padding:0 5px;">8</span></a></li>
+        <li><a href="#">🗺️ 库位地图</a></li>
+        <li><a href="#">📜 我的流水</a></li>
+    </ul>
+    <div class="sider-section">查询</div>
+    <ul class="sider-menu">
+        <li><a href="#">🗃️ 库存查询</a></li>
+        <li><a href="#">🏢 库位管理</a></li>
+    </ul>
+</aside>
+
+<div class="main">
+    <header class="header">
+        <div class="breadcrumb"><span>首页</span><span class="sep">/</span><span class="current">上架员工作台</span></div>
+        <div class="header-actions">
+            <input type="text" class="search-box" placeholder="🔍 SKU / 库位号">
+            <div class="header-icon">🔔<span class="badge-dot">2</span></div>
+            <div class="avatar" style="background:#EB2F96;">钱</div>
+        </div>
+    </header>
+
+    <div class="page-header">
+        <div class="page-title">
+            <h1>上架员工作台</h1>
+            <div class="subtitle">钱师傅，待上架 <strong class="text-warning">8 个批次</strong>，建议从冷藏区开始</div>
+        </div>
+        <div class="page-actions">
+            <button class="btn">🗺️ 库位地图</button>
+            <button class="btn btn-primary">📷 扫码上架</button>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <div class="grid grid-4 mb-16">
+            <div class="stat fade-in highlight-warning">
+                <div class="stat-title">待上架件数</div>
+                <div class="stat-value"><span>340</span><span class="unit">件</span></div>
+                <div class="stat-suffix">8 个批次 · 含冷藏 5</div>
+                <div class="stat-deco">📥</div>
+            </div>
+            <div class="stat fade-in highlight-success">
+                <div class="stat-title">今日已上架</div>
+                <div class="stat-value"><span>180</span><span class="unit">件</span></div>
+                <div class="stat-suffix">效率 60 件/小时</div>
+                <div class="stat-deco">✓</div>
+            </div>
+            <div class="stat fade-in highlight-primary">
+                <div class="stat-title">库位占用率</div>
+                <div class="stat-value"><span>68</span><span class="unit">%</span></div>
+                <div class="stat-suffix">8 个库位 · 5 已用</div>
+                <div class="stat-deco">🏢</div>
+            </div>
+            <div class="stat fade-in highlight-error">
+                <div class="stat-title">异常库位</div>
+                <div class="stat-value"><span>1</span><span class="unit">个</span></div>
+                <div class="stat-suffix">B-01-02 温度异常</div>
+                <div class="stat-deco">⚠️</div>
+            </div>
+        </div>
+
+        <div class="card mb-16">
+            <div class="card-head">
+                <div class="card-head-title">📥 待上架批次（按收货时间）</div>
+                <div class="card-head-extra"><a href="#">全部 →</a></div>
+            </div>
+            <div class="card-body flush">
+                <table class="table">
+                    <thead><tr><th>收货单</th><th>SKU</th><th>批次</th><th>数量</th><th>存储要求</th><th>推荐库位</th><th></th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td class="mono">RKD20260517008</td>
+                            <td class="mono">FQNF-500</td>
+                            <td class="mono">FQNF-A</td>
+                            <td class="mono fw-bold">100</td>
+                            <td><span class="tag tag-info">冷冻 -18℃</span></td>
+                            <td class="mono">B-01-01 <span class="text-tertiary">(空 60%)</span></td>
+                            <td><button class="btn btn-sm btn-primary">上架</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">RKD20260517008</td>
+                            <td class="mono">FQNF-500</td>
+                            <td class="mono">FQNF-A</td>
+                            <td class="mono fw-bold">20</td>
+                            <td><span class="tag tag-info">冷冻 -18℃</span></td>
+                            <td class="mono">B-01-02 <span class="text-error">(温度异常)</span></td>
+                            <td><button class="btn btn-sm">换位</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">RKD20260517009</td>
+                            <td class="mono">MGZ-280-N</td>
+                            <td class="mono">MGZ-A</td>
+                            <td class="mono fw-bold">80</td>
+                            <td><span class="tag tag-success">冷藏 0-4℃</span></td>
+                            <td class="mono">A-01-01 <span class="text-tertiary">(空 80%)</span></td>
+                            <td><button class="btn btn-sm btn-primary">上架</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">RKD20260517010</td>
+                            <td class="mono">KLR-300-N</td>
+                            <td class="mono">KLR-A</td>
+                            <td class="mono fw-bold">90</td>
+                            <td><span class="tag tag-success">冷藏 0-4℃</span></td>
+                            <td class="mono">A-01-02 <span class="text-tertiary">(空 40%)</span></td>
+                            <td><button class="btn btn-sm btn-primary">上架</button></td>
+                        </tr>
+                        <tr>
+                            <td class="mono">RKD20260517011</td>
+                            <td class="mono">BHJ-450-N</td>
+                            <td class="mono">BHJ-A</td>
+                            <td class="mono fw-bold">50</td>
+                            <td><span class="tag tag-info">冷冻 -18℃</span></td>
+                            <td class="mono">B-01-01 <span class="text-tertiary">(混存可)</span></td>
+                            <td><button class="btn btn-sm btn-primary">上架</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid grid-2 mb-16">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">🗺️ 库位占用一览</div>
+                    <div class="card-head-extra"><a href="#">完整地图 →</a></div>
+                </div>
+                <div class="card-body">
+                    <ul class="list">
+                        <li class="list-item">
+                            <span class="mono fw-bold" style="width:80px;">A-01-01</span>
+                            <div class="list-item-main">
+                                <div class="list-item-desc text-secondary">冷藏 · 当前 380/500</div>
+                                <div class="progress"><div class="progress-bar" style="width:76%"></div></div>
+                            </div>
+                            <span class="mono text-secondary">76%</span>
+                        </li>
+                        <li class="list-item">
+                            <span class="mono fw-bold" style="width:80px;">A-01-02</span>
+                            <div class="list-item-main">
+                                <div class="list-item-desc text-secondary">冷藏 · 当前 240/500</div>
+                                <div class="progress"><div class="progress-bar" style="width:48%"></div></div>
+                            </div>
+                            <span class="mono text-secondary">48%</span>
+                        </li>
+                        <li class="list-item">
+                            <span class="mono fw-bold" style="width:80px;">B-01-01</span>
+                            <div class="list-item-main">
+                                <div class="list-item-desc text-secondary">冷冻 · 当前 220/500</div>
+                                <div class="progress"><div class="progress-bar success" style="width:44%"></div></div>
+                            </div>
+                            <span class="mono text-secondary">44%</span>
+                        </li>
+                        <li class="list-item">
+                            <span class="mono fw-bold" style="width:80px;">B-01-02</span>
+                            <div class="list-item-main">
+                                <div class="list-item-desc text-error">冷冻 · ⚠️ 温度异常 ·  当前 80/500</div>
+                                <div class="progress"><div class="progress-bar error" style="width:16%"></div></div>
+                            </div>
+                            <span class="mono text-error">异常</span>
+                        </li>
+                        <li class="list-item">
+                            <span class="mono fw-bold" style="width:80px;">DG-01</span>
+                            <div class="list-item-main">
+                                <div class="list-item-desc text-secondary">降级区 · 当前 4/200</div>
+                                <div class="progress"><div class="progress-bar warning" style="width:2%"></div></div>
+                            </div>
+                            <span class="mono text-secondary">2%</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-title">📜 我的今日上架记录</div>
+                </div>
+                <div class="card-body">
+                    <ul class="timeline">
+                        <li class="success">
+                            <div class="timeline-time">10:42 · 100 件</div>
+                            <div class="timeline-content"><span class="mono">FQNF-500</span> 上架到 <span class="mono">B-01-01</span></div>
+                        </li>
+                        <li class="success">
+                            <div class="timeline-time">09:30 · 80 件</div>
+                            <div class="timeline-content"><span class="mono">MLXJ-400</span> 上架到 <span class="mono">A-02-01</span></div>
+                        </li>
+                        <li class="warning">
+                            <div class="timeline-time">09:15</div>
+                            <div class="timeline-content">B-01-02 温度报警，已通知库存控制员</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+</body>
+</html>

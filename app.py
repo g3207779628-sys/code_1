@@ -1555,6 +1555,264 @@ def return_reject(order_no):
     return redirect(url_for("return_detail", order_no=order_no))
 
 
+# ============ 报表 Dashboard ============
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    with database.get_conn() as conn:
+        # 1. 销售趋势 — 最近 14 天
+        sales_trend = conn.execute(
+            """SELECT date(created_at) AS d,
+                      COUNT(*) AS orders,
+                      COALESCE(SUM(total_amount), 0) AS revenue
+               FROM sales_order
+               WHERE date(created_at) >= date('now', '-13 days')
+               GROUP BY date(created_at)
+               ORDER BY d"""
+        ).fetchall()
+
+        # 2. 库存 TOP 10 SKU
+        inv_top = conn.execute(
+            """SELECT s.code, s.name, COALESCE(SUM(i.on_hand), 0) AS total
+               FROM sku s LEFT JOIN inventory i ON i.sku_id = s.id
+               GROUP BY s.id
+               ORDER BY total DESC LIMIT 10"""
+        ).fetchall()
+
+        # 3. 库存按存储区
+        zone_dist = conn.execute(
+            """SELECT s.storage_zone AS zone, COALESCE(SUM(i.on_hand), 0) AS total
+               FROM sku s LEFT JOIN inventory i ON i.sku_id = s.id
+               GROUP BY s.storage_zone"""
+        ).fetchall()
+
+        # 4. 流水类型分布（最近 30 天）
+        log_type = conn.execute(
+            """SELECT event_type, COUNT(*) AS cnt
+               FROM stock_log
+               WHERE date(occurred_at) >= date('now', '-29 days')
+               GROUP BY event_type"""
+        ).fetchall()
+
+        # 5. 退货原因分布
+        return_reason = conn.execute(
+            """SELECT reason, COUNT(*) AS cnt
+               FROM return_order
+               WHERE reason IS NOT NULL
+               GROUP BY reason
+               ORDER BY cnt DESC"""
+        ).fetchall()
+
+        # 6. 临期分级
+        expiry_grade = conn.execute(
+            """SELECT
+                 SUM(CASE WHEN b.expiry_date < date('now') THEN 1 ELSE 0 END) AS expired,
+                 SUM(CASE WHEN b.expiry_date >= date('now') AND b.expiry_date <= date('now','+7 days') THEN 1 ELSE 0 END) AS urgent,
+                 SUM(CASE WHEN b.expiry_date > date('now','+7 days') AND b.expiry_date <= date('now','+30 days') THEN 1 ELSE 0 END) AS warning,
+                 SUM(CASE WHEN b.expiry_date > date('now','+30 days') THEN 1 ELSE 0 END) AS normal
+               FROM inventory i JOIN batch b ON b.id = i.batch_id
+               WHERE i.on_hand > 0"""
+        ).fetchone()
+
+        # 7. 销售 TOP 5 SKU（按数量）
+        sku_top = conn.execute(
+            """SELECT s.code, s.name, COALESCE(SUM(si.quantity), 0) AS qty
+               FROM sales_order_item si
+               JOIN sku s ON s.id = si.sku_id
+               JOIN sales_order so ON so.order_no = si.order_no
+               WHERE so.status IN ('reserved','completed')
+               GROUP BY s.id
+               ORDER BY qty DESC LIMIT 5"""
+        ).fetchall()
+
+    import json
+    charts = {
+        "sales_trend": {
+            "labels": [r["d"] for r in sales_trend],
+            "orders": [r["orders"] for r in sales_trend],
+            "revenue": [round(r["revenue"], 2) for r in sales_trend],
+        },
+        "inv_top": {
+            "labels": [f"{r['code']}" for r in inv_top],
+            "data": [r["total"] for r in inv_top],
+        },
+        "zone_dist": {
+            "labels": [{"normal":"常温","cold":"冷藏","freeze":"冷冻"}.get(r["zone"], r["zone"]) for r in zone_dist],
+            "data": [r["total"] for r in zone_dist],
+        },
+        "log_type": {
+            "labels": [{"inbound":"入库","outbound":"出库","damage":"报损","adjust":"盘点调整","return_in":"退货入","transfer":"调拨"}.get(r["event_type"], r["event_type"]) for r in log_type],
+            "data": [r["cnt"] for r in log_type],
+        },
+        "return_reason": {
+            "labels": [{"quality":"质量","wrong":"发错","dislike":"不喜欢","damaged_in_transit":"运输破损","other":"其他"}.get(r["reason"], r["reason"]) for r in return_reason],
+            "data": [r["cnt"] for r in return_reason],
+        },
+        "expiry_grade": {
+            "labels": ["已过期", "紧急(7天)", "预警(30天)", "正常"],
+            "data": [expiry_grade["expired"] or 0, expiry_grade["urgent"] or 0, expiry_grade["warning"] or 0, expiry_grade["normal"] or 0],
+        },
+        "sku_top": {
+            "labels": [r["code"] for r in sku_top],
+            "data": [r["qty"] for r in sku_top],
+        },
+    }
+    return render_template("dashboard.html", charts_json=json.dumps(charts))
+
+
+# ============ AI 自然语言查询 ============
+
+AI_PRESETS = [
+    {"q": "本周销售前 5 的 SKU", "intent": "top_sales"},
+    {"q": "现在库存最多的 5 个 SKU", "intent": "top_stock"},
+    {"q": "临期 7 天内的批次", "intent": "expiry_urgent"},
+    {"q": "已过期需要报损的库存", "intent": "expired"},
+    {"q": "低于安全库存的 SKU", "intent": "low_stock"},
+    {"q": "本周待审的报损单", "intent": "pending_damage"},
+    {"q": "待拣货任务有几个", "intent": "pending_pick"},
+    {"q": "今天的销售额", "intent": "today_revenue"},
+]
+
+
+def _classify_intent(query: str) -> str:
+    """简化版意图分类（规则引擎）。生产环境可替换成 LLM call。
+    规则：单关键词 OR 多关键词 AND（list of str = OR；tuple of str = AND）。
+    """
+    q = query.lower().strip()
+    rules = [
+        (["销售前", "销售 top", "热销", "热卖", "卖得最多"], "top_sales"),
+        (["库存最多", "库存 top", "存货最多", "在仓最多"], "top_stock"),
+        (["临期", "快过期", "马上过期", "7天", "七天"], "expiry_urgent"),
+        (["已过期", "过期"], "expired"),
+        (["安全库存", "库存不足", "低库存", "缺货"], "low_stock"),
+        ([("报损", "待审"), ("待审", "报损"), "待审报损", "报损待审"], "pending_damage"),
+        (["待拣货", "拣货任务"], "pending_pick"),
+        ([("今天", "销售"), ("今日", "销售"), ("今天", "营业"), ("今日", "营业"), "今天销售", "今日销售"], "today_revenue"),
+    ]
+    for kws, intent in rules:
+        for kw in kws:
+            if isinstance(kw, tuple):
+                if all(k in q for k in kw):
+                    return intent
+            else:
+                if kw in q:
+                    return intent
+    return "unknown"
+
+
+def _execute_intent(conn, intent: str):
+    """执行意图，返回 (title, columns, rows)。"""
+    if intent == "top_sales":
+        rows = conn.execute(
+            """SELECT s.code, s.name, s.spec, COALESCE(SUM(si.quantity), 0) AS 销量
+               FROM sales_order_item si JOIN sku s ON s.id = si.sku_id
+               JOIN sales_order so ON so.order_no = si.order_no
+               WHERE so.status IN ('reserved','completed')
+                 AND date(so.created_at) >= date('now', '-6 days')
+               GROUP BY s.id ORDER BY 销量 DESC LIMIT 5"""
+        ).fetchall()
+        return ("最近 7 天销售 TOP 5", ["SKU", "商品", "规格", "销量"], [list(r) for r in rows])
+
+    if intent == "top_stock":
+        rows = conn.execute(
+            """SELECT s.code, s.name, s.spec, COALESCE(SUM(i.on_hand), 0) AS 在仓数
+               FROM sku s LEFT JOIN inventory i ON i.sku_id = s.id
+               GROUP BY s.id ORDER BY 在仓数 DESC LIMIT 5"""
+        ).fetchall()
+        return ("当前库存 TOP 5", ["SKU", "商品", "规格", "在仓数"], [list(r) for r in rows])
+
+    if intent == "expiry_urgent":
+        rows = conn.execute(
+            """SELECT s.code, b.batch_no, b.expiry_date,
+                      CAST(julianday(b.expiry_date) - julianday('now') AS INTEGER) AS 剩余天数,
+                      l.code AS 库位, i.on_hand AS 在仓数
+               FROM inventory i
+               JOIN batch b ON b.id = i.batch_id
+               JOIN sku s ON s.id = i.sku_id
+               JOIN location l ON l.id = i.location_id
+               WHERE i.on_hand > 0 AND b.expiry_date <= date('now','+7 days')
+                 AND b.expiry_date >= date('now')
+               ORDER BY b.expiry_date"""
+        ).fetchall()
+        return ("7 天内到期批次", ["SKU", "批次", "效期", "剩余天数", "库位", "在仓数"], [list(r) for r in rows])
+
+    if intent == "expired":
+        rows = conn.execute(
+            """SELECT s.code, b.batch_no, b.expiry_date,
+                      CAST(julianday('now') - julianday(b.expiry_date) AS INTEGER) AS 已过期天数,
+                      l.code AS 库位, i.on_hand AS 在仓数
+               FROM inventory i
+               JOIN batch b ON b.id = i.batch_id
+               JOIN sku s ON s.id = i.sku_id
+               JOIN location l ON l.id = i.location_id
+               WHERE i.on_hand > 0 AND b.expiry_date < date('now')
+               ORDER BY b.expiry_date"""
+        ).fetchall()
+        return ("已过期未报损的库存", ["SKU", "批次", "效期", "已过期天数", "库位", "在仓数"], [list(r) for r in rows])
+
+    if intent == "low_stock":
+        rows = conn.execute(
+            """SELECT s.code, s.name, s.safety_stock AS 安全库存, COALESCE(SUM(i.on_hand), 0) AS 在仓数
+               FROM sku s LEFT JOIN inventory i ON i.sku_id = s.id
+               GROUP BY s.id
+               HAVING 在仓数 < s.safety_stock AND s.safety_stock > 0
+               ORDER BY (s.safety_stock - 在仓数) DESC"""
+        ).fetchall()
+        return ("低于安全库存的 SKU", ["SKU", "商品", "安全库存", "在仓数"], [list(r) for r in rows])
+
+    if intent == "pending_damage":
+        rows = conn.execute(
+            """SELECT d.id, s.code AS SKU, b.batch_no AS 批次, l.code AS 库位, d.quantity AS 报损数,
+                      u.display_name AS 申请人, d.created_at AS 提交时间
+               FROM damage_log d
+               JOIN sku s ON s.id = d.sku_id
+               JOIN batch b ON b.id = d.batch_id
+               JOIN location l ON l.id = d.location_id
+               LEFT JOIN user u ON u.id = d.applicant_id
+               WHERE d.status = 'pending'
+               ORDER BY d.id DESC"""
+        ).fetchall()
+        return ("待审报损单", ["#", "SKU", "批次", "库位", "报损数", "申请人", "提交时间"], [list(r) for r in rows])
+
+    if intent == "pending_pick":
+        rows = conn.execute(
+            """SELECT ob.order_no AS 出库单, ob.sales_order_no AS 销售单,
+                      so.receiver_name AS 收件人, ob.created_at AS 派单时间,
+                      (SELECT COUNT(*) FROM outbound_item WHERE order_no = ob.order_no) AS 明细行
+               FROM outbound_order ob JOIN sales_order so ON so.order_no = ob.sales_order_no
+               WHERE ob.status = 'pending' ORDER BY ob.id"""
+        ).fetchall()
+        return ("待拣货任务", ["出库单", "销售单", "收件人", "派单时间", "明细行"], [list(r) for r in rows])
+
+    if intent == "today_revenue":
+        row = conn.execute(
+            """SELECT COUNT(*) AS 订单数, COALESCE(SUM(total_amount), 0) AS 总销售额
+               FROM sales_order WHERE date(created_at) = date('now')"""
+        ).fetchone()
+        return ("今日销售概况", ["订单数", "总销售额"], [[row["订单数"], f"¥{row['总销售额']:.2f}"]])
+
+    return ("无法识别该查询", ["提示"], [["试试预设按钮，或输入'销售前5'/'临期'/'过期'/'低库存'/'待审'/'待拣货'/'今日销售'等关键词"]])
+
+
+@app.route("/ai-query", methods=["GET", "POST"])
+@login_required
+def ai_query():
+    query = ""
+    intent = ""
+    title = ""
+    columns = []
+    rows = []
+    if request.method == "POST":
+        query = request.form.get("query", "").strip()
+        if query:
+            intent = _classify_intent(query)
+            with database.get_conn() as conn:
+                title, columns, rows = _execute_intent(conn, intent)
+    return render_template("ai_query.html", presets=AI_PRESETS, query=query, intent=intent,
+                           title=title, columns=columns, rows=rows)
+
+
 # ============ 库存流水（阶段 2 已建，路由保留） ============
 
 @app.route("/stock-log")

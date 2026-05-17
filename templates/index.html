@@ -31,6 +31,14 @@
         <h3>退换货</h3>
         <p>客户退货 → 质检三分支 → 退款</p>
     </a>
+    <a class="entry-card" href="{{ url_for('dashboard') }}">
+        <h3>经营 Dashboard</h3>
+        <p>销售/库存/退货 6 图实时</p>
+    </a>
+    <a class="entry-card" href="{{ url_for('ai_query') }}">
+        <h3>智能查询</h3>
+        <p>自然语言问系统，降低使用门槛</p>
+    </a>
     <a class="entry-card" href="{{ url_for('inventory_list') }}">
         <h3>库存查询</h3>
         <p>按 SKU / 批次查看</p>
@@ -75,8 +83,8 @@
             <li>✓ 阶段 2：入库链 + 批次管理</li>
             <li>✓ 阶段 3：销售链 + FIFO 拣货</li>
             <li>✓ 阶段 4：报损 + 临期预警 + 盘点</li>
-            <li><strong>✓ 阶段 5：退换货 + 质检（当前）</strong></li>
-            <li>○ 阶段 6：报表 + AI 亮点</li>
+            <li>✓ 阶段 5：退换货 + 质检</li>
+            <li><strong>✓ 阶段 6：报表 + AI 智能查询（项目完成）</strong></li>
         </ul>
     </div>
 </div>

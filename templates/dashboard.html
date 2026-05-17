@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}经营 Dashboard{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">经营 Dashboard（实时数据）</div>
+    <div class="card-body">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div style="background:#fff; padding:16px; border:1px solid var(--color-border);">
+                <h4 style="margin:0 0 8px 0; color:var(--color-primary);">近 14 天销售趋势</h4>
+                <canvas id="chart-sales-trend" height="180"></canvas>
+            </div>
+            <div style="background:#fff; padding:16px; border:1px solid var(--color-border);">
+                <h4 style="margin:0 0 8px 0; color:var(--color-primary);">库存 TOP 10 SKU</h4>
+                <canvas id="chart-inv-top" height="180"></canvas>
+            </div>
+            <div style="background:#fff; padding:16px; border:1px solid var(--color-border);">
+                <h4 style="margin:0 0 8px 0; color:var(--color-primary);">库存按存储区</h4>
+                <canvas id="chart-zone" height="180"></canvas>
+            </div>
+            <div style="background:#fff; padding:16px; border:1px solid var(--color-border);">
+                <h4 style="margin:0 0 8px 0; color:var(--color-primary);">近 30 天流水类型</h4>
+                <canvas id="chart-log-type" height="180"></canvas>
+            </div>
+            <div style="background:#fff; padding:16px; border:1px solid var(--color-border);">
+                <h4 style="margin:0 0 8px 0; color:var(--color-primary);">退货原因分布</h4>
+                <canvas id="chart-return-reason" height="180"></canvas>
+            </div>
+            <div style="background:#fff; padding:16px; border:1px solid var(--color-border);">
+                <h4 style="margin:0 0 8px 0; color:var(--color-primary);">批次临期分级</h4>
+                <canvas id="chart-expiry" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const data = {{ charts_json|safe }};
+
+const PALETTE = ['#2F4F3E', '#D97D3D', '#5C8A3F', '#A8412B', '#185FA5', '#0F6E56', '#6B6259', '#FBE9D0', '#E6F2F8', '#F1EFE8'];
+
+Chart.defaults.font.family = '"PingFang SC","Microsoft YaHei",sans-serif';
+Chart.defaults.color = '#1F1B16';
+
+// 1. 销售趋势（折线 + 双轴）
+new Chart(document.getElementById('chart-sales-trend'), {
+    type: 'line',
+    data: {
+        labels: data.sales_trend.labels,
+        datasets: [
+            {label:'订单数', data: data.sales_trend.orders, borderColor:'#2F4F3E', backgroundColor:'#2F4F3E', yAxisID:'y'},
+            {label:'销售额', data: data.sales_trend.revenue, borderColor:'#D97D3D', backgroundColor:'#D97D3D', yAxisID:'y1'},
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {beginAtZero:true, position:'left', title:{display:true, text:'订单数'}},
+            y1: {beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true, text:'金额 ¥'}}
+        }
+    }
+});
+
+// 2. 库存 TOP 10 SKU（柱状）
+new Chart(document.getElementById('chart-inv-top'), {
+    type: 'bar',
+    data: {
+        labels: data.inv_top.labels,
+        datasets: [{label:'在仓数', data: data.inv_top.data, backgroundColor:'#2F4F3E'}]
+    },
+    options: {responsive:true, indexAxis:'y', plugins:{legend:{display:false}}}
+});
+
+// 3. 库存按存储区（饼图）
+new Chart(document.getElementById('chart-zone'), {
+    type: 'doughnut',
+    data: {
+        labels: data.zone_dist.labels,
+        datasets: [{data: data.zone_dist.data, backgroundColor:['#6B6259','#185FA5','#0F6E56']}]
+    },
+    options: {responsive:true}
+});
+
+// 4. 流水类型（饼图）
+new Chart(document.getElementById('chart-log-type'), {
+    type: 'doughnut',
+    data: {
+        labels: data.log_type.labels,
+        datasets: [{data: data.log_type.data, backgroundColor:['#5C8A3F','#A8412B','#D97D3D','#6B6259','#185FA5','#0F6E56']}]
+    },
+    options: {responsive:true}
+});
+
+// 5. 退货原因（柱状）
+new Chart(document.getElementById('chart-return-reason'), {
+    type: 'bar',
+    data: {
+        labels: data.return_reason.labels.length ? data.return_reason.labels : ['暂无退货'],
+        datasets: [{label:'退货次数', data: data.return_reason.data.length ? data.return_reason.data : [0], backgroundColor:'#A8412B'}]
+    },
+    options: {responsive:true, plugins:{legend:{display:false}}}
+});
+
+// 6. 临期分级（柱状）
+new Chart(document.getElementById('chart-expiry'), {
+    type: 'bar',
+    data: {
+        labels: data.expiry_grade.labels,
+        datasets: [{label:'批次数', data: data.expiry_grade.data, backgroundColor:['#A8412B','#D97D3D','#FBE9D0','#5C8A3F']}]
+    },
+    options: {responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}}}
+});
+</script>
+
+<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+    数据来源：sales_order / inventory / stock_log / return_order / batch 实时查询。<br>
+    图表用 Chart.js（CDN）+ 工业风色板。
+</div>
+
+{% endblock %}

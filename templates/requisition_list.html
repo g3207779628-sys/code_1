@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}申领表{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">出库管理</span><span class="sep">/</span><span class="current">申领表</span>{% endblock %}
+{% block content %}
+{% set st_map = {'submitted':'待处理','handled':'已处理','cancelled':'已取消'} %}
+{% set st_cls = {'submitted':'badge-warn','handled':'badge-ok','cancelled':'badge-mute'} %}
+
+<style>
+.req-list .v13-page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.req-list .filter-card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px;}
+.req-list .filter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 16px;}
+.req-list .fg{display:flex;flex-direction:column;gap:5px;}
+.req-list .fg label{font-size:12px;font-weight:600;color:var(--ink-soft);}
+.req-list .fg input,.req-list .fg select{font-size:13px;padding:8px 10px;border:1px solid var(--line-input);
+  border-radius:8px;background:#fff;width:100%;}
+.req-list .filter-actions{display:flex;gap:10px;align-items:flex-end;}
+.req-list .rq-table{width:100%;border-collapse:collapse;background:var(--bg-card);
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:13px;}
+.req-list .rq-table th{background:var(--bg-soft);text-align:left;padding:11px 12px;font-size:12px;
+  color:var(--ink-soft);font-weight:600;white-space:nowrap;border-bottom:1px solid var(--line);}
+.req-list .rq-table td{padding:11px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+.req-list .rq-table tr:last-child td{border-bottom:none;}
+.req-list .rq-no{font-family:var(--font-mono);font-weight:600;color:var(--accent-deep);white-space:nowrap;}
+.req-list .items-cell{min-width:200px;}
+.req-list .item-line{display:inline-block;background:var(--bg-soft);border-radius:6px;padding:2px 8px;
+  margin:0 4px 4px 0;font-size:12px;}
+.req-list .item-line b{font-family:var(--font-mono);color:var(--accent-deep);}
+.req-list .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;}
+.req-list .badge-warn{color:var(--accent-deep);background:var(--accent-soft);}
+.req-list .badge-ok{color:#15803d;background:#dcfce7;}
+.req-list .badge-mute{color:var(--ink-quiet);background:var(--bg-soft);}
+.req-list .note-cell{max-width:200px;color:var(--ink-soft);font-size:12px;}
+.req-list .empty{padding:48px;text-align:center;color:var(--ink-quiet);background:var(--bg-card);
+  border:1px solid var(--line);border-radius:var(--radius);}
+.req-list .sub-muted{color:var(--ink-quiet);font-size:11px;}
+@media (max-width:768px){.req-list .filter-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+
+<div class="req-list">
+
+  <div class="v13-page-head">
+    <div>
+      <div class="page-title">申领表</div>
+      <div class="page-sub">务工人员扫码免登录提交的领用申请单 · 共 {{ total_all }} 张 · 当前筛出 {{ orders|length }} 张</div>
+    </div>
+  </div>
+
+  <form class="filter-card" method="get" action="{{ url_for('requisition_list') }}">
+    <div class="filter-grid">
+      <div class="fg">
+        <label for="fl-applicant">申请人</label>
+        <input type="text" id="fl-applicant" name="applicant" value="{{ f.applicant }}" placeholder="姓名关键字">
+      </div>
+      <div class="fg">
+        <label for="fl-dept">所属部门</label>
+        <input type="text" id="fl-dept" name="dept" value="{{ f.dept }}" placeholder="部门关键字" list="dl-depts">
+        <datalist id="dl-depts">{% for d in depts %}<option value="{{ d.name }}">{% endfor %}</datalist>
+      </div>
+      <div class="fg">
+        <label for="fl-loc">库位</label>
+        <input type="text" id="fl-loc" name="location" value="{{ f.location }}" placeholder="库位编码">
+      </div>
+      <div class="fg">
+        <label for="fl-cat">领用类别</label>
+        <input type="text" id="fl-cat" name="category" value="{{ f.category }}" placeholder="类别关键字" list="dl-cats">
+        <datalist id="dl-cats">{% for c in cats %}<option value="{{ c.name }}">{% endfor %}</datalist>
+      </div>
+      <div class="fg">
+        <label for="fl-sku">申请物品</label>
+        <input type="text" id="fl-sku" name="sku" value="{{ f.sku }}" placeholder="物品名称或编码">
+      </div>
+      <div class="fg">
+        <label for="fl-from">申请日期 从</label>
+        <input type="date" id="fl-from" name="date_from" value="{{ f.date_from }}">
+      </div>
+      <div class="fg">
+        <label for="fl-to">申请日期 到</label>
+        <input type="date" id="fl-to" name="date_to" value="{{ f.date_to }}">
+      </div>
+      <div class="fg">
+        <label for="fl-status">状态</label>
+        <select id="fl-status" name="status">
+          <option value="">全部</option>
+          <option value="submitted" {% if f.status=='submitted' %}selected{% endif %}>待处理</option>
+          <option value="handled" {% if f.status=='handled' %}selected{% endif %}>已处理</option>
+          <option value="cancelled" {% if f.status=='cancelled' %}selected{% endif %}>已取消</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions" style="margin-top:14px;">
+      <button type="submit" class="btn btn-primary">筛选</button>
+      <a class="btn btn-secondary" href="{{ url_for('requisition_list') }}">重置</a>
+    </div>
+  </form>
+
+  {% if orders %}
+  <table class="rq-table">
+    <thead>
+      <tr>
+        <th>单号</th><th>申请人</th><th>部门</th><th>库位</th><th>类别</th>
+        <th>申请日期</th><th>领用物品</th><th>说明</th><th>状态</th><th>提交时间</th><th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td class="rq-no">{{ o.order_no }}</td>
+        <td>{{ o.applicant }}</td>
+        <td>{{ o.dept_name or '—' }}</td>
+        <td>{{ o.location_code or '—' }}</td>
+        <td>{{ o.category_name or '—' }}</td>
+        <td style="white-space:nowrap;">{{ o.apply_date or '—' }}</td>
+        <td class="items-cell">
+          {% for it in items_by.get(o.order_no, []) %}
+          <span class="item-line">{{ it.sku_name or it.sku_code or '物品' }} <b>×{{ it.quantity }}</b>{{ it.unit or '' }}</span>
+          {% else %}<span class="sub-muted">无明细</span>{% endfor %}
+        </td>
+        <td class="note-cell">{{ o.note or '—' }}</td>
+        <td><span class="badge {{ st_cls.get(o.status,'badge-mute') }}">{{ st_map.get(o.status, o.status) }}</span></td>
+        <td style="white-space:nowrap;" class="sub-muted">{{ o.created_at }}</td>
+        <td style="white-space:nowrap;">
+          {% if o.status == 'submitted' %}
+            <form method="post" action="{{ url_for('requisition_confirm_outbound', order_no=o.order_no) }}"
+                  onsubmit="return confirm('确认对申请单 {{ o.order_no }} 出库？\n将按 FIFO 实扣库存并生成出库单，此操作不可撤销。');"
+                  style="display:inline;">
+              <button type="submit" class="btn btn-primary btn-sm">出库确认</button>
+            </form>
+          {% elif o.status == 'handled' %}
+            {% if outbound_by.get(o.order_no) %}
+              <a class="btn btn-secondary btn-sm" href="{{ url_for('pick_detail', order_no=outbound_by[o.order_no]) }}">已出库 · {{ outbound_by[o.order_no] }}</a>
+            {% else %}
+              <span class="sub-muted">已处理</span>
+            {% endif %}
+          {% else %}
+            <span class="sub-muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">没有符合条件的领用申请单。<br><span class="sub-muted">务工人员通过扫码门户提交后，会出现在这里。</span></div>
+  {% endif %}
+
+</div>
+{% endblock %}

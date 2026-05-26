@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }} 的权限{% endblock %}
+{% block content %}
+
+<style>
+/* === Stripe 风 + 折叠树（方案 4）=== */
+.sp-page {
+    --sp-ink: #0A2540;
+    --sp-ink-soft: #425466;
+    --sp-ink-quiet: #8898AA;
+    --sp-line: #E3E8EE;
+    --sp-bg-alt: #F6F9FC;
+    --sp-accent: #0073E6;
+    --sp-ok: #1A7F37;
+    --sp-ok-bg: #ECF7EE;
+    --sp-warn: #B25600;
+    --sp-warn-bg: #FFF4E5;
+
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--sp-ink);
+}
+.sp-page a { color: var(--sp-accent); text-decoration: none; }
+
+.sp-back {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--sp-ink-soft);
+    margin-bottom: 24px;
+}
+.sp-back:hover { color: var(--sp-ink); }
+
+/* 用户信息区 */
+.sp-banner {
+    background: #FFF;
+    border: 1px solid var(--sp-line);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.sp-banner-left { display: flex; align-items: center; gap: 16px; }
+.sp-banner-avatar {
+    width: 48px; height: 48px;
+    background: var(--sp-bg-alt);
+    color: var(--sp-ink);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 600;
+    letter-spacing: -0.02em;
+}
+.sp-banner h1 {
+    font-size: 22px; font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+.sp-banner-sub {
+    font-size: 13px; color: var(--sp-ink-quiet);
+    margin-top: 4px;
+}
+.sp-banner-stat { text-align: right; }
+.sp-banner-stat .label {
+    font-size: 11px; color: var(--sp-ink-quiet);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    font-weight: 500;
+}
+.sp-banner-stat .value {
+    font-size: 28px; font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-top: 4px;
+}
+.sp-banner-stat .total {
+    font-size: 14px; color: var(--sp-ink-quiet);
+    font-weight: 400;
+    margin-left: 2px;
+}
+
+/* 工具栏 */
+.sp-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 4px 12px;
+    font-size: 13px; color: var(--sp-ink-soft);
+}
+.sp-toolbar .left strong {
+    color: var(--sp-ink);
+    font-weight: 600;
+}
+.sp-link-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--sp-accent);
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+}
+.sp-link-btn:hover { background: var(--sp-bg-alt); }
+
+/* 树容器 */
+.sp-tree {
+    background: #FFF;
+    border: 1px solid var(--sp-line);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.sp-node + .sp-node { border-top: 1px solid var(--sp-line); }
+
+.sp-group {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 24px;
+    cursor: pointer;
+    user-select: none;
+    background: #FFF;
+    transition: background 0.15s;
+}
+.sp-group:hover { background: var(--sp-bg-alt); }
+.sp-group .caret {
+    color: var(--sp-ink-quiet);
+    font-size: 13px;
+    width: 14px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+.sp-group.open .caret {
+    transform: rotate(90deg);
+    color: var(--sp-ink);
+}
+.sp-group .name {
+    font-size: 15px;
+    font-weight: 500;
+    flex: 1;
+    color: var(--sp-ink);
+}
+.sp-group .summary {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+.sp-group .summary.full {
+    background: var(--sp-ok-bg);
+    color: var(--sp-ok);
+}
+.sp-group .summary.partial {
+    background: var(--sp-warn-bg);
+    color: var(--sp-warn);
+}
+.sp-group .summary.empty {
+    background: var(--sp-bg-alt);
+    color: var(--sp-ink-quiet);
+}
+
+.sp-leaves {
+    padding: 4px 24px 16px 50px;
+    display: none;
+    background: #FFF;
+}
+.sp-node.open .sp-leaves { display: block; }
+.sp-node.open .sp-group { background: var(--sp-bg-alt); }
+
+.sp-leaf {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--sp-ink-soft);
+    transition: background 0.12s, color 0.12s;
+}
+.sp-leaf:hover { background: var(--sp-bg-alt); color: var(--sp-ink); }
+.sp-leaf input {
+    width: 16px; height: 16px;
+    accent-color: var(--sp-ink);
+    cursor: pointer;
+}
+.sp-leaf.checked {
+    color: var(--sp-ink);
+    font-weight: 500;
+}
+.sp-group-action {
+    font-size: 12px;
+    color: var(--sp-accent);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+.sp-group-action:hover {
+    background: var(--sp-bg-alt);
+    text-decoration: none;
+}
+
+/* 底部 sticky 保存条 */
+.sp-footer {
+    margin-top: 24px;
+    padding: 16px 24px;
+    background: #FFF;
+    border: 1px solid var(--sp-line);
+    border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky;
+    bottom: 16px;
+    box-shadow: 0 4px 16px rgba(60, 66, 87, 0.06);
+}
+.sp-footer-info {
+    font-size: 13px;
+    color: var(--sp-ink-soft);
+}
+.sp-footer-info .delta {
+    font-weight: 500;
+    color: var(--sp-ink);
+}
+.sp-actions { display: flex; gap: 8px; }
+.sp-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--sp-line);
+    background: #FFF;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--sp-ink);
+    cursor: pointer;
+    font-family: inherit;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    text-decoration: none;
+    display: inline-block;
+}
+.sp-btn:hover {
+    box-shadow: 0 2px 5px rgba(60, 66, 87, 0.08);
+    border-color: var(--sp-ink-soft);
+    text-decoration: none;
+}
+.sp-btn-primary {
+    background: var(--sp-ink);
+    color: #FFF;
+    border-color: var(--sp-ink);
+}
+.sp-btn-primary:hover {
+    background: #18324F;
+    border-color: #18324F;
+    color: #FFF;
+}
+</style>
+
+<div class="sp-page">
+    <a class="sp-back" href="{{ url_for('user_admin') }}">‹ 返回用户列表</a>
+
+    <!-- 用户信息 -->
+    <div class="sp-banner">
+        <div class="sp-banner-left">
+            <div class="sp-banner-avatar">{{ user.username[0]|upper }}</div>
+            <div>
+                <h1>{{ user.username }}</h1>
+                <div class="sp-banner-sub">
+                    {% if user.email %}{{ user.email }}{% endif %}
+                    {% if user.email and user.phone %} · {% endif %}
+                    {% if user.phone %}{{ user.phone }}{% endif %}
+                    {% if not user.email and not user.phone %}未填写联系方式{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="sp-banner-stat">
+            <div class="label">已授权</div>
+            <div class="value"><span id="perm-count">{{ current_perms|length }}</span><span class="total"> / <span id="perm-total">0</span></span></div>
+        </div>
+    </div>
+
+    <!-- 工具栏 -->
+    <div class="sp-toolbar">
+        <div class="left">点击分组可<strong>展开 / 折叠</strong>。勾选叶子节点即可。</div>
+        <div>
+            <button type="button" class="sp-link-btn" onclick="expandAll()">展开全部</button>
+            <button type="button" class="sp-link-btn" onclick="collapseAll()">折叠全部</button>
+        </div>
+    </div>
+
+    <!-- 折叠树 + 底部保存条（同一个 form 包裹，保证 checkbox 能被提交） -->
+    <form id="perms-form" method="post">
+        <div class="sp-tree" id="sp-tree">
+            {% for group in nav_tree %}
+                {% set group_keys = [] %}
+                {% for it in group['items'] %}{% if it.key %}{% set _ = group_keys.append(it.key) %}{% elif it.children %}{% for ch in it['children'] %}{% if ch.key %}{% set _ = group_keys.append(ch.key) %}{% endif %}{% endfor %}{% endif %}{% endfor %}
+                {% if group_keys %}
+                <div class="sp-node" data-group="{{ group.label }}">
+                    <div class="sp-group" onclick="this.parentNode.classList.toggle('open')">
+                        <span class="caret">›</span>
+                        <span class="name">{{ group.label }}</span>
+                        <span class="summary" data-summary></span>
+                        <a class="sp-group-action" onclick="event.stopPropagation(); toggleGroup(this)" data-toggle-group>全选</a>
+                    </div>
+                    <div class="sp-leaves">
+                        {% for it in group['items'] %}
+                          {% if it.key %}
+                          <label class="sp-leaf {% if it.key in current_perms %}checked{% endif %}">
+                              <input type="checkbox" name="menu_keys" value="{{ it.key }}" {% if it.key in current_perms %}checked{% endif %} onchange="onLeafChange(this)">
+                              <span>{{ it.label }}</span>
+                          </label>
+                          {% elif it.children %}{% for ch in it['children'] %}{% if ch.key %}
+                          <label class="sp-leaf {% if ch.key in current_perms %}checked{% endif %}">
+                              <input type="checkbox" name="menu_keys" value="{{ ch.key }}" {% if ch.key in current_perms %}checked{% endif %} onchange="onLeafChange(this)">
+                              <span>{{ ch.label }}</span>
+                          </label>
+                          {% endif %}{% endfor %}{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="sp-footer">
+            <div class="sp-footer-info">
+                共 <span class="delta" id="perm-count-2">{{ current_perms|length }}</span> 项已授权。点保存生效。
+            </div>
+            <div class="sp-actions">
+                <a class="sp-btn" href="{{ url_for('user_admin') }}">取消</a>
+                <button class="sp-btn sp-btn-primary" type="submit">保存权限</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function updateGroupSummary(node) {
+    const inputs = node.querySelectorAll('.sp-leaves input[type=checkbox]');
+    const total = inputs.length;
+    const checked = node.querySelectorAll('.sp-leaves input[type=checkbox]:checked').length;
+    const sumEl = node.querySelector('[data-summary]');
+    const actEl = node.querySelector('[data-toggle-group]');
+    sumEl.textContent = `${checked} / ${total}`;
+    sumEl.className = 'summary ' + (checked === total ? 'full' : checked === 0 ? 'empty' : 'partial');
+    actEl.textContent = (checked === total) ? '全部取消' : '全选';
+}
+
+function updateTotalCount() {
+    const total = document.querySelectorAll('#sp-tree input[type=checkbox]').length;
+    const checked = document.querySelectorAll('#sp-tree input[type=checkbox]:checked').length;
+    document.getElementById('perm-count').textContent = checked;
+    document.getElementById('perm-total').textContent = total;
+    document.getElementById('perm-count-2').textContent = checked;
+}
+
+function onLeafChange(cb) {
+    cb.closest('label').classList.toggle('checked', cb.checked);
+    updateGroupSummary(cb.closest('.sp-node'));
+    updateTotalCount();
+}
+
+function toggleGroup(actEl) {
+    const node = actEl.closest('.sp-node');
+    const inputs = node.querySelectorAll('.sp-leaves input[type=checkbox]');
+    const total = inputs.length;
+    const checked = node.querySelectorAll('.sp-leaves input[type=checkbox]:checked').length;
+    const targetState = checked !== total; // 未全选 → 全选；已全选 → 全部取消
+    inputs.forEach(cb => {
+        cb.checked = targetState;
+        cb.closest('label').classList.toggle('checked', targetState);
+    });
+    updateGroupSummary(node);
+    updateTotalCount();
+}
+
+function expandAll() {
+    document.querySelectorAll('.sp-node').forEach(n => n.classList.add('open'));
+}
+function collapseAll() {
+    document.querySelectorAll('.sp-node').forEach(n => n.classList.remove('open'));
+}
+
+// 初始化：默认展开有勾选的组，其他折叠；计算汇总
+document.querySelectorAll('.sp-node').forEach(node => {
+    updateGroupSummary(node);
+    const hasChecked = node.querySelectorAll('.sp-leaves input[type=checkbox]:checked').length > 0;
+    if (hasChecked) node.classList.add('open');
+});
+updateTotalCount();
+</script>
+
+{% endblock %}

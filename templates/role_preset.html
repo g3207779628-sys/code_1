@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}预设角色管理{% endblock %}
+{% block content %}
+
+<style>
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+.preset-card-mgmt {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px;
+}
+.preset-card-mgmt h3 {
+    font-size: 15px;
+    font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.preset-card-mgmt .code-badge {
+    font-family: monospace; font-size: 11px;
+    color: var(--ink-quiet);
+    padding: 2px 6px; background: var(--bg-alt); border-radius: 3px;
+}
+.preset-card-mgmt .desc {
+    font-size: 12px; color: var(--ink-quiet);
+    margin: 6px 0 10px;
+}
+.preset-card-mgmt .keys {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-bottom: 10px;
+}
+.preset-card-mgmt .key-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: var(--ok-bg); color: var(--ok);
+    border-radius: 10px;
+    border: 1px solid #B7EB8F;
+}
+.preset-card-mgmt .actions {
+    display: flex; gap: 6px; justify-content: flex-end;
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+}
+</style>
+
+<div class="card">
+    <div class="card-header">
+        <span>预设角色（共 {{ presets|length }} 个）</span>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('new-preset').style.display = ''; window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});">＋ 新建预设</button>
+    </div>
+    <div class="card-body">
+        <div class="text-tertiary" style="font-size:12px; margin-bottom:12px;">
+            预设角色用于"用户与权限"页里 <strong>一键套用菜单授权模板</strong>。
+            修改某个预设不会影响已使用此预设的用户当前权限——只在下次重新套用时生效。
+        </div>
+
+        <div class="preset-grid">
+            {% for p in presets %}
+            <div class="preset-card-mgmt">
+                <h3>
+                    {{ p.name }}
+                    <span class="code-badge">{{ p.code }}</span>
+                </h3>
+                <div class="desc">{{ p.description or '无描述' }}</div>
+                <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">
+                    包含 {{ p.count }} 项菜单权限：
+                </div>
+                <div class="keys">
+                    {% for k in p.menu_keys %}
+                    <span class="key-tag">{{ k }}</span>
+                    {% endfor %}
+                    {% if not p.menu_keys %}<span class="text-tertiary">（无）</span>{% endif %}
+                </div>
+                <div class="actions">
+                    <button class="btn btn-sm btn-secondary" onclick="toggleEdit({{ p.id }})">编辑</button>
+                    <form method="post" style="display:inline;" onsubmit="return confirm('删除预设「{{ p.name }}」？此操作不影响已使用此预设的用户的当前权限。');">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="preset_id" value="{{ p.id }}">
+                        <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                    </form>
+                </div>
+
+                <!-- 编辑面板（默认隐藏） -->
+                <form method="post" id="edit-form-{{ p.id }}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="preset_id" value="{{ p.id }}">
+                    <div class="form-row">
+                        <label>名称</label>
+                        <input type="text" name="name" value="{{ p.name }}" required>
+                    </div>
+                    <div class="form-row">
+                        <label>描述</label>
+                        <input type="text" name="description" value="{{ p.description or '' }}">
+                    </div>
+                    <div class="form-row">
+                        <label>菜单权限（勾选）</label>
+                        <div style="background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:10px;">
+                            {% for group in nav_tree %}
+                            <div style="margin-bottom:8px;">
+                                <div style="font-size:11px; color:var(--ink-quiet); text-transform:uppercase; margin-bottom:4px;">{{ group.label }}</div>
+                                {% for it in group['items'] %}
+                                  {% if it.key %}
+                                  <label style="display:inline-block; margin-right:10px; font-weight:400; font-size:12px;">
+                                      <input type="checkbox" name="menu_keys" value="{{ it.key }}" {% if it.key in p.menu_keys %}checked{% endif %}>
+                                      {{ it.label }}
+                                  </label>
+                                  {% elif it.children %}{% for ch in it['children'] %}{% if ch.key %}
+                                  <label style="display:inline-block; margin-right:10px; font-weight:400; font-size:12px;">
+                                      <input type="checkbox" name="menu_keys" value="{{ ch.key }}" {% if ch.key in p.menu_keys %}checked{% endif %}>
+                                      {{ ch.label }}
+                                  </label>
+                                  {% endif %}{% endfor %}{% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" type="submit">保存</button>
+                    <button class="btn btn-secondary btn-sm" type="button" onclick="toggleEdit({{ p.id }})">取消</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="card" id="new-preset" style="display:none;">
+    <div class="card-header">
+        <span>新建预设角色</span>
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('new-preset').style.display = 'none';">关闭</button>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <input type="hidden" name="action" value="create">
+            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;">
+                <div class="form-row">
+                    <label>名称 *</label>
+                    <input type="text" name="name" required placeholder="如 仓库主管">
+                </div>
+                <div class="form-row">
+                    <label>代码<span style="font-weight:400;color:var(--ink-quiet);font-size:11px;">（留空自动生成）</span></label>
+                    <input type="text" name="code" placeholder="如 warehouse_head">
+                </div>
+            </div>
+            <div class="form-row">
+                <label>描述</label>
+                <input type="text" name="description" placeholder="一句话说明该预设适合什么人">
+            </div>
+            <div class="form-row">
+                <label>菜单权限（勾选）</label>
+                <div style="background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:10px;">
+                    {% for group in nav_tree %}
+                    <div style="margin-bottom:8px;">
+                        <div style="font-size:11px; color:var(--ink-quiet); text-transform:uppercase; margin-bottom:4px;">{{ group.label }}</div>
+                        {% for it in group['items'] %}
+                          {% if it.key %}
+                          <label style="display:inline-block; margin-right:10px; font-weight:400; font-size:12px;">
+                              <input type="checkbox" name="menu_keys" value="{{ it.key }}">
+                              {{ it.label }}
+                          </label>
+                          {% elif it.children %}{% for ch in it['children'] %}{% if ch.key %}
+                          <label style="display:inline-block; margin-right:10px; font-weight:400; font-size:12px;">
+                              <input type="checkbox" name="menu_keys" value="{{ ch.key }}">
+                              {{ ch.label }}
+                          </label>
+                          {% endif %}{% endfor %}{% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button class="btn btn-primary" type="submit">创建预设</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleEdit(pid) {
+    const form = document.getElementById('edit-form-' + pid);
+    form.style.display = form.style.display === '' ? 'none' : '';
+}
+</script>
+
+{% endblock %}

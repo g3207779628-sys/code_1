@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}待审批中心{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>待审批中心（共 {{ items|length }} 项）</span>
+    </div>
+    <div style="padding:8px 20px 0; border-bottom:1px solid var(--line);">
+        {% set tabs = [('all','全部'), ('damage','报损'), ('inbound','入库'), ('outbound','出库'), ('requisition','申领'), ('transfer','调拨'), ('stocktake','盘点')] %}
+        {% for code, label in tabs %}
+        <a href="?type={{ code }}" class="btn btn-sm {% if biz == code %}btn-primary{% else %}btn-secondary{% endif %}">
+            {{ label }} {% if counts.get(code, 0) %}({{ counts[code] }}){% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% if items %}
+        <table>
+            <thead><tr><th>业务</th><th>单号</th><th>摘要</th><th>申请人/创建人</th><th>时间</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for it in items %}
+                <tr>
+                    <td><span class="badge">{{ it.biz }}</span></td>
+                    <td class="mono"><a href="{{ it.url }}">{{ it.id }}</a></td>
+                    <td>{{ it.title }}</td>
+                    <td>{{ it.by or '-' }}</td>
+                    <td class="mono" style="font-size:12px;">{{ it.at }}</td>
+                    <td><a class="btn btn-sm btn-primary" href="{{ it.url }}">处理</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">{% if biz == 'all' %}没有任何待审批事项{% else %}该业务类型无待审批事项{% endif %}</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

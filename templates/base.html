@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}code_1{% endblock %} · KClaw 仓储</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ css_version }}">
+    <style>
+    /* v11 hard override：确保列表页一定铺满工作区，不被任何浏览器/代理缓存的旧 CSS 卡死 */
+    .container { max-width: none !important; }
+    </style>
 </head>
 <body>
 {% if session.user_id %}
@@ -12,60 +16,94 @@
 
     <aside class="sider">
         <div class="sider-brand">
-            KClaw 仓储
-            <small>Warehouse OS</small>
+            金山仓储
         </div>
 
-        <div class="sider-section">驾驶舱</div>
-        <ul class="sider-menu">
-            {% if 'dashboard' in menus %}<li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">工作台</a></li>{% endif %}
-            {% if 'report' in menus %}<li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">经营报表</a></li>{% endif %}
-            {% if 'ai' in menus %}<li><a href="{{ url_for('ai_query') }}" class="{% if request.endpoint == 'ai_query' %}active{% endif %}">智能查询</a></li>{% endif %}
+        <ul class="nav">
+            {% for group in nav_tree %}
+                {% set ns = namespace(visible=[]) %}
+                {% for it in group['items'] %}
+                    {% if it.get('divider') %}
+                        {% if ns.visible and not ns.visible[-1].get('divider') %}
+                            {% set _ = ns.visible.append(it) %}
+                        {% endif %}
+                    {% elif it.get('children') %}
+                        {% set cns = namespace(kids=[]) %}
+                        {% for ch in it['children'] %}
+                            {% if ch.key in menus and ch.endpoint in available_endpoints %}
+                                {% set _ = cns.kids.append(ch) %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if cns.kids %}
+                            {% set _ = ns.visible.append({'label': it.label, 'children': cns.kids}) %}
+                        {% endif %}
+                    {% elif it.key in menus and it.endpoint in available_endpoints %}
+                        {% set _ = ns.visible.append(it) %}
+                    {% endif %}
+                {% endfor %}
+                {% if ns.visible and ns.visible[-1].get('divider') %}
+                    {% set _ = ns.visible.pop() %}
+                {% endif %}
+                {% if ns.visible %}
+                    {% set act = namespace(group=false) %}
+                    {% for it in ns.visible %}
+                        {% if it.get('children') %}
+                            {% for ch in it['children'] %}
+                                {% if request.endpoint == ch.endpoint or (request.endpoint and request.endpoint.startswith(ch.endpoint ~ '_')) %}
+                                    {% set act.group = true %}
+                                {% endif %}
+                            {% endfor %}
+                        {% elif not it.get('divider') and (request.endpoint == it.endpoint or (request.endpoint and request.endpoint.startswith(it.endpoint ~ '_'))) %}
+                            {% set act.group = true %}
+                        {% endif %}
+                    {% endfor %}
+                    <li class="nav-item {% if act.group %}active{% endif %}">
+                        <span class="nav-label">{{ group.label }}<span class="nav-caret">›</span></span>
+                        <ul class="submenu">
+                            {% for it in ns.visible %}
+                                {% if it.get('divider') %}
+                                    <li class="submenu-divider"></li>
+                                {% elif it.get('children') %}
+                                    {% set sact = namespace(on=false) %}
+                                    {% for ch in it['children'] %}
+                                        {% if request.endpoint == ch.endpoint or (request.endpoint and request.endpoint.startswith(ch.endpoint ~ '_')) %}
+                                            {% set sact.on = true %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    <li class="submenu-parent {% if sact.on %}active{% endif %}">
+                                        <span class="submenu-parent-label">{{ it.label }}<span class="nav-caret">›</span></span>
+                                        <ul class="submenu submenu-child">
+                                            {% for ch in it['children'] %}
+                                                {% set is_current = request.endpoint == ch.endpoint or (request.endpoint and request.endpoint.startswith(ch.endpoint ~ '_')) %}
+                                                <li><a href="{{ url_for(ch.endpoint) }}" class="{% if is_current %}active{% endif %}">{{ ch.label }}</a></li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                {% else %}
+                                    {% set is_current = request.endpoint == it.endpoint or (request.endpoint and request.endpoint.startswith(it.endpoint ~ '_')) %}
+                                    <li><a href="{{ url_for(it.endpoint) }}" class="{% if is_current %}active{% endif %}">{{ it.label }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+            {% endfor %}
         </ul>
-
-        {% if 'sales' in menus or 'pick' in menus or 'inbound' in menus or 'return' in menus %}
-        <div class="sider-section">业务</div>
-        <ul class="sider-menu">
-            {% if 'sales' in menus %}<li><a href="{{ url_for('sales_list') }}" class="{% if request.endpoint and request.endpoint.startswith('sales') %}active{% endif %}">销售订单</a></li>{% endif %}
-            {% if 'pick' in menus %}<li><a href="{{ url_for('pick_list') }}" class="{% if request.endpoint and request.endpoint.startswith('pick') %}active{% endif %}">拣货任务</a></li>{% endif %}
-            {% if 'inbound' in menus %}<li><a href="{{ url_for('inbound_list') }}" class="{% if request.endpoint and request.endpoint.startswith('inbound') %}active{% endif %}">入库管理</a></li>{% endif %}
-            {% if 'return' in menus %}<li><a href="{{ url_for('return_list') }}" class="{% if request.endpoint and request.endpoint.startswith('return') %}active{% endif %}">退换货</a></li>{% endif %}
-        </ul>
-        {% endif %}
-
-        {% if 'inventory' in menus or 'expiry' in menus or 'damage' in menus or 'stocktake' in menus or 'log' in menus %}
-        <div class="sider-section">库存</div>
-        <ul class="sider-menu">
-            {% if 'inventory' in menus %}<li><a href="{{ url_for('inventory_list') }}" class="{% if request.endpoint and request.endpoint.startswith('inventory') %}active{% endif %}">库存查询</a></li>{% endif %}
-            {% if 'expiry' in menus %}<li><a href="{{ url_for('expiry_alert') }}" class="{% if request.endpoint == 'expiry_alert' %}active{% endif %}">临期预警</a></li>{% endif %}
-            {% if 'damage' in menus %}<li><a href="{{ url_for('damage_list') }}" class="{% if request.endpoint and request.endpoint.startswith('damage') %}active{% endif %}">报损管理</a></li>{% endif %}
-            {% if 'stocktake' in menus %}<li><a href="{{ url_for('stocktake_list') }}" class="{% if request.endpoint and request.endpoint.startswith('stocktake') %}active{% endif %}">盘点</a></li>{% endif %}
-            {% if 'log' in menus %}<li><a href="{{ url_for('stock_log_view') }}" class="{% if request.endpoint == 'stock_log_view' %}active{% endif %}">库存流水</a></li>{% endif %}
-        </ul>
-        {% endif %}
-
-        {% if 'sku' in menus or 'customer' in menus or 'supplier' in menus or 'warehouse' in menus or 'location' in menus %}
-        <div class="sider-section">主数据</div>
-        <ul class="sider-menu">
-            {% if 'sku' in menus %}<li><a href="{{ url_for('sku_list') }}" class="{% if request.endpoint and request.endpoint.startswith('sku') %}active{% endif %}">商品 SKU</a></li>{% endif %}
-            {% if 'customer' in menus %}<li><a href="{{ url_for('customer_list') }}" class="{% if request.endpoint and request.endpoint.startswith('customer') %}active{% endif %}">客户</a></li>{% endif %}
-            {% if 'supplier' in menus %}<li><a href="{{ url_for('supplier_list') }}" class="{% if request.endpoint and request.endpoint.startswith('supplier') %}active{% endif %}">供应商</a></li>{% endif %}
-            {% if 'warehouse' in menus %}<li><a href="{{ url_for('warehouse_list') }}" class="{% if request.endpoint and request.endpoint.startswith('warehouse') %}active{% endif %}">仓库</a></li>{% endif %}
-            {% if 'location' in menus %}<li><a href="{{ url_for('location_list') }}" class="{% if request.endpoint and request.endpoint.startswith('location') %}active{% endif %}">库位</a></li>{% endif %}
-        </ul>
-        {% endif %}
     </aside>
 
     <div class="main">
         <header class="header">
             <div class="crumb">
-                <span><a href="{{ url_for('index') }}">首页</a></span>
+                <span><a href="{{ url_for('welcome') }}">首页</a></span>
                 {% block crumb %}{% endblock %}
             </div>
             <div class="header-right">
                 <div class="header-user">
                     <span class="name">{{ session.display_name }}</span>
                     <span class="role">{{ session.position_label or session.role }}</span>
+                    {% if 'password' in menus and 'password_change' in available_endpoints %}
+                    <a href="{{ url_for('password_change') }}">改密</a>
+                    {% endif %}
                     <a href="{{ url_for('logout') }}">退出</a>
                 </div>
             </div>
@@ -74,11 +112,29 @@
         <div class="container">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
+                {# 成功消息 → Toast 浮窗（方案 2，3 秒自动消失）；其他 → 顶部横幅（方案 1） #}
+                {% set banner_msgs = [] %}
+                {% set toast_msgs = [] %}
+                {% for category, msg in messages %}
+                    {% if category == 'success' %}{% set _ = toast_msgs.append((category, msg)) %}
+                    {% else %}{% set _ = banner_msgs.append((category, msg)) %}{% endif %}
+                {% endfor %}
+                {% if banner_msgs %}
                 <div class="flash-list">
-                    {% for category, msg in messages %}
+                    {% for category, msg in banner_msgs %}
                     <div class="flash {{ category }}">{{ msg }}</div>
                     {% endfor %}
                 </div>
+                {% endif %}
+                {% if toast_msgs %}
+                <script>
+                window.__pendingToasts = (window.__pendingToasts || []).concat([
+                    {% for category, msg in toast_msgs %}
+                    {category: "{{ category }}", msg: {{ msg|tojson }}},
+                    {% endfor %}
+                ]);
+                </script>
+                {% endif %}
                 {% endif %}
             {% endwith %}
 
@@ -87,10 +143,14 @@
     </div>
 
 </div>
+
+<!-- Toast 容器（方案 2 浮窗） -->
+<div id="toast-stack"></div>
+
 {% else %}
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <div class="flash-list" style="position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:200;min-width:320px;">
+        <div class="flash-list" style="position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:200;min-width:320px;max-width:480px;">
             {% for category, msg in messages %}
             <div class="flash {{ category }}">{{ msg }}</div>
             {% endfor %}
@@ -99,5 +159,51 @@
     {% endwith %}
     {% block content_unauth %}{% endblock %}
 {% endif %}
+
+<script>
+// Toast 渲染 + 3 秒自动消失
+(function () {
+    var stack = document.getElementById('toast-stack');
+    if (!stack) return;
+
+    function icon(cat) {
+        if (cat === 'success') return '✓';
+        if (cat === 'error') return '!';
+        if (cat === 'warn' || cat === 'warning') return '!';
+        return 'i';
+    }
+    function clsType(cat) {
+        if (cat === 'success') return 'toast-success';
+        if (cat === 'error') return 'toast-error';
+        if (cat === 'warn' || cat === 'warning') return 'toast-warn';
+        return '';
+    }
+    window.showToast = function (cat, msg, opts) {
+        opts = opts || {};
+        var el = document.createElement('div');
+        el.className = 'toast ' + clsType(cat);
+        el.innerHTML =
+            '<span class="ico">' + icon(cat) + '</span>' +
+            '<div class="body">' + msg + '</div>' +
+            '<button class="close" type="button">×</button>';
+        stack.appendChild(el);
+        var close = el.querySelector('.close');
+        function dismiss() {
+            el.classList.add('fade-out');
+            setTimeout(function () { el.remove(); }, 250);
+        }
+        close.addEventListener('click', dismiss);
+        var duration = (cat === 'error') ? 0 : (opts.duration || 3000);
+        if (duration > 0) setTimeout(dismiss, duration);
+        return el;
+    };
+
+    var pending = window.__pendingToasts || [];
+    pending.forEach(function (t) { window.showToast(t.category, t.msg); });
+    window.__pendingToasts = [];
+})();
+</script>
+
+<script src="{{ url_for('static', filename='js/picker.js') }}"></script>
 </body>
 </html>

@@ -1,39 +1,71 @@
 {% extends "base.html" %}
-{% block title %}拣货任务{% endblock %}
+{% block title %}出库单列表{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">出库管理</span><span class="sep">/</span><span class="current">出库单列表</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">
-        <span>拣货任务（共 {{ orders|length }} 张，待拣货优先）</span>
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">出库单列表</div>
+        <div class="page-sub">共 {{ orders|length }} 张 · 待出库优先 · <span style="color:var(--accent-deep);">申领</span>标签表示由申领转出库</div>
     </div>
-    <div class="card-body" style="padding:0;">
+    <a class="btn btn-primary" href="{{ url_for('outbound_new') }}">+ 新建出库单</a>
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>出库单列表</h3><span class="meta">{{ orders|length }} 张</span></div>
+    <div class="body" style="padding:0;">
         {% if orders %}
-        <table>
+        <table class="dense-table">
             <thead>
-                <tr><th>出库单号</th><th>状态</th><th>关联销售单</th><th>收件人</th><th>明细行</th><th>总数量</th><th>拣货员</th><th>创建时间</th><th>操作</th></tr>
+                <tr>
+                    <th>单号</th>
+                    <th>仓库</th>
+                    <th>物品</th>
+                    <th>收件方</th>
+                    <th>状态</th>
+                    <th class="text-right">明细行</th>
+                    <th class="text-right">总数量</th>
+                    <th class="text-right">已撤销</th>
+                    <th>出库员</th>
+                    <th>创建时间</th>
+                    <th class="text-right" style="width:120px;">操作</th>
+                </tr>
             </thead>
             <tbody>
                 {% for o in orders %}
+                {% set s = order_summary.get(o.order_no) %}
                 <tr>
-                    <td class="mono"><a href="{{ url_for('pick_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
-                    <td>
-                        {% if o.status == 'pending' %}<span class="badge badge-downgrade">待拣货</span>
-                        {% elif o.status == 'completed' %}<span class="badge badge-in">已完成</span>
-                        {% else %}<span class="badge badge-out">已取消</span>{% endif %}
+                    <td class="mono"><a href="{{ url_for('pick_detail', order_no=o.order_no) }}">{{ o.order_no }}</a>
+                        {% if o.requisition_no %}<span class="tag" title="来自领用申请 {{ o.requisition_no }}" style="margin-left:6px;background:var(--accent-soft);color:var(--accent-deep);">申领</span>{% endif %}
                     </td>
-                    <td class="mono" style="font-size:12px;">{{ o.sales_order_no }}</td>
-                    <td>{{ o.receiver_name or '-' }} <span class="mono" style="font-size:12px;color:var(--color-text-soft);">{{ o.receiver_phone or '' }}</span></td>
-                    <td class="mono">{{ o.line_count }}</td>
-                    <td class="mono">{{ o.total_qty }}</td>
-                    <td>{{ o.picker_name or '-' }}</td>
-                    <td class="mono" style="font-size:12px;">{{ o.created_at }}</td>
-                    <td><a class="btn btn-sm" href="{{ url_for('pick_detail', order_no=o.order_no) }}">{% if o.status == 'pending' %}去拣货{% else %}查看{% endif %}</a></td>
+                    <td>{{ s.wh_names if s and s.wh_names else '—' }}</td>
+                    <td class="sku-name" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ s.sku_names if s and s.sku_names else '—' }}
+                    </td>
+                    <td>{{ o.receiver_desc or '—' }}</td>
+                    <td>
+                        {% if o.status == 'pending' %}<span class="tag tag-warn">待出库</span>
+                        {% elif o.status == 'completed' %}<span class="tag tag-success">已完成</span>
+                        {% else %}<span class="tag tag-error">已取消</span>{% endif %}
+                    </td>
+                    <td class="num-mono text-right">{{ o.line_count }}</td>
+                    <td class="num-mono text-right"><strong>{{ o.total_qty }}</strong></td>
+                    <td class="num-mono text-right" style="color:var(--ink-quiet);">{{ o.reversed_qty or 0 }}</td>
+                    <td>{{ o.picker_name or '—' }}</td>
+                    <td class="mono" style="font-size:11px; color:var(--ink-quiet);">{{ (o.created_at or '')[:16] }}</td>
+                    <td class="text-right">
+                        <a class="btn btn-sm btn-link" href="{{ url_for('pick_detail', order_no=o.order_no) }}">
+                            {% if o.status == 'pending' %}去出库{% else %}查看{% endif %}
+                        </a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <div class="empty">还没有拣货任务。<br>先在 <a href="{{ url_for('sales_list') }}">销售订单</a> 创建并确认一张销售单，系统会自动派单。</div>
+        <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
+            还没有出库单。点击右上「+ 新建出库单」开始。
+        </div>
         {% endif %}
     </div>
 </div>

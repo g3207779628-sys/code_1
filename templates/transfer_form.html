@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}新建调拨单{% endblock %}
+{% block crumb %}<span class="sep">/</span><a href="{{ url_for('transfer_list') }}">调拨</a><span class="sep">/</span><span class="current">新建</span>{% endblock %}
+{% block content %}
+
+<form method="post" enctype="multipart/form-data" id="transfer-form">
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">新建调拨单</div>
+            <div class="page-sub">单号自动生成 · 跨仓库 / 跨库位都可</div>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('transfer_list') }}">取消返回</a>
+    </div>
+
+    <div class="step-bar">
+        <div class="step active"><span class="n">1</span><span>创建调拨单</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">2</span><span>待执行</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">3</span><span>已完成</span></div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>调拨方向</h3><span class="meta">库位自带仓库信息 · 跳新页 5 重筛选选库位</span></div>
+        <div class="body">
+            <div class="wh-flow">
+                <div class="side">
+                    <div class="label">调出库位 *（仅有库存可选）</div>
+                    <div class="picker-btn" onclick="openPicker('loc-filtered', 'from-loc', {require_stock: 1})">
+                        <input type="hidden" name="from_location_id" id="from-loc" required>
+                        <span class="picker-label empty" id="from-loc-label">未选择</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="arrow-big">→</div>
+                <div class="side">
+                    <div class="label">调入库位 *</div>
+                    <div class="picker-btn" onclick="openPicker('loc-filtered', 'to-loc')">
+                        <input type="hidden" name="to_location_id" id="to-loc" required>
+                        <span class="picker-label empty" id="to-loc-label">未选择</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>调拨日期 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="date" name="transfer_date" required>
+                </div>
+                <div class="form-row">
+                    <label>备注 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可选</span></label>
+                    <input type="text" name="note" placeholder="如：分仓补货 / 盘点后调整 / 跨区补货">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>调拨明细</h3><span class="meta" id="meta-detail">点"选物品"按调出库位过滤可调存货</span></div>
+        <div class="body">
+            <div class="info-tip">
+                <strong>i</strong> 先选完<strong>调出库位</strong>，再点每行的「选物品 →」按钮，会跳到独立选择页，**只显示该库位上可调的物品+批次**。
+            </div>
+            <table class="line-table" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 56%;">物品 + 批次（来自调出库位）</th>
+                        <th style="width: 14%;">当前可调</th>
+                        <th style="width: 22%;">调拨数量</th>
+                        <th style="width: 8%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+            </table>
+            <button type="button" class="add-line" onclick="addRow()">+ 添加一行明细</button>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>附件</h3><span class="meta">可选 · 单文件 ≤ 10MB</span></div>
+        <div class="body">
+            <label class="upload-zone">
+                <div class="big">+ 上传</div>
+                <div>调拨审批单 / 交接记录</div>
+                <div class="hint">jpg / png / pdf · 单文件 ≤ 10MB</div>
+                <input type="file" name="attachments[]" multiple>
+            </label>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left">
+            <div>明细 <span class="num" id="stat-rows">1</span> 行</div>
+            <div>合计 <span class="num" id="stat-total">0</span> 件</div>
+        </div>
+        <div class="right">
+            <a class="btn btn-secondary" href="{{ url_for('transfer_list') }}">取消</a>
+            <button class="btn btn-primary" type="submit">创建调拨单（草稿）</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+// 选 inventory 前必须先选调出库位
+function pickInv(targetId) {
+    const fromLoc = document.getElementById('from-loc').value;
+    if (!fromLoc) {
+        alert('请先选择调出库位');
+        return;
+    }
+    openPicker('inventory', targetId, {location_id: fromLoc});
+}
+
+// 调出库位变化 → 清空所有明细行的 inv 选择
+document.getElementById('from-loc').addEventListener('change', clearAllInvSelections);
+
+function clearAllInvSelections() {
+    // 调出库位变化时，所有明细行的 inv 选择清空
+    document.querySelectorAll('#items-body input[name="inv_id[]"]').forEach(input => {
+        input.value = '';
+        const lbl = document.getElementById(input.id + '-label');
+        if (lbl) { lbl.textContent = '先选调出库位'; lbl.classList.add('empty'); }
+        const tr = input.closest('tr');
+        const avail = tr.querySelector('.avail-cell');
+        if (avail) avail.textContent = '-';
+    });
+}
+
+let invRowCounter = 0;
+
+function addRow() {
+    invRowCounter += 1;
+    const idx = invRowCounter;
+    const body = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.className = 'item-row';
+    tr.innerHTML = `
+        <td>
+            <div class="picker-btn" onclick="pickInv('inv-${idx}')">
+                <input type="hidden" name="inv_id[]" id="inv-${idx}" required>
+                <span class="picker-label empty" id="inv-${idx}-label">先选调出库位</span>
+                <span class="picker-arrow">选物品 →</span>
+            </div>
+        </td>
+        <td class="avail-cell" style="color:var(--ok); font-family:var(--font-mono); text-align:right;">-</td>
+        <td><input type="number" name="quantity[]" min="1" required style="width:100%; text-align:right;" oninput="recalc()"></td>
+        <td style="text-align:center;"><button type="button" class="del" onclick="removeRow(this)">×</button></td>
+    `;
+    body.appendChild(tr);
+    recalc();
+}
+
+function removeRow(btn) {
+    const body = document.getElementById('items-body');
+    if (body.querySelectorAll('.item-row').length <= 1) {
+        alert('至少保留 1 行');
+        return;
+    }
+    btn.closest('tr').remove();
+    recalc();
+}
+
+function recalc() {
+    const rows = document.querySelectorAll('#items-body .item-row');
+    document.getElementById('stat-rows').textContent = rows.length;
+    let total = 0;
+    document.querySelectorAll('input[name="quantity[]"]').forEach(i => {
+        total += parseInt(i.value) || 0;
+    });
+    document.getElementById('stat-total').textContent = total;
+}
+
+// picker 回填后：hidden input change 同步 label empty 类 + 解析 label 显示可调数
+document.addEventListener('change', e => {
+    if (e.target.type === 'hidden' && e.target.id) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) lbl.classList.toggle('empty', !e.target.value);
+        // 调拨明细行：从 label 文本中提取"可调 N"展示到 .avail-cell
+        if (e.target.id.startsWith('inv-')) {
+            const tr = e.target.closest('tr');
+            const avail = tr.querySelector('.avail-cell');
+            if (avail && lbl) {
+                const m = lbl.textContent.match(/可调\s*(\d+)/);
+                avail.textContent = m ? m[1] : '-';
+            }
+        }
+    }
+});
+
+// 默认日期 = 今天
+document.querySelector('input[name="transfer_date"]').valueAsDate = new Date();
+
+// 初始化：默认 1 行明细
+addRow();
+</script>
+
+{% endblock %}

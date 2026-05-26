@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v8 方案 C · 新建入库单 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { font-size: 13px; }
+
+/* 紧凑 C 风 sider 覆盖 */
+.menu li > a { padding: 7px 18px; font-size: 13px; }
+.menu-group { padding: 12px 20px 4px; font-size: 11px; }
+.sider { width: 200px; }
+.header { height: 52px; }
+.content { padding: 28px; background: var(--bg-soft); }
+
+/* === 业务表单卡片居中（max-width 中等） === */
+.form-wrap {
+    max-width: 920px;
+    margin: 0 auto;
+}
+
+.page-head {
+    margin-bottom: 18px;
+}
+.page-head .pre {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+.page-head h1 {
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+.page-head .sub {
+    font-size: 12px; color: var(--ink-quiet);
+}
+
+.card-head h3 { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+}
+.form-row label {
+    display: block; font-size: 12px;
+    color: var(--ink-quiet);
+    margin-bottom: 6px; font-weight: 500;
+}
+.form-row .req { color: var(--err); }
+.form-row .hint { color: var(--ink-faded); font-size: 11px; margin-left: 4px; font-weight: 400; }
+.form-row input, .form-row textarea, .form-row select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--line-input);
+    border-radius: var(--r-md);
+    padding: 8px 11px;
+    font-size: 13px;
+    color: var(--ink);
+    font-family: inherit;
+}
+.form-row input:focus, .form-row select:focus {
+    outline: none;
+    background: var(--bg-input-focus);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255,69,0,0.10);
+}
+
+.picker-row {
+    display: flex; gap: 8px; align-items: center;
+}
+.picker-label {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--line-input);
+    border-radius: var(--r-md);
+    padding: 8px 11px;
+    font-size: 13px;
+    color: var(--ink);
+    min-height: 34px;
+}
+.picker-label.empty { color: var(--ink-faded); }
+
+.btn {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 7px 14px;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-primary { background: var(--accent); color: #FFF; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+
+/* dense-table 入库明细 */
+.dense-table { width: 100%; border-collapse: collapse; }
+.dense-table th, .dense-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 12px;
+    vertical-align: middle;
+}
+.dense-table thead th {
+    background: var(--bg-soft);
+    font-size: 10px;
+    color: var(--ink-quiet);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--line);
+}
+.dense-table td input,
+.dense-table td .picker-label {
+    padding: 5px 8px;
+    font-size: 12px;
+    min-height: 28px;
+}
+.dense-table .btn-x {
+    color: var(--err);
+    background: transparent;
+    border: 1px solid var(--err-bg);
+    padding: 3px 8px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.foot-actions {
+    margin-top: 18px;
+    padding: 14px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.foot-actions .summary {
+    font-size: 13px; color: var(--ink-soft);
+}
+.foot-actions .summary .big {
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    margin: 0 4px;
+}
+.foot-actions .right { display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+    <strong>v8 方案 C · 新建入库单</strong> · 业务表单卡片居中 (max-width: 920px) · 明细用 dense-table 紧凑表
+</div>
+
+<div class="layout">
+    <aside class="sider">
+        <div class="sider-brand">金山仓储</div>
+        <ul class="menu">
+            <li class="menu-group">日常使用</li>
+            <li><a href="ui_white_c_dashboard.html">工作台</a></li>
+            <li><a href="#">待审批中心</a></li>
+            <li class="menu-group">日常操作</li>
+            <li><a href="#" class="active">入库</a></li>
+            <li><a href="#">出库</a></li>
+            <li><a href="#">调拨</a></li>
+            <li><a href="#">报损</a></li>
+            <li><a href="#">盘点</a></li>
+            <li class="menu-group">查询分析</li>
+            <li><a href="ui_white_c_inventory.html">库存查询</a></li>
+            <li><a href="ui_white_c_stock_log.html">库存流水</a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <div class="crumb"><span class="prev">日常操作 / 入库</span><span class="sep">/</span><span class="now">新建入库单</span></div>
+            <div class="header-actions">
+                <span class="user-name">王经理</span>
+                <span class="quiet">改密</span>
+                <span class="quiet">退出</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- 关键：业务表单卡片用 .form-wrap 居中 -->
+            <div class="form-wrap">
+                <div class="page-head">
+                    <div class="pre">// FORM_INBOUND_NEW</div>
+                    <h1>新建入库单</h1>
+                    <div class="sub">保存为草稿后，需要仓库经理审批方可入账</div>
+                </div>
+
+                <!-- 基本信息卡 -->
+                <div class="card" style="margin-bottom: 14px;">
+                    <div class="card-head"><h3>基本信息</h3></div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-row">
+                                <label>入库仓库 <span class="req">*</span></label>
+                                <div class="picker-row">
+                                    <span class="picker-label">金山主仓</span>
+                                    <button class="btn btn-sm">选择仓库</button>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label>供应商 <span class="req">*</span></label>
+                                <div class="picker-row">
+                                    <span class="picker-label">贵州茅台经销商</span>
+                                    <button class="btn btn-sm">选择供应商</button>
+                                </div>
+                            </div>
+                            <div class="form-row" style="grid-column: 1 / -1;">
+                                <label>备注 <span class="hint">（可选）</span></label>
+                                <input type="text" value="月度补货">
+                            </div>
+                            <div class="form-row" style="grid-column: 1 / -1;">
+                                <label>附件 <span class="hint">（可多选，单文件 ≤ 10MB）</span></label>
+                                <input type="file" multiple>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 入库明细卡 -->
+                <div class="card">
+                    <div class="card-head">
+                        <h3>入库明细</h3>
+                        <button class="btn btn-sm">+ 添加一行</button>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <table class="dense-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:24%;">商品</th>
+                                    <th style="width:22%;">批次号</th>
+                                    <th style="width:20%;">入库位</th>
+                                    <th style="width:12%;">数量</th>
+                                    <th style="width:60px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="picker-row">
+                                            <span class="picker-label">茅台</span>
+                                            <button class="btn btn-sm">选</button>
+                                        </div>
+                                    </td>
+                                    <td><input type="text" value="MT-FW-500-001"></td>
+                                    <td>
+                                        <div class="picker-row">
+                                            <span class="picker-label">酒柜-A1</span>
+                                            <button class="btn btn-sm">选</button>
+                                        </div>
+                                    </td>
+                                    <td><input type="number" value="20"></td>
+                                    <td><button class="btn-x">×</button></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="picker-row">
+                                            <span class="picker-label">五粮液</span>
+                                            <button class="btn btn-sm">选</button>
+                                        </div>
+                                    </td>
+                                    <td><input type="text" placeholder="留空自动生成"></td>
+                                    <td>
+                                        <div class="picker-row">
+                                            <span class="picker-label">酒柜-A1</span>
+                                            <button class="btn btn-sm">选</button>
+                                        </div>
+                                    </td>
+                                    <td><input type="number" value="12"></td>
+                                    <td><button class="btn-x">×</button></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="picker-row">
+                                            <span class="picker-label empty">未选择</span>
+                                            <button class="btn btn-sm">选</button>
+                                        </div>
+                                    </td>
+                                    <td><input type="text" placeholder="留空自动生成"></td>
+                                    <td>
+                                        <div class="picker-row">
+                                            <span class="picker-label empty">未选择</span>
+                                            <button class="btn btn-sm">选</button>
+                                        </div>
+                                    </td>
+                                    <td><input type="number" placeholder="数量"></td>
+                                    <td><button class="btn-x">×</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="foot-actions">
+                    <div class="summary">合计 <span class="big">2</span> 个商品 · <span class="big">32</span> 件</div>
+                    <div class="right">
+                        <a href="ui_white_c_inventory.html" class="btn">取消</a>
+                        <button class="btn btn-primary">提交</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; text-align: center;">
+                    <a href="ui_white_index.html" class="btn btn-sm">‹ 返回方案对比</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

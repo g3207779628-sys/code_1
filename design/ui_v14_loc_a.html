@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v14 方案 A · 三级独立表 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { font-size: 13px; background: var(--bg-soft); padding: 32px 40px; }
+.page { max-width: 1280px; margin: 0 auto; }
+.head { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px 26px; margin-bottom: 18px; }
+.head .tag { display: inline-block; font-size: 10px; letter-spacing: 2px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent-deep); border-radius: 2px; font-weight: 600; margin-bottom: 6px; }
+.head h1 { font-size: 22px; margin-bottom: 6px; }
+.head .sub { color: var(--ink-quiet); font-size: 13px; }
+
+.demo-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.demo-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.demo-card .head { background: var(--bg-soft); padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--ink-quiet); text-transform: uppercase; margin-bottom: 0; }
+.demo-card .body { padding: 14px; }
+.demo-card .menu-item { padding: 6px 10px; font-size: 12px; color: var(--ink-soft); border-left: 3px solid transparent; }
+.demo-card .menu-item.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+.demo-card table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.demo-card table th { background: var(--bg-soft); padding: 6px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-quiet); text-align: left; border-bottom: 1px solid var(--line); }
+.demo-card table td { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); font-size: 12px; }
+
+.flow { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px 20px; margin-bottom: 18px; }
+.flow h3 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.flow .step { display: inline-flex; align-items: center; padding: 6px 12px; background: var(--bg-input); border: 1px solid var(--line); border-radius: 4px; margin-right: 8px; font-size: 12px; }
+.flow .step .n { background: var(--accent); color: #FFF; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-right: 6px; }
+.flow .arr { color: var(--accent); margin-right: 8px; font-weight: 700; }
+
+.code-block { background: var(--bg-input); padding: 14px 18px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; color: var(--ink-soft); overflow-x: auto; }
+.code-block .kw { color: var(--accent-deep); font-weight: 700; }
+
+.back { display: inline-block; padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; text-decoration: none; color: var(--ink); font-size: 12px; margin-bottom: 18px; }
+.back:hover { border-color: var(--accent); color: var(--accent); }
+
+.pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+.pros-cons > div { padding: 14px 18px; border-radius: 6px; font-size: 12px; line-height: 1.7; }
+.pros { background: var(--ok-bg); border-left: 3px solid var(--ok); }
+.cons { background: var(--err-bg); border-left: 3px solid var(--err); }
+.pros strong, .cons strong { font-weight: 700; }
+.pros strong { color: var(--ok); }
+.cons strong { color: var(--err); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<a class="back" href="ui_v14_loc_index.html">← 返回 3 方案对比</a>
+
+<div class="head">
+    <span class="tag">A · 重方案</span>
+    <h1>三级独立表：楼栋 → 楼层 → 库位</h1>
+    <div class="sub">3 张独立表 FK 串起，每张表都有自己的菜单和 admin 页。</div>
+</div>
+
+<div class="flow">
+    <h3>建一个库位的操作流程（3 次 picker）</h3>
+    <span class="step"><span class="n">1</span>仓库</span>
+    <span class="arr">→</span>
+    <span class="step"><span class="n">2</span>楼栋（picker）</span>
+    <span class="arr">→</span>
+    <span class="step"><span class="n">3</span>楼层（picker · 按楼栋过滤）</span>
+    <span class="arr">→</span>
+    <span class="step"><span class="n">4</span>输入库位号 + 类型</span>
+</div>
+
+<div class="demo-row">
+    <div class="demo-card">
+        <div class="head">仓库数据维护菜单（+ 2 项）</div>
+        <div class="body">
+            <div class="menu-item">仓库</div>
+            <div class="menu-item">仓库分配部门</div>
+            <div class="menu-item">仓库使用部门</div>
+            <div class="menu-item">仓库类型</div>
+            <div class="menu-item">责任人</div>
+            <div class="menu-item active">楼栋号 ← 新增</div>
+            <div class="menu-item active">楼层 ← 新增</div>
+            <div class="menu-item">库位</div>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <div class="head">库位列表（按楼栋分组）</div>
+        <div class="body">
+            <table>
+                <thead><tr><th>楼栋</th><th>楼层</th><th>库位</th><th class="text-right">在仓</th></tr></thead>
+                <tbody>
+                    <tr><td rowspan="2" style="background:var(--accent-soft); color:var(--accent-deep); font-weight:600;">1 号楼</td><td>1 层</td><td>A-01</td><td style="text-align:right;">128</td></tr>
+                    <tr><td>2 层</td><td>A-02</td><td style="text-align:right;">86</td></tr>
+                    <tr><td rowspan="2" style="background:var(--accent-soft); color:var(--accent-deep); font-weight:600;">2 号楼</td><td>1 层</td><td>B-01</td><td style="text-align:right;">15</td></tr>
+                    <tr><td>1 层</td><td>B-02</td><td style="text-align:right;">22</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <div class="head">库存查询 · 按楼栋聚合</div>
+        <div class="body">
+            <table>
+                <thead><tr><th>楼栋</th><th class="text-right">含楼层</th><th class="text-right">含库位</th><th class="text-right">总在仓</th></tr></thead>
+                <tbody>
+                    <tr><td style="color:var(--accent-deep); font-weight:600;">1 号楼</td><td style="text-align:right;">2</td><td style="text-align:right;">2</td><td style="text-align:right; color:var(--accent);">214</td></tr>
+                    <tr><td style="color:var(--accent-deep); font-weight:600;">2 号楼</td><td style="text-align:right;">1</td><td style="text-align:right;">2</td><td style="text-align:right; color:var(--accent);">37</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="head">
+    <h1 style="font-size: 16px;">数据库 schema</h1>
+    <div class="code-block">
+<span class="kw">CREATE TABLE</span> building (
+    id INTEGER PRIMARY KEY,
+    warehouse_id INTEGER <span class="kw">REFERENCES</span> warehouse(id),
+    name TEXT NOT NULL   <span style="color:var(--ink-faded);">-- 如 "1 号楼"</span>
+);
+
+<span class="kw">CREATE TABLE</span> floor (
+    id INTEGER PRIMARY KEY,
+    building_id INTEGER <span class="kw">REFERENCES</span> building(id),
+    name TEXT NOT NULL   <span style="color:var(--ink-faded);">-- 如 "2 层"</span>
+);
+
+<span class="kw">CREATE TABLE</span> location (
+    id INTEGER PRIMARY KEY,
+    floor_id INTEGER <span class="kw">REFERENCES</span> floor(id),
+    code TEXT NOT NULL,  <span style="color:var(--ink-faded);">-- 如 "A-01"</span>
+    zone_type TEXT
+);
+
+<span style="color:var(--ink-faded);">-- 查询 "1 号楼总在仓"：</span>
+<span class="kw">SELECT</span> SUM(inv.on_hand) <span class="kw">FROM</span> inventory inv
+  <span class="kw">JOIN</span> location l <span class="kw">ON</span> l.id=inv.location_id
+  <span class="kw">JOIN</span> floor f    <span class="kw">ON</span> f.id=l.floor_id
+  <span class="kw">JOIN</span> building b <span class="kw">ON</span> b.id=f.building_id
+<span class="kw">WHERE</span> b.name=<span style="color:var(--ok);">'1 号楼'</span>;
+    </div>
+</div>
+
+<div class="pros-cons">
+    <div class="pros">
+        <strong>★ 优点</strong><br>
+        · 数据结构最严谨，3 层物理坐标完全可表达<br>
+        · 按楼栋 / 楼层精细查询，SQL 直接 JOIN 一气呵成<br>
+        · 适合 5+ 栋楼 / 10+ 层规模（多仓多层楼真实场景）<br>
+        · 楼栋改名只改 1 处，不会出现"1栋 / 1号楼 / 1-栋"乱码
+    </div>
+    <div class="cons">
+        <strong>✗ 缺点</strong><br>
+        · 菜单 +2 项（楼栋号 / 楼层），20 人小团队认知负担重<br>
+        · 建一个库位要点 3 次 picker，频繁操作慢<br>
+        · 实装工作量大：5 张表（building/floor/location + admin/picker 各 2）<br>
+        · 团队规模小时（每栋 1-3 层）属于过度设计
+    </div>
+</div>
+
+</div>
+
+</body>
+</html>

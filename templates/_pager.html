@@ -1,0 +1,20 @@
+{# 通用分页控件。用法：{% from "_pager.html" import pager %} 然后 {{ pager(pg) }}。
+   pg 由后端 _pagination() 提供。链接保留当前所有筛选 query string，只改 page。 #}
+{% macro pager(pg) %}
+{% if pg and pg.total_pages > 1 %}
+{% set qa = request.args.to_dict() %}{% set _ = qa.pop('page', None) %}
+<div class="pager">
+  <span class="pager-info">共 {{ pg.total }} 条 · 第 {{ pg.page }} / {{ pg.total_pages }} 页</span>
+  <span class="pager-btns">
+    {% if pg.has_prev %}
+      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=1, **qa) }}">« 首页</a>
+      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=pg.page-1, **qa) }}">‹ 上一页</a>
+    {% endif %}
+    {% if pg.has_next %}
+      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=pg.page+1, **qa) }}">下一页 ›</a>
+      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=pg.total_pages, **qa) }}">末页 »</a>
+    {% endif %}
+  </span>
+</div>
+{% endif %}
+{% endmacro %}

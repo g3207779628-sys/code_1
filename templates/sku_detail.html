@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ sku.name }} 物品明细{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:12px;">
+    <a class="btn btn-secondary btn-sm" href="javascript:history.back()">‹ 返回</a>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('sku_edit', sku_id=sku.id) }}">编辑</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span>物品明细：{{ sku.name }}{% if sku.spec %} · {{ sku.spec }}{% endif %}</span>
+        <span class="text-tertiary mono" style="font-size:12px;">编号 {{ sku.code }}</span>
+    </div>
+    <div class="card-body">
+        <div style="display:flex; gap:20px; align-items:flex-start;">
+            {% if sku.image_path %}
+            <div style="flex-shrink:0;">
+                <img src="{{ url_for('download_attachment', filepath=sku.image_path) }}"
+                     style="width:140px; height:140px; object-fit:cover; border:1px solid var(--line); border-radius:6px;"
+                     alt="{{ sku.name }}">
+            </div>
+            {% endif %}
+            <div style="flex:1;">
+                <div class="stat-grid" style="border:none; box-shadow:none;">
+                    <div class="stat-card"><div class="num">{{ current_total }}</div><div class="label">当前库存</div></div>
+                    <div class="stat-card"><div class="num">{{ sku.safety_stock }}</div><div class="label">安全库存</div></div>
+                    <div class="stat-card"><div class="num">{{ sku.unit }}</div><div class="label">单位</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">物品信息</div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <tbody>
+                <tr><th style="width:140px;">物资所属单位</th><td>{{ owner_unit or '—' }}</td>
+                    <th style="width:140px;">物资管理方</th><td>{{ owner_party or '—' }}</td></tr>
+                <tr><th>物品类别</th><td>{{ sku.category or '—' }}</td>
+                    <th>物品大类</th><td>{{ sku.category_major or '—' }}</td></tr>
+                <tr><th>规格</th><td>{{ sku.spec or '—' }}</td>
+                    <th>品牌</th><td>{{ sku.brand or '—' }}</td></tr>
+                <tr><th>单价</th><td>{% if sku.cost_price %}¥{{ '%.2f'|format(sku.cost_price) }}{% else %}—{% endif %}</td>
+                    <th>是否在合同内</th><td>{{ '是' if sku.in_contract else '否' }}</td></tr>
+                <tr><th>用途</th><td colspan="3">{{ sku.usage_purpose or '—' }}</td></tr>
+                <tr><th>存放位置</th><td colspan="3">{{ positions|join('、') if positions else '—' }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">采购记录（{{ purchases|length }} 条）</div>
+    <div class="card-body" style="padding:0;">
+        {% if purchases %}
+        <table>
+            <thead><tr><th>采购时间</th><th>采购数量</th><th>存放位置</th><th>入库单号</th></tr></thead>
+            <tbody>
+                {% for p in purchases %}
+                <tr>
+                    <td>{{ p.purchase_time }}</td>
+                    <td class="mono text-success"><strong>+{{ p.quantity }}</strong></td>
+                    <td>{{ p.loc }}</td>
+                    <td class="mono">{{ p.order_no }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<div class="empty">无采购记录</div>{% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">出库流水（{{ outbound_rows|length }} 条）</div>
+    <div class="card-body" style="padding:0;">
+        {% if outbound_rows %}
+        <table>
+            <thead><tr><th>时间</th><th>类型</th><th>存放位置</th><th>数量</th><th>来源单</th><th>备注</th></tr></thead>
+            <tbody>
+                {% for r in outbound_rows %}
+                <tr>
+                    <td>{{ r.occurred_at }}</td>
+                    <td><span class="badge">{{ '出库' if r.event_type == 'outbound' else '报损' }}</span></td>
+                    <td>{{ r.loc }}</td>
+                    <td class="mono text-error">{{ r.delta }}</td>
+                    <td class="mono">{{ r.source_doc or '-' }}</td>
+                    <td class="text-tertiary">{{ r.note or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<div class="empty">无出库 / 报损记录</div>{% endif %}
+    </div>
+</div>
+
+{% endblock %}

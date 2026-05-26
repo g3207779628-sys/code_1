@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}用户与权限{% endblock %}
+{% block content %}
+
+<script>
+// 互斥行为：开任一 exclusive 面板时，关闭所有其他 exclusive 面板（包括其他用户的）
+// 权限面板 (perms-*) 不参与互斥，可多个用户同时打开
+function togglePanel(uid, panelType) {
+    const targetId = panelType + '-' + uid;
+    const target = document.getElementById(targetId);
+    const isOpen = target && target.style.display === '';
+    if (panelType !== 'perms') {
+        // 关闭所有 exclusive 面板
+        document.querySelectorAll('tr.panel-exclusive').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+    if (target) {
+        target.style.display = isOpen ? 'none' : '';
+    }
+}
+function closePanel(uid, panelType) {
+    const target = document.getElementById(panelType + '-' + uid);
+    if (target) target.style.display = 'none';
+}
+
+</script>
+
+<div class="card">
+    <div class="card-header">
+        <span>用户列表（共 {{ users|length }} 人）</span>
+        <span>
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('position_admin') }}">岗位管理 →</a>
+            <a class="btn btn-primary btn-sm" href="{{ url_for('user_new') }}">＋ 新建用户</a>
+        </span>
+    </div>
+
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead>
+                <tr><th>用户名</th><th>岗位</th><th>菜单权限</th><th>创建时间</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                {% set user_positions = (u.position or '').split(',') %}
+                <tr>
+                    <td class="mono">{{ u.username }}{% if u.must_change_password %} <span class="badge">待改密</span>{% endif %}</td>
+                    <td>
+                        {% for code in user_positions %}{% if code %}<span class="badge" style="margin-right:4px;">{{ POSITIONS.get(code, code) }}</span>{% endif %}{% endfor %}
+                        {% if not user_positions or not user_positions[0] %}-{% endif %}
+                    </td>
+                    <td>
+                        {% if u.role == 'admin' %}
+                        <span class="text-tertiary">admin 看全部</span>
+                        {% else %}
+                        <span class="badge">{{ perms[u.id]|length }} 项</span>
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('user_perms', user_id=u.id) }}" style="margin-left:6px;">权限</a>
+                        {% endif %}
+                    </td>
+                    <td class="text-tertiary" style="font-size:12px;">{{ u.created_at }}</td>
+                    <td class="actions">
+                        {% if u.role != 'admin' or session.role == 'admin' %}
+                        <button class="btn btn-sm btn-primary" onclick="togglePanel({{ u.id }}, 'edit')">编辑</button>
+                        <button class="btn btn-sm btn-link" onclick="togglePanel({{ u.id }}, 'view')">查看</button>
+                        <button class="btn btn-sm btn-link" onclick="togglePanel({{ u.id }}, 'pwd')">重置密码</button>
+                        {% if u.id != session.user_id %}
+                        <form method="post" style="display:inline;" onsubmit="return confirm('确定删除 {{ u.username }}？');">
+                            <input type="hidden" name="action" value="delete_user">
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <!-- 编辑面板（exclusive） -->
+                <tr id="edit-{{ u.id }}" class="panel-exclusive" style="display:none; background:var(--bg-alt);">
+                    <td colspan="5">
+                        <form method="post" style="padding:8px 0;">
+                            <input type="hidden" name="action" value="update_user">
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
+                                <div class="form-row" style="margin:0;">
+                                    <label>用户名 *</label>
+                                    <input type="text" name="username" value="{{ u.username }}" required>
+                                </div>
+                                <div class="form-row" style="margin:0;">
+                                    <label>岗位<span style="font-weight:400; color:var(--ink-quiet); font-size:11px;">（多选）</span></label>
+                                    <div style="display:flex; gap:6px; align-items:center;">
+                                        <input type="hidden" name="position" id="edit-pos-{{ u.id }}" value="{{ u.position or '' }}">
+                                        <span class="picker-label" id="edit-pos-{{ u.id }}-label" style="padding:4px 8px; background:var(--bg-alt); border-radius:4px; min-width:160px; display:inline-block;">
+                                            {% for code in user_positions %}{% if code %}{{ POSITIONS.get(code, code) }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}
+                                            {% if not user_positions or not user_positions[0] %}未选择{% endif %}
+                                        </span>
+                                        <button type="button" class="btn btn-sm" onclick="openPicker('position', 'edit-pos-{{ u.id }}', {multi: 1, current: document.getElementById('edit-pos-{{ u.id }}').value})">选岗位</button>
+                                    </div>
+                                </div>
+                                <div class="form-row" style="margin:0;">
+                                    <label>邮箱<span style="font-weight:400; color:var(--ink-quiet); font-size:11px;">（收邮件预警）</span></label>
+                                    <input type="email" name="email" value="{{ u.email or '' }}" placeholder="留空则不发邮件给他">
+                                </div>
+                                <div class="form-row" style="margin:0;">
+                                    <label>手机号<span style="font-weight:400; color:var(--ink-quiet); font-size:11px;">（收短信预警）</span></label>
+                                    <input type="text" name="phone" value="{{ u.phone or '' }}" placeholder="11 位手机号">
+                                </div>
+                                <div></div>
+                            </div>
+                            <div style="margin-top:12px;">
+                                <button class="btn btn-primary btn-sm" type="submit">保存</button>
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="closePanel({{ u.id }}, 'edit')">取消</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+
+                <!-- 查看面板（exclusive） -->
+                <tr id="view-{{ u.id }}" class="panel-exclusive" style="display:none;">
+                    <td colspan="5" style="background:var(--bg-soft); padding:0;">
+                        <div style="margin:12px 14px; padding:16px 20px; background:var(--bg-card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:6px;">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--line-soft);">
+                                <strong style="font-size:15px; color:var(--ink);">{{ u.username }}</strong>
+                                <span class="tag" style="background:var(--accent-soft); color:var(--accent-deep); border:1px solid var(--accent-fade); padding:2px 8px; border-radius:3px; font-size:11px;">{{ u.role }}</span>
+                                {% set user_positions_view = (u.position or '').split(',') %}
+                                {% for code in user_positions_view %}{% if code %}<span class="tag" style="background:var(--bg-soft); border:1px solid var(--line); padding:2px 8px; border-radius:3px; font-size:11px; color:var(--ink-soft);">{{ POSITIONS.get(code, code) }}</span>{% endif %}{% endfor %}
+                                {% if u.must_change_password %}<span class="tag" style="background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn); padding:2px 8px; border-radius:3px; font-size:11px;">待改密</span>{% endif %}
+                            </div>
+
+                            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px 24px; font-size:13px; margin-bottom:14px;">
+                                <div>
+                                    <div style="color:var(--ink-quiet); font-size:11px; margin-bottom:3px;">邮箱</div>
+                                    <div style="color:var(--ink);">{{ u.email or '—' }}</div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--ink-quiet); font-size:11px; margin-bottom:3px;">手机号</div>
+                                    <div style="color:var(--ink);">{{ u.phone or '—' }}</div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--ink-quiet); font-size:11px; margin-bottom:3px;">创建时间</div>
+                                    <div style="color:var(--ink); font-family:var(--font-mono); font-size:12px;">{{ u.created_at }}</div>
+                                </div>
+                            </div>
+
+                            <div style="padding-top:12px; border-top:1px solid var(--line-soft);">
+                                <div style="color:var(--ink-quiet); font-size:11px; margin-bottom:8px;">菜单权限 <span style="color:var(--accent-deep); font-weight:600;">{{ perms[u.id]|length }}</span> 项</div>
+                                {% if u.role == 'admin' %}
+                                <div style="padding:8px 12px; background:var(--accent-soft); border:1px solid var(--accent-fade); border-radius:4px; color:var(--accent-deep); font-size:13px;">
+                                    管理员角色 · 自动拥有全部菜单权限
+                                </div>
+                                {% elif perms[u.id] %}
+                                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                    {% for k in perms[u.id]|sort %}
+                                    <span style="display:inline-block; padding:4px 10px; background:#fff; border:1px solid var(--accent); border-radius:3px; font-size:12px; color:var(--accent-deep); font-weight:500;">{{ menu_labels.get(k, k) }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div style="color:var(--ink-quiet); font-size:12px;">（无菜单权限）</div>
+                                {% endif %}
+                            </div>
+
+                            <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line-soft); text-align:right;">
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="closePanel({{ u.id }}, 'view')">关闭</button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- 重置密码面板（exclusive） -->
+                <tr id="pwd-{{ u.id }}" class="panel-exclusive" style="display:none; background:var(--bg-alt);">
+                    <td colspan="5">
+                        <form method="post" style="padding:8px 0; display:flex; gap:8px; align-items:end;">
+                            <input type="hidden" name="action" value="reset_password">
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <div class="form-row" style="margin:0;">
+                                <label>{{ u.username }} 的新密码（≥ 6 位）</label>
+                                <input type="text" name="new_password" minlength="6" required>
+                            </div>
+                            <button class="btn btn-primary btn-sm" type="submit">重置</button>
+                            <button class="btn btn-secondary btn-sm" type="button" onclick="closePanel({{ u.id }}, 'pwd')">取消</button>
+                            <div class="text-tertiary" style="font-size:12px;">重置后对方下次登录需修改</div>
+                        </form>
+                    </td>
+                </tr>
+
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

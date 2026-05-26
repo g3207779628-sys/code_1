@@ -1,37 +1,134 @@
 {% extends "base.html" %}
-{% block title %}新增库位{% endblock %}
+{% block title %}{% if location %}编辑{% else %}新建{% endif %}库位{% endblock %}
+{% block crumb %}<span class="sep">/</span><a href="{{ url_for('location_list') }}">库位</a><span class="sep">/</span><span class="current">{% if location %}编辑{% else %}新建{% endif %}</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">新增库位</div>
-    <div class="card-body">
-        <form method="post">
-            <div class="form-row">
-                <label>所属仓库 <span style="color:var(--color-out);">*</span></label>
-                <select name="warehouse_id" required>
-                    {% for w in warehouses %}
-                    <option value="{{ w.id }}">{{ w.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-row">
-                <label>库位编码 <span style="color:var(--color-out);">*</span></label>
-                <input type="text" name="code" required placeholder="如 A-01-01">
-            </div>
-            <div class="form-row">
-                <label>分区类型 <span style="color:var(--color-out);">*</span></label>
-                <select name="zone_type" required>
-                    <option value="normal">常温区</option>
-                    <option value="cold" selected>冷藏区</option>
-                    <option value="freeze">冷冻区</option>
-                    <option value="isolation">隔离区（不良品/待处理）</option>
-                    <option value="downgrade">降级区（临期/退货品）</option>
-                </select>
-            </div>
-            <button class="btn" type="submit">保存</button>
-            <a class="btn btn-secondary" href="{{ url_for('location_list') }}">取消</a>
-        </form>
+<form method="post" id="location-form" enctype="multipart/form-data">
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">{% if location %}编辑库位：{{ location.storage_area }} / {{ location.storage_position }}{% else %}新建库位{% endif %}</div>
+            <div class="page-sub">所有选择都跳新页 picker 完成 · 没有数据可在 picker 内 + 新建</div>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('location_list') }}">取消返回</a>
     </div>
-</div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>基本信息</h3><span class="meta">必填 2 项</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>所属仓库 <span class="req" style="color:var(--accent);">*</span></label>
+                    <div class="picker-btn" onclick="openPicker('warehouse', 'warehouse-id')">
+                        <input type="hidden" name="warehouse_id" id="warehouse-id" required value="{{ location.warehouse_id if location else '' }}">
+                        <span class="picker-label {% if not (location and location.warehouse_id) %}empty{% endif %}" id="warehouse-id-label">{{ wh_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>存放区域 <span class="req" style="color:var(--accent);">*</span> <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">输入可搜已有，也可填新的</span></label>
+                    <input type="text" name="storage_area" required list="area-options" autocomplete="off" value="{{ location.storage_area if location else '' }}" placeholder="如 A区 / 1号楼东">
+                    <datalist id="area-options">{% for a in area_options or [] %}<option value="{{ a }}">{% endfor %}</datalist>
+                </div>
+                <div class="form-row">
+                    <label>存放位置 <span class="req" style="color:var(--accent);">*</span> <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">具体点位，输入可搜已有</span></label>
+                    <input type="text" name="storage_position" required list="position-options" autocomplete="off" value="{{ location.storage_position if location else '' }}" placeholder="如 03-02 / 3号货架">
+                    <datalist id="position-options">{% for p in position_options or [] %}<option value="{{ p }}">{% endfor %}</datalist>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>归属与责任</h3><span class="meta">4 个 picker · 点跳新页选择 / 内嵌新建</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>类型</label>
+                    <div class="picker-btn" onclick="openPicker('wh-type', 'wh-type-id')">
+                        <input type="hidden" name="wh_type_id" id="wh-type-id" value="{{ location.wh_type_id if location else '' }}">
+                        <span class="picker-label {% if not (location and location.wh_type_id) %}empty{% endif %}" id="wh-type-id-label">{{ wh_type_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>责任人</label>
+                    <div class="picker-btn" onclick="openPicker('wh-owner', 'owner-user-id')">
+                        <input type="hidden" name="resp_owner_id" id="owner-user-id" value="{{ location.resp_owner_id if location else '' }}">
+                        <span class="picker-label {% if not (location and location.resp_owner_id) %}empty{% endif %}" id="owner-user-id-label">{{ owner_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>分配部门</label>
+                    <div class="picker-btn" onclick="openPicker('wh-alloc-dept', 'alloc-dept-id')">
+                        <input type="hidden" name="alloc_dept_id" id="alloc-dept-id" value="{{ location.alloc_dept_id if location else '' }}">
+                        <span class="picker-label {% if not (location and location.alloc_dept_id) %}empty{% endif %}" id="alloc-dept-id-label">{{ alloc_dept_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>使用部门</label>
+                    <div class="picker-btn" onclick="openPicker('wh-use-dept', 'use-dept-id')">
+                        <input type="hidden" name="use_dept_id" id="use-dept-id" value="{{ location.use_dept_id if location else '' }}">
+                        <span class="picker-label {% if not (location and location.use_dept_id) %}empty{% endif %}" id="use-dept-id-label">{{ use_dept_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>备注与附件</h3><span class="meta">可选</span></div>
+        <div class="body">
+            <div class="form-row">
+                <label>备注 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">如：本库位用于储存高价值物品，进出需 admin 审批</span></label>
+                <textarea name="note" rows="2">{{ location.note if location else '' }}</textarea>
+            </div>
+            {% if location and location.attachments %}
+            <div class="form-row">
+                <label>已上传附件</label>
+                <div style="background:var(--bg-soft); padding:8px 12px; border:1px solid var(--line); border-radius:4px;">
+                    {% for path in location.attachments|attachments_list %}
+                    <div style="font-size:12px; padding:3px 0;">
+                        <a href="{{ url_for('download_attachment', filepath=path) }}" target="_blank" style="color:var(--accent);">{{ path.split('/')[-1] }}</a>
+                        <span class="text-tertiary" style="font-size:11px; color:var(--ink-quiet);"> · {{ path }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            <div class="form-row">
+                <label>{{ '继续上传附件' if (location and location.attachments) else '附件' }} <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可多选 · 单文件 ≤ 10MB</span></label>
+                <label class="upload-zone" style="cursor:pointer;">
+                    <div class="big">+ 上传</div>
+                    <div>库位照片 / 整改记录 / 验收单</div>
+                    <div class="hint">jpg / png / pdf / xlsx · 单文件 ≤ 10MB</div>
+                    <input type="file" name="attachments[]" multiple>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left"></div>
+        <div class="right">
+            <a class="btn btn-secondary" href="{{ url_for('location_list') }}">取消</a>
+            <button class="btn btn-primary" type="submit">{% if location %}保存修改{% else %}创建库位{% endif %}</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+// picker 回填同步 empty 类
+document.addEventListener('change', e => {
+    if (e.target.type === 'hidden' && e.target.id) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) lbl.classList.toggle('empty', !e.target.value);
+    }
+});
+</script>
 
 {% endblock %}

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>视觉规范 · 色板与组件 · 金山仓储</title>
+<link rel="stylesheet" href="ui_cream_shared.css">
+<style>
+.page { max-width: 1100px; margin: 0 auto; padding: 40px 32px; }
+.section { margin-bottom: 48px; }
+.section h2 {
+    font-size: 22px; font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+.section .desc { color: var(--ink-quiet); font-size: 13px; margin-bottom: 20px; }
+.section-mark {
+    font-family: monospace;
+    font-size: 11px; color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.swatch-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+}
+.swatch {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+}
+.swatch .color {
+    height: 80px;
+}
+.swatch .meta { padding: 10px 14px; }
+.swatch .name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.swatch .var { font-family: monospace; font-size: 10px; color: var(--ink-quiet); margin-bottom: 4px; }
+.swatch .hex { font-family: monospace; font-size: 11px; color: var(--accent); }
+
+.comp-row {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 24px;
+    align-items: center;
+}
+.comp-row .label {
+    font-size: 13px; font-weight: 600;
+    color: var(--ink);
+}
+.comp-row .label .var { font-family: monospace; font-size: 10px; color: var(--ink-quiet); display: block; margin-top: 2px; }
+
+.type-sample {
+    display: flex; flex-direction: column; gap: 16px;
+}
+.type-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 24px;
+    align-items: baseline;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+}
+.type-row .meta {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--ink-quiet);
+}
+.type-row .demo {
+    color: var(--ink);
+}
+
+.donts {
+    background: #FFF7F5;
+    border: 1px solid #F5C2C0;
+    border-left: 3px solid var(--err);
+    padding: 16px 22px;
+    border-radius: var(--r-md);
+    margin-top: 14px;
+}
+.donts h4 { color: var(--err); margin-bottom: 10px; font-size: 13px; font-weight: 600; }
+.donts ul { padding-left: 20px; font-size: 13px; line-height: 1.9; color: var(--ink-soft); }
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--ink-quiet);
+}
+.back-link:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>视觉规范</strong> · 暖米白 + 橙色点缀 · 完整色板与组件</div>
+
+<div class="page">
+    <a href="ui_redesign_index.html" class="back-link">‹ 返回方案对比</a>
+
+    <h1 style="font-size: 38px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px;">视觉规范</h1>
+    <p style="color: var(--ink-quiet); margin-bottom: 40px; max-width: 600px;">
+        本规范适用于 3 套 UI 方案（A 纯净 / B 显眼 / C hybrid），所有方案使用相同色板、字体、组件类，差异只在密度和强调度。
+    </p>
+
+    <!-- 色板 -->
+    <div class="section">
+        <div class="section-mark">// COLOR PALETTE</div>
+        <h2>1. 色板</h2>
+        <div class="desc">9 个核心色 + 5 个状态色。所有颜色都在 <code>:root</code> 定义为 CSS 变量。</div>
+
+        <h4 style="font-size: 13px; color: var(--ink-quiet); margin: 14px 0 10px; letter-spacing: 1px;">背景层级</h4>
+        <div class="swatch-grid">
+            <div class="swatch"><div class="color" style="background:#FBFAF7;"></div><div class="meta"><div class="name">主背景 暖米白</div><div class="var">--bg-warm</div><div class="hex">#FBFAF7</div></div></div>
+            <div class="swatch"><div class="color" style="background:#FFFFFF; border-bottom:1px solid var(--line);"></div><div class="meta"><div class="name">卡片 纯白</div><div class="var">--bg-card</div><div class="hex">#FFFFFF</div></div></div>
+            <div class="swatch"><div class="color" style="background:#EFE9DF;"></div><div class="meta"><div class="name">输入框 浅米灰</div><div class="var">--bg-input</div><div class="hex">#EFE9DF</div></div></div>
+            <div class="swatch"><div class="color" style="background:#FFF3E8;"></div><div class="meta"><div class="name">浅橙强调底</div><div class="var">--bg-accent-soft</div><div class="hex">#FFF3E8</div></div></div>
+        </div>
+
+        <h4 style="font-size: 13px; color: var(--ink-quiet); margin: 24px 0 10px; letter-spacing: 1px;">文字</h4>
+        <div class="swatch-grid">
+            <div class="swatch"><div class="color" style="background:#2F2A26;"></div><div class="meta"><div class="name">主文字 深棕黑</div><div class="var">--ink</div><div class="hex">#2F2A26</div></div></div>
+            <div class="swatch"><div class="color" style="background:#3A3530;"></div><div class="meta"><div class="name">次文字</div><div class="var">--ink-soft</div><div class="hex">#3A3530</div></div></div>
+            <div class="swatch"><div class="color" style="background:#6B6661;"></div><div class="meta"><div class="name">辅文字 灰棕</div><div class="var">--ink-quiet</div><div class="hex">#6B6661</div></div></div>
+            <div class="swatch"><div class="color" style="background:#B8B5B0;"></div><div class="meta"><div class="name">极淡 placeholder</div><div class="var">--ink-faded</div><div class="hex">#B8B5B0</div></div></div>
+        </div>
+
+        <h4 style="font-size: 13px; color: var(--ink-quiet); margin: 24px 0 10px; letter-spacing: 1px;">辅助色 — 橙</h4>
+        <div class="swatch-grid">
+            <div class="swatch"><div class="color" style="background:#D97737;"></div><div class="meta"><div class="name">主橙</div><div class="var">--accent</div><div class="hex">#D97737</div></div></div>
+            <div class="swatch"><div class="color" style="background:#F08032;"></div><div class="meta"><div class="name">亮橙</div><div class="var">--accent-light</div><div class="hex">#F08032</div></div></div>
+            <div class="swatch"><div class="color" style="background:#C45F1C;"></div><div class="meta"><div class="name">深橙（hover）</div><div class="var">--accent-deep</div><div class="hex">#C45F1C</div></div></div>
+            <div class="swatch"><div class="color" style="background:#FFF3E8;"></div><div class="meta"><div class="name">浅橙底</div><div class="var">--accent-soft</div><div class="hex">#FFF3E8</div></div></div>
+        </div>
+    </div>
+
+    <!-- 字体 -->
+    <div class="section">
+        <div class="section-mark">// TYPOGRAPHY</div>
+        <h2>2. 字体</h2>
+        <div class="desc">中文：PingFang SC / Microsoft YaHei；数字 / 流水：monospace。Hero 大字用 letter-spacing 拉开。</div>
+
+        <div class="type-sample" style="background:var(--bg-card); border:1px solid var(--line); border-radius:var(--r-md); padding: 20px 28px;">
+            <div class="type-row"><div class="meta">Hero · 88-104px / 800 / spacing 10-16px</div><div class="demo" style="font-size:64px;font-weight:800;color:var(--accent);letter-spacing:8px;line-height:1;">WELCOME</div></div>
+            <div class="type-row"><div class="meta">大标题 · 28px / 800 / -1px</div><div class="demo" style="font-size:28px;font-weight:800;letter-spacing:-1px;">仓库经理工作台</div></div>
+            <div class="type-row"><div class="meta">页标题 · 22px / 700</div><div class="demo" style="font-size:22px;font-weight:700;">新建入库单</div></div>
+            <div class="type-row"><div class="meta">副标题 · 22px / 300 / spacing 6px</div><div class="demo" style="font-size:22px;font-weight:300;letter-spacing:6px;color:var(--ink-quiet);">金山仓储</div></div>
+            <div class="type-row"><div class="meta">卡片标题 · 15-16px / 600</div><div class="demo" style="font-size:15px;font-weight:600;">待审批入库单</div></div>
+            <div class="type-row"><div class="meta">正文 · 14px / 400</div><div class="demo">这是一段正文示例文字，描述某个商品的库存情况</div></div>
+            <div class="type-row"><div class="meta">辅文字 · 13px / 400 / quiet</div><div class="demo" style="color:var(--ink-quiet);">最近 14 天的出库流水</div></div>
+            <div class="type-row"><div class="meta">小标 · 11px / 600 / uppercase / spacing 2px</div><div class="demo" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--ink-quiet);">PENDING ACTIONS</div></div>
+            <div class="type-row"><div class="meta">KPI 数字 · 28px / 800 / tabular</div><div class="demo" style="font-size:28px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;">2,847</div></div>
+            <div class="type-row"><div class="meta">mono 流水 · 12px / monospace</div><div class="demo" style="font-family:monospace;font-size:12px;">RKD-20260521-001 · 14:08:32 · +20</div></div>
+        </div>
+    </div>
+
+    <!-- 组件 -->
+    <div class="section">
+        <div class="section-mark">// COMPONENTS</div>
+        <h2>3. 核心组件</h2>
+        <div class="desc">所有组件类都在 <code>ui_cream_shared.css</code> 定义。</div>
+
+        <div class="comp-row">
+            <div class="label">主按钮<span class="var">.btn-primary</span></div>
+            <div><button class="btn btn-primary">提交</button> &nbsp; <button class="btn btn-primary btn-sm">小按钮</button> &nbsp; <button class="btn btn-primary btn-lg">大按钮</button></div>
+        </div>
+        <div class="comp-row">
+            <div class="label">次按钮<span class="var">.btn</span></div>
+            <div><button class="btn">取消</button> &nbsp; <button class="btn btn-sm">小</button></div>
+        </div>
+        <div class="comp-row">
+            <div class="label">危险按钮<span class="var">.btn-danger</span></div>
+            <div><button class="btn btn-danger">删除</button> &nbsp; <button class="btn btn-danger btn-sm">删</button></div>
+        </div>
+        <div class="comp-row">
+            <div class="label">输入框<span class="var">input / .field</span></div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <input type="text" placeholder="Describe a tweak..." style="width:280px;">
+                <input type="search" placeholder="搜索..." style="width:200px;">
+            </div>
+        </div>
+        <div class="comp-row">
+            <div class="label">Tag / Badge<span class="var">.tag-*</span></div>
+            <div>
+                <span class="tag tag-default">默认</span>
+                <span class="tag tag-accent">橙色</span>
+                <span class="tag tag-success">通过</span>
+                <span class="tag tag-warn">待审</span>
+                <span class="tag tag-error">驳回</span>
+            </div>
+        </div>
+        <div class="comp-row">
+            <div class="label">KPI 数字卡<span class="var">.kpi</span></div>
+            <div style="display:flex;gap:14px;">
+                <div class="kpi" style="min-width:140px;"><div class="label">在仓</div><div class="num">2,847</div></div>
+                <div class="kpi accent" style="min-width:140px;"><div class="label">待审</div><div class="num">8</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 禁忌 -->
+    <div class="section">
+        <div class="section-mark">// DON'TS</div>
+        <h2>4. 禁忌</h2>
+        <div class="donts">
+            <h4>不要这样做</h4>
+            <ul>
+                <li>❌ 纯白背景占主导（除卡片内部），整体用 <code>#FBFAF7</code> 暖米白</li>
+                <li>❌ 深色 sidebar（旧 Ant Pro 风的 <code>#001529</code>）</li>
+                <li>❌ 蓝色（旧 Stripe 深墨蓝、Ant 蓝）</li>
+                <li>❌ 深绿（旧工业风的 <code>#2F4F3E</code>）</li>
+                <li>❌ border-radius > 12px</li>
+                <li>❌ 装饰性 emoji（除非用户明确要）</li>
+                <li>❌ 渐变背景（除欢迎页 hero 用 radial-gradient）</li>
+                <li>❌ 阴影过重（最多 <code>0 4px 16px rgba(217,119,55,0.12)</code>）</li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

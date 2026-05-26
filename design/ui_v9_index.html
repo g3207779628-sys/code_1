@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v9 设计方案对比 · 公共欢迎页 + 通用首页 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body {
+    background: var(--bg-soft);
+    font-size: 13px;
+    padding: 32px 40px;
+    color: var(--ink);
+}
+.v9-page {
+    max-width: 1280px;
+    margin: 0 auto;
+}
+.v9-head {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+}
+.v9-head .pre {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-deep);
+    letter-spacing: 5px;
+    margin-bottom: 8px;
+}
+.v9-head h1 {
+    font-size: 28px;
+    letter-spacing: 4px;
+    margin-bottom: 14px;
+    font-weight: 800;
+}
+.v9-head h1 .accent { color: var(--accent-deep); }
+.v9-head .lead {
+    font-size: 13px;
+    color: var(--ink-quiet);
+    line-height: 1.8;
+    max-width: 880px;
+}
+.v9-head .lead strong { color: var(--ink); font-weight: 600; }
+
+.v9-decision {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent-deep);
+    padding: 14px 20px;
+    margin-top: 18px;
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+.v9-decision .title {
+    font-size: 11px; font-weight: 700;
+    color: var(--accent-deep);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+}
+.v9-decision .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    font-size: 12px;
+}
+.v9-decision .grid .item {
+    display: flex; flex-direction: column; gap: 4px;
+}
+.v9-decision .grid .k {
+    font-size: 10px; color: var(--ink-quiet);
+    letter-spacing: 2px; text-transform: uppercase;
+}
+.v9-decision .grid .v {
+    color: var(--ink-soft);
+}
+
+.v9-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 24px;
+}
+.v9-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+.v9-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+}
+.v9-card .thumb {
+    height: 220px;
+    background:
+        radial-gradient(circle at 30% 30%, var(--accent-soft) 0%, var(--bg-base) 60%),
+        radial-gradient(circle at 75% 70%, var(--bg-soft) 0%, var(--bg-base) 50%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+}
+.v9-card .thumb .pre {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: var(--accent-deep);
+    margin-bottom: 6px;
+}
+.v9-card .thumb .mega {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: 5px;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+.v9-card .thumb .mega .fill { color: var(--accent-deep); }
+.v9-card .thumb .mega .stroke {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--accent-deep);
+}
+.v9-card .thumb .sub {
+    font-size: 9px; color: var(--ink-soft);
+    letter-spacing: 4px;
+}
+.v9-card .thumb .extra {
+    position: absolute;
+    bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px;
+}
+.v9-card .thumb .extra .dot {
+    width: 32px; height: 5px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+}
+.v9-card .thumb .extra .dot.accent { background: var(--accent); border-color: var(--accent); }
+.v9-card .body {
+    padding: 18px 22px 20px;
+    flex: 1;
+    display: flex; flex-direction: column;
+}
+.v9-card .tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 2px 8px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    border-radius: 2px;
+    margin-bottom: 10px;
+    align-self: flex-start;
+    font-weight: 600;
+}
+.v9-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+.v9-card .desc {
+    font-size: 12px;
+    color: var(--ink-quiet);
+    line-height: 1.7;
+    margin-bottom: 14px;
+    min-height: 60px;
+}
+.v9-card .links {
+    display: flex; gap: 8px;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+}
+.v9-card .links a {
+    flex: 1;
+    text-align: center;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+.v9-card .links a.primary {
+    background: var(--accent);
+    color: #FFF;
+}
+.v9-card .links a.primary:hover { background: var(--accent-deep); }
+.v9-card .links a.secondary {
+    background: var(--bg-input);
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+}
+.v9-card .links a.secondary:hover {
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    border-color: var(--accent);
+}
+
+.v9-compare {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+}
+.v9-compare h2 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--ink-quiet);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+}
+table.v9-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+table.v9-table th, table.v9-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-soft);
+}
+table.v9-table th {
+    background: var(--bg-input);
+    color: var(--ink-soft);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+table.v9-table td.center { text-align: center; }
+table.v9-table td.score { font-family: var(--font-mono); color: var(--accent-deep); letter-spacing: 1px; }
+table.v9-table tr.best { background: var(--accent-soft); }
+table.v9-table tr.best td { font-weight: 600; }
+.v9-rec {
+    background: var(--ok-bg);
+    border-left: 3px solid var(--ok);
+    padding: 16px 22px;
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+    margin-top: 18px;
+}
+.v9-rec .pre {
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--ok); font-weight: 700;
+    margin-bottom: 6px;
+}
+.v9-rec .text {
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.7;
+}
+.v9-rec .text strong { color: var(--accent-deep); }
+
+.v9-flow {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 24px 28px;
+}
+.v9-flow h2 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--ink-quiet);
+    margin-bottom: 18px;
+    text-transform: uppercase;
+}
+.v9-flow .steps {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.v9-flow .step {
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 12px 18px;
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+}
+.v9-flow .step .n {
+    position: absolute;
+    top: -8px; left: 14px;
+    background: var(--accent);
+    color: #FFF;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    font-family: var(--font-mono);
+}
+.v9-flow .step .title {
+    font-size: 13px; font-weight: 600;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    color: var(--ink);
+}
+.v9-flow .step .url {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-deep);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+.v9-flow .step .what {
+    font-size: 11px;
+    color: var(--ink-quiet);
+    line-height: 1.6;
+}
+.v9-flow .arrow {
+    color: var(--ink-faded);
+    font-size: 18px;
+    font-family: var(--font-mono);
+}
+
+.foot {
+    margin-top: 32px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--ink-faded);
+}
+.foot a { color: var(--ink-quiet); text-decoration: none; }
+.foot a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="v9-page">
+
+    <!-- ====== 头部说明 ====== -->
+    <div class="v9-head">
+        <div class="pre">// V9 · WELCOME REDESIGN · 2026-05</div>
+        <h1><span class="accent">v9</span> 设计方案对比 · 公共欢迎页 + 通用首页</h1>
+        <div class="lead">
+            v8 已上线（纯白 + 橙红 #FF4500）。本次 v9 解决两个使用痛点：<strong>未登录访客直接撞登录页（不友好）</strong>、<strong>没工作台权限的岗位登录后看到空 dashboard（无家可归）</strong>。
+            做法：新增公共 <code>/</code> 让访客也能看到门面 hero；改造 <code>/welcome</code> 为图二风格的通用首页，所有岗位都看一样的中央 hero，按方案差异化的弱引导内容。
+        </div>
+
+        <div class="v9-decision">
+            <div class="title">// 4 个对齐决策（已确认）</div>
+            <div class="grid">
+                <div class="item">
+                    <div class="k">橙红</div>
+                    <div class="v">保持 v8 <code>#FF4500</code>；hero 装饰用 <code>#D63A00</code>（深一档）</div>
+                </div>
+                <div class="item">
+                    <div class="k">侧栏</div>
+                    <div class="v">保持 v8 白底（不用图二橙底，符合 v8 禁忌）</div>
+                </div>
+                <div class="item">
+                    <div class="k">路由</div>
+                    <div class="v"><code>/</code> 公共 + <code>/welcome</code> 通用（dashboard 保留）</div>
+                </div>
+                <div class="item">
+                    <div class="k">方案数</div>
+                    <div class="v">3 个 — A 极简 / B 信息卡 / C 业务磁贴</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 跳转流程 ====== -->
+    <div class="v9-flow">
+        <h2>跳转流程（3 方案共用）</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="n">1</div>
+                <div class="title">访客打开网址</div>
+                <div class="url">GET /</div>
+                <div class="what">未登录 → 看公共欢迎页（hero + "进入管理系统"按钮）</div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="step">
+                <div class="n">2</div>
+                <div class="title">点击"进入管理系统"</div>
+                <div class="url">GET /login</div>
+                <div class="what">跳标准登录页（v8 已实装的居中小卡片）</div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="step">
+                <div class="n">3</div>
+                <div class="title">登录成功</div>
+                <div class="url">GET /welcome</div>
+                <div class="what">通用首页（图二风格，无论有无工作台权限都能看）</div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="step">
+                <div class="n">4</div>
+                <div class="title">点"进入工作台"（如有权限）</div>
+                <div class="url">GET /dashboard</div>
+                <div class="what">按岗位分发到原 11 个 dashboard_*.html</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== 3 方案卡片 ====== -->
+    <div class="v9-cards" style="margin-top: 24px;">
+
+        <!-- 方案 A -->
+        <div class="v9-card">
+            <div class="thumb">
+                <div class="pre">KINGSOFT WAREHOUSE</div>
+                <div class="mega"><span class="fill">WEL</span><span class="stroke">COME</span></div>
+                <div class="sub">金山仓库管理</div>
+                <div class="extra">
+                    <div class="dot accent"></div>
+                </div>
+            </div>
+            <div class="body">
+                <span class="tag">A · 极简 HERO</span>
+                <h3>满屏 hero · 仅 1 个按钮</h3>
+                <div class="desc">公共页和已登录页都只有中央 hero + 一个橙红按钮。最大化视觉冲击，几乎没有其他元素分散注意力。</div>
+                <div class="links">
+                    <a class="secondary" href="ui_v9_a_public.html">公共 / →</a>
+                    <a class="primary" href="ui_v9_a_welcome.html">已登录 /welcome →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案 B -->
+        <div class="v9-card">
+            <div class="thumb">
+                <div class="pre">KINGSOFT WAREHOUSE</div>
+                <div class="mega"><span class="fill">WEL</span><span class="stroke">COME</span></div>
+                <div class="sub">金山仓库管理</div>
+                <div class="extra">
+                    <div class="dot accent"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+            <div class="body">
+                <span class="tag">B · 信息卡平衡</span>
+                <h3>hero + 用户卡 + 4 快捷入口</h3>
+                <div class="desc">已登录页中央 hero 下方加一张用户欢迎卡（姓名/岗位/加入时间），再下方 4 个常用功能快捷链接。视觉与信息平衡。</div>
+                <div class="links">
+                    <a class="secondary" href="ui_v9_b_public.html">公共 / →</a>
+                    <a class="primary" href="ui_v9_b_welcome.html">已登录 /welcome →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案 C -->
+        <div class="v9-card">
+            <div class="thumb">
+                <div class="pre">KINGSOFT WAREHOUSE</div>
+                <div class="mega"><span class="fill">WEL</span><span class="stroke">COME</span></div>
+                <div class="sub">金山仓库管理</div>
+                <div class="extra">
+                    <div class="dot accent"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+            <div class="body">
+                <span class="tag">C · 业务磁贴</span>
+                <h3>hero + 6 大业务入口磁贴</h3>
+                <div class="desc">已登录页 hero 下方铺 6 个大业务入口磁贴（入库 / 出库 / 调拨 / 报损 / 盘点 / 库存查询），按权限过滤显示。强引导。</div>
+                <div class="links">
+                    <a class="secondary" href="ui_v9_c_public.html">公共 / →</a>
+                    <a class="primary" href="ui_v9_c_welcome.html">已登录 /welcome →</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ====== 选型对比表 ====== -->
+    <div class="v9-compare">
+        <h2>// 4 维度对比</h2>
+        <table class="v9-table">
+            <thead>
+                <tr>
+                    <th>维度</th>
+                    <th class="center">A 极简 hero</th>
+                    <th class="center">B 信息卡平衡</th>
+                    <th class="center">C 业务磁贴</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>视觉冲击力</td>
+                    <td class="center score">★★★★★</td>
+                    <td class="center score">★★★★</td>
+                    <td class="center score">★★★</td>
+                </tr>
+                <tr>
+                    <td>信息密度（每屏传达多少）</td>
+                    <td class="center score">★</td>
+                    <td class="center score">★★★</td>
+                    <td class="center score">★★★★★</td>
+                </tr>
+                <tr class="best">
+                    <td>对"没工作台权限的用户"友好</td>
+                    <td class="center score">★★★</td>
+                    <td class="center score">★★★★</td>
+                    <td class="center score">★★★★★</td>
+                </tr>
+                <tr>
+                    <td>上线工作量（实装 .py + .html 改动）</td>
+                    <td class="center score">★（最小，约 100 行）</td>
+                    <td class="center score">★★（约 180 行）</td>
+                    <td class="center score">★★★（约 250 行 + 权限过滤逻辑）</td>
+                </tr>
+                <tr>
+                    <td>主题色定位</td>
+                    <td class="center">hero 占满，按钮唯一 accent</td>
+                    <td class="center">hero + 用户卡头像 + 入口图标都 accent</td>
+                    <td class="center">磁贴边线 + 数字 + 链接全 accent</td>
+                </tr>
+                <tr>
+                    <td>适合什么时候选</td>
+                    <td class="center">追求门面感、首屏惊艳</td>
+                    <td class="center">日常使用平衡型</td>
+                    <td class="center">新员工多 / 工具入口分散</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="v9-rec">
+            <div class="pre">// RECOMMENDED</div>
+            <div class="text">
+                推荐 <strong>方案 B（信息卡平衡）</strong>。理由：
+                <br>① 用户卡显示"display_name + 岗位 + 加入时间"，每个登录用户都能感到"被认出来了"，比纯 hero 更有亲和力；
+                <br>② 4 个快捷入口比 C 的 6 个磁贴更克制，不会让首页变成第二个 dashboard；
+                <br>③ 实装工作量适中，hero 用 #D63A00 + 按钮用 #FF4500 的"双层橙红"层次清楚，符合用户"暗一点"的诉求。
+                <br>④ 没工作台权限的用户至少看到 4 个快捷入口里他能用的那几个（按 menu_permission 表过滤后渲染），不会两手空空。
+            </div>
+        </div>
+    </div>
+
+    <div class="foot">
+        KINGSOFT-WMS · V9 DESIGN INDEX · BUILD 20260521 · <a href="ui_white_index.html">← 回 v8 入口</a>
+    </div>
+
+</div>
+
+</body>
+</html>

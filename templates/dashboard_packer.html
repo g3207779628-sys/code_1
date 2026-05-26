@@ -10,29 +10,26 @@
 
 <div class="stat-grid" style="margin-bottom:24px;">
     <div class="stat-card"><div class="num">{{ to_pack|length }}</div><div class="label">待打包包裹</div></div>
-    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日销售单</div></div>
-    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">仍在拣货</div></div>
-    <div class="stat-card"><div class="num">¥{{ '{:,.0f}'.format(stats.today_revenue) }}</div><div class="label">今日营业额</div></div>
+    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日出库单</div></div>
+    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">仍在出库</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">总在仓</div></div>
 </div>
 
 <div class="card">
-    <div class="card-header">待打包列表（拣货已完成）</div>
+    <div class="card-header">待打包列表（出库已完成）</div>
     <div class="card-body" style="padding:0;">
         <table>
-            <thead><tr><th>出库单</th><th>销售单</th><th>收件人</th><th>电话</th><th>渠道</th><th>拣完时间</th><th></th></tr></thead>
+            <thead><tr><th>出库单</th><th>收件方</th><th>完成时间</th><th></th></tr></thead>
             <tbody>
                 {% for p in to_pack %}
                 <tr>
                     <td class="mono"><a href="{{ url_for('pick_detail', order_no=p.order_no) }}">{{ p.order_no }}</a></td>
-                    <td class="mono text-secondary" style="font-size:12px;">{{ p.sales_order_no }}</td>
-                    <td>{{ p.receiver_name or '-' }}</td>
-                    <td class="mono">{{ p.receiver_phone or '-' }}</td>
-                    <td><span class="tag">{{ {'manual':'手工','tmall':'天猫','jd':'京东','douyin':'抖音','applet':'小程序'}.get(p.channel, p.channel) }}</span></td>
+                    <td>{{ p.receiver_desc or '-' }}</td>
                     <td class="mono text-secondary" style="font-size:12px;">{{ p.completed_at }}</td>
-                    <td><a class="btn btn-sm btn-primary" href="{{ url_for('pick_detail', order_no=p.order_no) }}">打包</a></td>
+                    <td><a class="btn btn-sm btn-primary" href="{{ url_for('pick_detail', order_no=p.order_no) }}">查看</a></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="empty">无待打包</td></tr>
+                <tr><td colspan="4" class="empty">无待打包</td></tr>
                 {% endfor %}
             </tbody>
         </table>

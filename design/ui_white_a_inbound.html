@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>方案 A · 入库表单 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+.content { padding: 40px 56px; background: var(--bg-base); max-width: 900px; }
+.page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+.form-section {
+    padding: 28px 0;
+    border-bottom: 1px solid var(--line);
+}
+.form-section:last-of-type { border-bottom: none; }
+.form-section h3 {
+    font-size: 11px; letter-spacing: 2px; color: var(--ink-faded);
+    font-weight: 600; text-transform: uppercase;
+    margin-bottom: 18px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }
+
+.line-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--bg-soft);
+    border-radius: var(--r-md);
+    overflow: hidden;
+}
+.line-table th, .line-table td { padding: 12px 14px; font-size: 13px; text-align: left; }
+.line-table th { background: transparent; color: var(--ink-quiet); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.line-table input, .line-table select { background: var(--bg-card); border: 1px solid var(--line-input); padding: 7px 10px; font-size: 13px; }
+.line-table .picker-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--line-input);
+    border-radius: var(--r-md);
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    width: 100%;
+    justify-content: space-between;
+}
+.line-table .picker-btn:hover { border-color: var(--accent); color: var(--accent); }
+.line-table .picker-btn .placeholder { color: var(--ink-faded); }
+.line-table .picker-btn .pick { color: var(--accent); font-weight: 600; font-size: 11px; }
+.line-table .del { color: var(--ink-faded); cursor: pointer; font-size: 16px; padding: 4px; }
+.line-table .del:hover { color: var(--err); }
+
+.add-line {
+    margin-top: 12px;
+    color: var(--accent);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 10px 14px;
+    border: 1px dashed var(--line-input);
+    border-radius: var(--r-md);
+    text-align: center;
+    transition: all 0.15s;
+}
+.add-line:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+.upload-zone {
+    padding: 28px;
+    border: 2px dashed var(--line-input);
+    border-radius: var(--r-md);
+    text-align: center;
+    color: var(--ink-quiet);
+    font-size: 13px;
+    cursor: pointer;
+}
+.upload-zone:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.upload-zone .big { font-size: 24px; margin-bottom: 6px; color: var(--accent); }
+
+.actions-bar {
+    margin-top: 36px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: flex-end; gap: 12px;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>方案 A · 极简白</strong> · 新建入库单</div>
+
+<div class="layout">
+    <aside class="sider">
+        <div class="sider-brand"><span class="mark">金</span>金山仓储</div>
+        <ul class="menu">
+            <li class="menu-group">日常使用</li>
+            <li><a href="ui_white_a_dashboard.html">工作台 <span class="arrow">›</span></a></li>
+            <li><a href="#">待审批中心 <span class="arrow">›</span></a></li>
+            <li class="menu-group">日常操作</li>
+            <li><a href="#" class="active">入库 <span class="arrow">›</span></a></li>
+            <li><a href="#">出库 <span class="arrow">›</span></a></li>
+            <li><a href="#">调拨 <span class="arrow">›</span></a></li>
+            <li><a href="#">报损 <span class="arrow">›</span></a></li>
+            <li><a href="#">盘点 <span class="arrow">›</span></a></li>
+            <li class="menu-group">查询分析</li>
+            <li><a href="ui_white_a_inventory.html">库存查询 <span class="arrow">›</span></a></li>
+            <li><a href="#">库存流水 <span class="arrow">›</span></a></li>
+            <li><a href="#">经营报表 <span class="arrow">›</span></a></li>
+            <li class="menu-group">系统</li>
+            <li><a href="#">用户与权限 <span class="arrow">›</span></a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <div class="crumb"><span class="prev">日常操作</span><span class="sep">/</span><span class="prev">入库</span><span class="sep">/</span><span class="now">新建</span></div>
+            <div class="header-actions">
+                <span class="user-name">王经理</span>
+                <span class="quiet">改密</span>
+                <span class="quiet">退出</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="page-title">新建入库单</div>
+            <div class="page-sub">填完点 <span class="text-accent" style="font-weight:600;">提交审批</span>，单据进入审核流程</div>
+
+            <div class="form-section">
+                <h3>— 基本信息</h3>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>单据编号 <span class="hint">系统自动生成</span></label>
+                        <input type="text" value="RKD-20260521-004" readonly style="color:var(--ink-quiet);">
+                    </div>
+                    <div class="form-row">
+                        <label>入库日期 <span class="req">*</span></label>
+                        <input type="date" value="2026-05-21">
+                    </div>
+                    <div class="form-row">
+                        <label>供应商 <span class="req">*</span></label>
+                        <a href="#" class="btn" style="width:100%; justify-content: space-between;">
+                            <span>贵州茅台经销商</span>
+                            <span class="text-accent" style="font-size:11px; font-weight:600;">更换 →</span>
+                        </a>
+                    </div>
+                    <div class="form-row">
+                        <label>目标仓库 <span class="req">*</span></label>
+                        <a href="#" class="btn" style="width:100%; justify-content: space-between;">
+                            <span>金山主仓</span>
+                            <span class="text-accent" style="font-size:11px; font-weight:600;">更换 →</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="form-row" style="margin-top: 8px;">
+                    <label>备注</label>
+                    <textarea rows="2" placeholder="本次入库的说明 / 注意事项"></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>— 入库明细 <span style="color:var(--ink-quiet); font-weight:400; text-transform:none; letter-spacing:0; margin-left:8px;">共 3 行</span></h3>
+                <table class="line-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 28%;">商品</th>
+                            <th style="width: 20%;">入库库位</th>
+                            <th style="width: 12%;">数量</th>
+                            <th style="width: 12%;">单位</th>
+                            <th style="width: 16%;">批次号 <span class="hint">可选</span></th>
+                            <th style="width: 8%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <a href="#" class="picker-btn">
+                                    <span>茅台 <span style="font-size:11px;color:var(--ink-faded); margin-left:4px;">MT-FW-500</span></span>
+                                    <span class="pick">选择 →</span>
+                                </a>
+                            </td>
+                            <td>
+                                <a href="#" class="picker-btn">
+                                    <span>酒柜-A1</span>
+                                    <span class="pick">选择 →</span>
+                                </a>
+                            </td>
+                            <td><input type="number" value="20" style="text-align:right;"></td>
+                            <td><input type="text" value="瓶" readonly style="color:var(--ink-quiet);"></td>
+                            <td><input type="text" placeholder="自动生成"></td>
+                            <td class="text-center"><span class="del">×</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="#" class="picker-btn">
+                                    <span>五粮液 <span style="font-size:11px;color:var(--ink-faded); margin-left:4px;">WLY-PJ-500</span></span>
+                                    <span class="pick">选择 →</span>
+                                </a>
+                            </td>
+                            <td>
+                                <a href="#" class="picker-btn">
+                                    <span>酒柜-A2</span>
+                                    <span class="pick">选择 →</span>
+                                </a>
+                            </td>
+                            <td><input type="number" value="12" style="text-align:right;"></td>
+                            <td><input type="text" value="瓶" readonly style="color:var(--ink-quiet);"></td>
+                            <td><input type="text" placeholder="自动生成"></td>
+                            <td class="text-center"><span class="del">×</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="#" class="picker-btn">
+                                    <span class="placeholder">点击选择商品…</span>
+                                    <span class="pick">选择 →</span>
+                                </a>
+                            </td>
+                            <td>
+                                <a href="#" class="picker-btn">
+                                    <span class="placeholder">选择库位…</span>
+                                    <span class="pick">选择 →</span>
+                                </a>
+                            </td>
+                            <td><input type="number" placeholder="0" style="text-align:right;"></td>
+                            <td><input type="text" placeholder="-" readonly style="color:var(--ink-quiet);"></td>
+                            <td><input type="text" placeholder="自动生成"></td>
+                            <td class="text-center"><span class="del">×</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="add-line">+ 添加一行明细</div>
+            </div>
+
+            <div class="form-section">
+                <h3>— 附件</h3>
+                <div class="upload-zone">
+                    <div class="big">+</div>
+                    <div>点击或拖入采购合同 / 发票 / 验收单照片</div>
+                    <div style="font-size: 11px; color: var(--ink-faded); margin-top: 6px;">支持 jpg / png / pdf · 单文件最大 10MB · 最多 10 份</div>
+                </div>
+            </div>
+
+            <div class="actions-bar">
+                <a href="ui_white_a_dashboard.html" class="btn">取消</a>
+                <a href="#" class="btn">存为草稿</a>
+                <a href="#" class="btn btn-primary btn-lg">提交审批 →</a>
+            </div>
+
+            <div class="page-nav">
+                <a href="ui_white_a_inventory.html" class="btn btn-sm">‹ 上一页 库存查询</a>
+                <a href="ui_white_index.html" class="btn btn-sm">返回方案对比</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

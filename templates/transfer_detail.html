@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}调拨 {{ order.order_no }}{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>调拨单 <span class="mono">{{ order.order_no }}</span></span>
+        <span>
+            {% if order.status == 'draft' %}<span class="badge">草稿</span>
+            {% elif order.status == 'completed' %}<span class="badge badge-in">已完成</span>
+            {% else %}<span class="badge">已撤销</span>{% endif %}
+        </span>
+    </div>
+    <div class="card-body">
+        <table style="margin-bottom:16px;">
+            <tbody>
+                <tr><th style="background:var(--bg-alt);width:120px;">日期</th><td class="mono">{{ order.transfer_date }}</td>
+                    <th style="background:var(--bg-alt);width:120px;">创建人</th><td>{{ order.creator_name or '-' }}</td></tr>
+                <tr><th style="background:var(--bg-alt);">调出</th><td>{{ order.from_wh_name }} · <span class="mono">{{ order.from_loc_code }}</span></td>
+                    <th style="background:var(--bg-alt);">调入</th><td>{{ order.to_wh_name }} · <span class="mono">{{ order.to_loc_code }}</span></td></tr>
+                <tr><th style="background:var(--bg-alt);">创建时间</th><td class="mono">{{ order.created_at }}</td>
+                    <th style="background:var(--bg-alt);">完成时间</th><td class="mono">{{ order.completed_at or '-' }}</td></tr>
+                <tr><th style="background:var(--bg-alt);">备注</th><td colspan="3">{{ order.note or '-' }}</td></tr>
+            </tbody>
+        </table>
+
+        {% set atts = order.attachments | attachments_list %}
+        {% if atts %}
+        <div style="padding:10px; background:var(--bg-alt); border-radius:4px; margin-bottom:16px;">
+            <strong>附件（{{ atts|length }} 个）：</strong>
+            {% for path in atts %}
+            <a href="{{ url_for('download_attachment', filepath=path) }}" target="_blank" style="margin-right:12px;">{{ path.split('/')[-1] }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px;">调拨明细</h3>
+        <table>
+            <thead><tr><th>物品</th><th>规格</th><th>批次</th><th>数量</th></tr></thead>
+            <tbody>
+                {% for it in items %}
+                <tr>
+                    <td><strong>{{ it.sku_name }}</strong></td>
+                    <td>{{ it.sku_spec or '-' }}</td>
+                    <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
+                    <td class="mono">{{ it.quantity }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+            {% if order.status == 'draft' %}
+            <form method="post" action="{{ url_for('transfer_complete', order_no=order.order_no) }}" style="display:inline;"
+                  onsubmit="return confirm('执行调拨会实际搬动库存（调出 - N，调入 + N）。确认？');">
+                <button class="btn btn-primary" type="submit">✓ 执行调拨</button>
+            </form>
+            <form method="post" action="{{ url_for('transfer_cancel', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('撤销该调拨单？');">
+                <button class="btn btn-danger" type="submit">撤销</button>
+            </form>
+            {% endif %}
+            <a class="btn btn-secondary" href="{{ url_for('transfer_list') }}">返回列表</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

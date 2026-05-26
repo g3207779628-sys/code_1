@@ -6,22 +6,21 @@
     <div class="card-header">
         <span>盘点单（共 {{ orders|length }} 张）</span>
         {% if session.role in ['admin', 'manager'] %}
-        <form method="post" action="{{ url_for('stocktake_new') }}" style="display:flex;gap:8px;align-items:center;">
-            <input type="text" name="note" placeholder="备注（如：5月盘点）" style="padding:6px 10px;border:1px solid var(--color-border);">
-            <button class="btn" type="submit">+ 新建全仓盘点</button>
-        </form>
+        <a class="btn btn-primary" href="{{ url_for('stocktake_new') }}">+ 新建盘点单</a>
         {% endif %}
     </div>
+
     <div class="card-body" style="padding:0;">
         {% if orders %}
         <table>
             <thead>
-                <tr><th>单号</th><th>状态</th><th>盘点行</th><th>已盘</th><th>差异</th><th>备注</th><th>创建人</th><th>创建时间</th><th>关闭人</th></tr>
+                <tr><th>单号</th><th>盘点主题</th><th>状态</th><th>盘点行</th><th>已盘</th><th>差异</th><th>备注</th><th>创建人</th><th>创建时间</th></tr>
             </thead>
             <tbody>
                 {% for o in orders %}
                 <tr>
                     <td class="mono"><a href="{{ url_for('stocktake_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
+                    <td><strong>{{ o.title or '盘点' }}</strong></td>
                     <td>
                         {% if o.status == 'open' %}<span class="badge badge-downgrade">进行中</span>
                         {% else %}<span class="badge badge-in">已关闭</span>{% endif %}
@@ -32,7 +31,6 @@
                     <td style="font-size:12px;">{{ o.note or '-' }}</td>
                     <td>{{ o.creator_name }}</td>
                     <td class="mono" style="font-size:12px;">{{ o.created_at }}</td>
-                    <td>{{ o.closer_name or '-' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

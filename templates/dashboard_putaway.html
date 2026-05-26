@@ -20,12 +20,12 @@
         <div class="card-header">近 1 日已审入库（待上架） <a href="{{ url_for('inbound_list') }}">全部 →</a></div>
         <div class="card-body" style="padding:0;">
             <table>
-                <thead><tr><th>单号</th><th>供应商</th><th class="text-right">件数</th><th>时间</th></tr></thead>
+                <thead><tr><th>单号</th><th>入库员工</th><th class="text-right">件数</th><th>时间</th></tr></thead>
                 <tbody>
                     {% for r in recent_inbound %}
                     <tr>
                         <td class="mono" style="font-size:12px;"><a href="{{ url_for('inbound_detail', order_no=r.order_no) }}">{{ r.order_no }}</a></td>
-                        <td>{{ r.supplier or '-' }}</td>
+                        <td>{{ r.operator or '-' }}</td>
                         <td class="mono text-right fw-bold">{{ r.qty }}</td>
                         <td class="mono text-secondary" style="font-size:12px;">{{ r.created_at }}</td>
                     </tr>
@@ -46,7 +46,7 @@
                     {% for l in loc_occupancy %}
                     <tr>
                         <td class="mono fw-bold">{{ l.code }}</td>
-                        <td><span class="tag">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻','isolation':'隔离','downgrade':'降级'}.get(l.zone_type, l.zone_type) }}</span></td>
+                        <td><span class="tag">—</span></td>
                         <td class="mono text-right">{{ l.used }}</td>
                     </tr>
                     {% else %}

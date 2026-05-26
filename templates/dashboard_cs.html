@@ -5,56 +5,32 @@
 
 <div style="margin-bottom:24px;">
     <h1>客服工作台</h1>
-    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 处理中退货 {{ pending_returns|length }} 笔</div>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 待出库 {{ stats.pending_pick }} 单</div>
 </div>
 
 <div class="stat-grid" style="margin-bottom:24px;">
-    <div class="stat-card"><div class="num">{{ pending_returns|length }}</div><div class="label">处理中退货</div></div>
-    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日销售单</div></div>
-    <div class="stat-card"><div class="num">¥{{ '{:,.0f}'.format(stats.today_revenue) }}</div><div class="label">今日营业额</div></div>
-    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">待拣货</div></div>
+    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日出库单</div></div>
+    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">待出库</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">总在仓</div></div>
+    <div class="stat-card"><div class="num">{{ stats.low_stock_count }}</div><div class="label">低库存物品</div></div>
 </div>
 
 <div class="card">
-    <div class="card-header">处理中退货单 · {{ pending_returns|length }} <a href="{{ url_for('return_list') }}">全部 →</a></div>
+    <div class="card-header">最近出库单 <a href="{{ url_for('pick_list') }}">全部 →</a></div>
     <div class="card-body" style="padding:0;">
         <table>
-            <thead><tr><th>退货单</th><th>原销售单</th><th>客户</th><th>原因</th><th>状态</th><th class="text-right">件数</th><th></th></tr></thead>
+            <thead><tr><th>单号</th><th>收件方</th><th>状态</th><th>时间</th><th></th></tr></thead>
             <tbody>
-                {% for r in pending_returns %}
+                {% for s in recent_outbound %}
                 <tr>
-                    <td class="mono"><a href="{{ url_for('return_detail', order_no=r.order_no) }}">{{ r.order_no }}</a></td>
-                    <td class="mono text-secondary" style="font-size:12px;">{{ r.sales_order_no }}</td>
-                    <td>{{ r.phone or '-' }} {{ r.cust_name or '' }}</td>
-                    <td><span class="tag">{{ {'quality':'质量','wrong':'发错','dislike':'不喜欢','damaged_in_transit':'运输破损','other':'其他'}.get(r.reason, r.reason or '-') }}</span></td>
-                    <td><span class="tag">{{ {'approved':'已批准·待收货','received':'已收货·待质检','qc_done':'已质检·待退款'}.get(r.status, r.status) }}</span></td>
-                    <td class="mono text-right">{{ r.qty }}</td>
-                    <td><a class="btn btn-sm btn-primary" href="{{ url_for('return_detail', order_no=r.order_no) }}">处理</a></td>
-                </tr>
-                {% else %}
-                <tr><td colspan="7" class="empty">无处理中退货</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">最近销售订单 <a href="{{ url_for('sales_list') }}">全部 →</a></div>
-    <div class="card-body" style="padding:0;">
-        <table>
-            <thead><tr><th>单号</th><th>渠道</th><th>状态</th><th class="text-right">金额</th><th>时间</th></tr></thead>
-            <tbody>
-                {% for s in recent_sales %}
-                <tr>
-                    <td class="mono"><a href="{{ url_for('sales_detail', order_no=s.order_no) }}">{{ s.order_no }}</a></td>
-                    <td><span class="tag">{{ {'manual':'手工','tmall':'天猫','jd':'京东','douyin':'抖音','applet':'小程序'}.get(s.channel, s.channel) }}</span></td>
-                    <td><span class="tag">{{ {'new':'新建','reserved':'已预占','completed':'已完成','cancelled':'已取消'}.get(s.status, s.status) }}</span></td>
-                    <td class="mono text-right">¥{{ '%.2f'|format(s.total_amount or 0) }}</td>
+                    <td class="mono"><a href="{{ url_for('pick_detail', order_no=s.order_no) }}">{{ s.order_no }}</a></td>
+                    <td>{{ s.receiver_desc or '-' }}</td>
+                    <td><span class="tag">{{ {'pending':'待出库','completed':'已完成','cancelled':'已取消'}.get(s.status, s.status) }}</span></td>
                     <td class="mono text-secondary" style="font-size:12px;">{{ s.created_at }}</td>
+                    <td><a class="btn btn-sm" href="{{ url_for('pick_detail', order_no=s.order_no) }}">查看</a></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="empty">暂无销售单</td></tr>
+                <tr><td colspan="5" class="empty">暂无出库单。<a href="{{ url_for('outbound_new') }}">+ 新建出库单</a></td></tr>
                 {% endfor %}
             </tbody>
         </table>

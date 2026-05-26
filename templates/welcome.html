@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}首页{% endblock %}
+
+{# === 已登录用户：base.html 渲染 sider，本块为中央内容 === #}
+{% block content %}
+<div class="v9-welcome-authed">
+    <div class="v9-hero">
+        <div class="v9-hero-pre">KINGSOFT WAREHOUSE</div>
+        <div class="v9-hero-main">
+            <span class="fill">WEL</span><span class="stroke">COME</span>
+        </div>
+        <div class="v9-hero-sub">金山仓库管理</div>
+        <div class="v9-hero-meta">// {{ session.display_name }} · <span id="v9-today"></span></div>
+    </div>
+</div>
+<script>
+document.getElementById('v9-today').textContent = new Date().toISOString().slice(0, 10);
+</script>
+{% endblock %}
+
+{# === 未登录访客：base.html 走 content_unauth 分支，整页结构由本块控制 === #}
+{% block content_unauth %}
+<div class="v9-welcome-public">
+    <div class="v9-top">
+        <div class="v9-brand">金山<span class="accent">仓储</span></div>
+        <div class="v9-meta" id="v9-now"></div>
+    </div>
+
+    <div class="v9-main">
+        <div class="v9-hero">
+            <div class="v9-hero-pre">KINGSOFT WAREHOUSE</div>
+            <div class="v9-hero-main">
+                <span class="fill">WEL</span><span class="stroke">COME</span>
+            </div>
+            <div class="v9-hero-sub">金山仓库管理</div>
+            <div class="v9-hero-meta">// V9 · BUILD 20260521</div>
+        </div>
+        <a href="{{ url_for('login') }}" class="v9-btn-enter">进入管理系统 →</a>
+    </div>
+
+    <div class="v9-foot">
+        <div>KINGSOFT-WMS · V9 · 内部办公仓储系统</div>
+        <div class="v9-foot-link">不对外开放</div>
+    </div>
+</div>
+<script>
+(function () {
+    function pad(n) { return n < 10 ? '0' + n : n; }
+    function tick() {
+        var d = new Date();
+        var el = document.getElementById('v9-now');
+        if (!el) return;
+        el.textContent =
+            d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+            ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+    tick();
+    setInterval(tick, 30000);
+})();
+</script>
+{% endblock %}

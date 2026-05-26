@@ -1,0 +1,394 @@
+{# 设计理念：紧凑高效型领用申请单——单屏录完、即输即筛 inline typeahead、键盘流畅（Tab/Enter 加行），沿用 outbound_form 卡片+密集表格视觉，做给熟练仓管的高速录入页。 #}
+{# 数据说明：所属部门数据源为 wh_use_dept 仓库使用部门，并非人员部门概念，待与现有项目对齐。 #}
+{% extends "base.html" %}
+{% block title %}领用申请单（原型）{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">领用申请单（UI 原型）</span>{% endblock %}
+{% block content %}
+
+<form method="post" id="req-form" autocomplete="off" novalidate>
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">领用申请单</div>
+            <div class="page-sub">UI 原型 · 紧凑高效型 · 即输即筛 · 暂不落库</div>
+        </div>
+        <span class="btn btn-secondary" role="note" aria-label="原型提示">原型预览</span>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>基本信息</h3><span class="meta">必填 4 项 · 可全键盘录入</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label for="applicant">申请人 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="text" id="applicant" name="applicant" placeholder="手填申请人姓名" aria-label="申请人" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="dept-input">所属部门 <span class="req" style="color:var(--accent);">*</span>
+                        {% if dept_is_sample %}<span class="sample-tag" aria-label="部门为示例数据">示例数据</span>{% endif %}
+                    </label>
+                    <div class="typeahead" data-source="depts">
+                        <input type="text" id="dept-input" class="ta-input" placeholder="输入部门名称筛选…" role="combobox" aria-label="所属部门" aria-expanded="false" aria-autocomplete="list" autocomplete="off">
+                        <input type="hidden" name="dept_id" id="dept-id">
+                        <ul class="ta-list" role="listbox" aria-label="部门候选" hidden></ul>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label for="loc-input">库位 <span class="req" style="color:var(--accent);">*</span></label>
+                    <div class="typeahead" data-source="locations">
+                        <input type="text" id="loc-input" class="ta-input" placeholder="输入库位编码筛选…" role="combobox" aria-label="库位" aria-expanded="false" aria-autocomplete="list" autocomplete="off">
+                        <input type="hidden" name="location_id" id="loc-id">
+                        <ul class="ta-list" role="listbox" aria-label="库位候选" hidden></ul>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label for="req-date">申请日期 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="date" id="req-date" name="req_date" value="{{ today }}" aria-label="申请日期" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="category">领用类别 <span class="req" style="color:var(--accent);">*</span>
+                        {% if cat_is_sample %}<span class="sample-tag" aria-label="类别为示例数据">示例数据</span>{% endif %}
+                    </label>
+                    <select id="category" name="category_id" aria-label="领用类别" required>
+                        <option value="">— 选择领用类别 —</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>申请物品与数量</h3><span class="meta" id="meta-detail">输入编码/名称即筛 · 选中自动回填编码/单位/规格/现库存 · 已添加 0 行</span></div>
+        <div class="body">
+            <table class="line-table" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">物品 *（输入编码或名称）</th>
+                        <th style="width: 13%;">编码</th>
+                        <th style="width: 8%;">单位</th>
+                        <th style="width: 15%;">规格</th>
+                        <th style="width: 11%;">现库存</th>
+                        <th style="width: 13%;">申请数量 *</th>
+                        <th style="width: 5%;" aria-label="操作"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+            </table>
+            <button type="button" class="add-line" id="add-row-btn" aria-label="添加一行明细">+ 添加一行明细（Enter）</button>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>申领说明</h3><span class="meta">可选</span></div>
+        <div class="body">
+            <div class="form-row" style="margin-bottom:0;">
+                <label for="note" class="sr-only-label">申领说明</label>
+                <textarea id="note" name="note" rows="3" placeholder="用途、紧急程度、审批备注等…" aria-label="申领说明"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left">
+            <div>明细 <span class="num" id="stat-rows">0</span> 行</div>
+            <div>合计 <span class="num" id="stat-total">0</span> 件</div>
+        </div>
+        <div class="right">
+            <button class="btn btn-secondary" type="reset" aria-label="重置表单">重置</button>
+            <button class="btn btn-primary" type="submit" aria-label="提交领用申请单">提交申请单 →</button>
+        </div>
+    </div>
+
+</form>
+
+{# 本地数据注入：数据量小（几十条），前端原生 JS 本地过滤，部门/库位/物品三处 inline typeahead 复用 #}
+<script id="req-data" type="application/json">
+{
+  "depts": {{ depts|tojson }},
+  "locations": {{ locations|tojson }},
+  "categories": {{ categories|tojson }},
+  "skus": {{ skus|tojson }}
+}
+</script>
+
+<style>
+/* —— 本页专属：inline typeahead（即输即筛下拉），区别于系统跳转式 picker —— */
+.sample-tag {
+    margin-left: 6px; font-size: 11px; font-weight: 500;
+    color: var(--warn); background: var(--warn-bg);
+    padding: 1px 6px; border-radius: var(--radius-sm); vertical-align: middle;
+}
+.typeahead { position: relative; }
+.typeahead .ta-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40;
+    margin: 0; padding: 4px; list-style: none;
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow-lg);
+    max-height: 240px; overflow-y: auto;
+}
+.typeahead .ta-list li {
+    padding: 7px 10px; font-size: 13px; color: var(--ink);
+    border-radius: var(--radius-sm); cursor: pointer; line-height: 1.4;
+}
+.typeahead .ta-list li .ta-sub {
+    color: var(--ink-quiet); font-size: 11px; font-family: var(--font-mono); margin-left: 6px;
+}
+.typeahead .ta-list li.active,
+.typeahead .ta-list li:hover { background: var(--accent-soft); }
+.typeahead .ta-list li.ta-empty { color: var(--ink-faint); cursor: default; text-align: center; }
+.typeahead .ta-list li.ta-empty:hover { background: transparent; }
+
+/* 物品行内的 typeahead 容器需要继承单元格宽度 */
+.line-table .typeahead { width: 100%; }
+.line-table .typeahead .ta-input { width: 100%; }
+.line-table .cell-ro {
+    background: var(--bg-soft); font-size: 12px; color: var(--ink-soft);
+}
+.line-table .cell-ro.mono { font-family: var(--font-mono); }
+.line-table .cell-onhand { text-align: right; color: var(--accent-deep); font-family: var(--font-mono); }
+.line-table input[name="quantity[]"] { text-align: right; }
+
+/* 隐藏标签但保留可访问性 */
+.sr-only-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* 窄屏：基本信息单列、明细表横向滚动 */
+@media (max-width: 768px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-card .body { padding: 16px; overflow-x: auto; }
+    #items-table { min-width: 640px; }
+}
+</style>
+
+<script>
+(function () {
+    'use strict';
+    const DATA = JSON.parse(document.getElementById('req-data').textContent);
+    const skuById = {};
+    DATA.skus.forEach(s => { skuById[String(s.id)] = s; });
+
+    /* ---------- 通用 inline typeahead ---------- */
+    // matcher(item, q) -> bool ; render(item) -> {main, sub} ; onPick(item, root)
+    function setupTypeahead(root, items, opts) {
+        const input = root.querySelector('.ta-input');
+        const hidden = root.querySelector('input[type=hidden]');
+        const list = root.querySelector('.ta-list');
+        let activeIdx = -1;
+        let current = [];
+
+        function close() {
+            list.hidden = true;
+            list.innerHTML = '';
+            input.setAttribute('aria-expanded', 'false');
+            activeIdx = -1;
+        }
+
+        function open(q) {
+            current = items.filter(it => opts.matcher(it, q)).slice(0, 30);
+            list.innerHTML = '';
+            if (!current.length) {
+                const li = document.createElement('li');
+                li.className = 'ta-empty';
+                li.textContent = '无匹配项';
+                list.appendChild(li);
+                list.hidden = false;
+                input.setAttribute('aria-expanded', 'true');
+                return;
+            }
+            current.forEach((it, i) => {
+                const li = document.createElement('li');
+                li.setAttribute('role', 'option');
+                const r = opts.render(it);
+                li.innerHTML = '<span class="ta-main"></span>' + (r.sub ? '<span class="ta-sub"></span>' : '');
+                li.querySelector('.ta-main').textContent = r.main;
+                if (r.sub) li.querySelector('.ta-sub').textContent = r.sub;
+                li.addEventListener('mousedown', e => { e.preventDefault(); pick(i); });
+                list.appendChild(li);
+            });
+            list.hidden = false;
+            input.setAttribute('aria-expanded', 'true');
+            activeIdx = -1;
+        }
+
+        function pick(i) {
+            const it = current[i];
+            if (!it) return;
+            const r = opts.render(it);
+            input.value = r.main;
+            if (hidden) hidden.value = it.id;
+            opts.onPick && opts.onPick(it, root);
+            close();
+        }
+
+        function highlight(delta) {
+            const lis = Array.from(list.querySelectorAll('li:not(.ta-empty)'));
+            if (!lis.length) return;
+            activeIdx = (activeIdx + delta + lis.length) % lis.length;
+            lis.forEach((li, i) => li.classList.toggle('active', i === activeIdx));
+            lis[activeIdx].scrollIntoView({ block: 'nearest' });
+        }
+
+        input.addEventListener('input', () => {
+            if (hidden) hidden.value = '';   // 重新输入即清除已选 id
+            open(input.value.trim());
+        });
+        input.addEventListener('focus', () => open(input.value.trim()));
+        input.addEventListener('keydown', e => {
+            if (list.hidden) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); highlight(1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(-1); }
+            else if (e.key === 'Enter') {
+                if (activeIdx >= 0) { e.preventDefault(); pick(activeIdx); }
+            } else if (e.key === 'Escape') { close(); }
+        });
+        input.addEventListener('blur', () => setTimeout(close, 120));
+    }
+
+    /* ---------- 基本信息：部门 / 库位 ---------- */
+    document.querySelectorAll('.form-grid .typeahead').forEach(root => {
+        const src = root.dataset.source;
+        if (src === 'depts') {
+            setupTypeahead(root, DATA.depts, {
+                matcher: (it, q) => !q || (it.name || '').toLowerCase().includes(q.toLowerCase()),
+                render: it => ({ main: it.name })
+            });
+        } else if (src === 'locations') {
+            setupTypeahead(root, DATA.locations, {
+                matcher: (it, q) => {
+                    if (!q) return true;
+                    q = q.toLowerCase();
+                    return (it.code || '').toLowerCase().includes(q) || (it.warehouse_name || '').toLowerCase().includes(q);
+                },
+                render: it => ({ main: it.code, sub: it.warehouse_name || '' })
+            });
+        }
+    });
+
+    /* ---------- 明细行 ---------- */
+    const tbody = document.getElementById('items-body');
+    let rowCounter = 0;
+
+    async function fillSkuInfo(row, sku) {
+        const set = (sel, val) => { const el = row.querySelector(sel); if (el) el.textContent = (val === 0 || val) ? val : ''; };
+        // 本地数据优先；若缺字段可回退到 GET /api/sku-info?id=
+        if (sku && (sku.code || sku.unit || sku.spec || sku.on_hand != null)) {
+            set('.c-code', sku.code); set('.c-unit', sku.unit);
+            set('.c-spec', sku.spec); set('.c-onhand', sku.on_hand);
+            return;
+        }
+        if (!sku) return;
+        try {
+            const r = await fetch('/api/sku-info?id=' + encodeURIComponent(sku.id));
+            if (!r.ok) return;
+            const j = await r.json();
+            set('.c-code', j.code); set('.c-unit', j.unit);
+            set('.c-spec', j.spec); set('.c-onhand', j.on_hand);
+        } catch (err) { /* 原型容错：接口不可用则留空 */ }
+    }
+
+    function addRow(focus) {
+        rowCounter += 1;
+        const idx = rowCounter;
+        const tr = document.createElement('tr');
+        tr.className = 'item-row';
+        tr.innerHTML =
+            '<td>' +
+                '<div class="typeahead" data-source="sku">' +
+                    '<input type="text" class="ta-input" placeholder="输入编码或名称…" role="combobox" aria-label="物品" aria-expanded="false" aria-autocomplete="list" autocomplete="off">' +
+                    '<input type="hidden" name="sku_id[]" id="sku-' + idx + '">' +
+                    '<ul class="ta-list" role="listbox" aria-label="物品候选" hidden></ul>' +
+                '</div>' +
+            '</td>' +
+            '<td class="cell-ro mono c-code" aria-label="编码"></td>' +
+            '<td class="cell-ro c-unit" aria-label="单位"></td>' +
+            '<td class="cell-ro c-spec" aria-label="规格"></td>' +
+            '<td class="cell-ro cell-onhand c-onhand" aria-label="现库存"></td>' +
+            '<td><input type="number" name="quantity[]" min="1" step="1" placeholder="0" aria-label="申请数量"></td>' +
+            '<td style="text-align:center;"><button type="button" class="del" aria-label="删除此行">×</button></td>';
+        tbody.appendChild(tr);
+
+        const taRoot = tr.querySelector('.typeahead');
+        setupTypeahead(taRoot, DATA.skus, {
+            matcher: (it, q) => {
+                if (!q) return true;
+                q = q.toLowerCase();
+                return (it.code || '').toLowerCase().includes(q) || (it.name || '').toLowerCase().includes(q);
+            },
+            render: it => ({ main: it.name, sub: it.code }),
+            onPick: (it, root) => fillSkuInfo(root.closest('tr'), it)
+        });
+
+        tr.querySelector('.del').addEventListener('click', () => removeRow(tr));
+        const qty = tr.querySelector('input[name="quantity[]"]');
+        qty.addEventListener('input', recalc);
+        // 键盘小优化：在数量框按 Enter 直接加新行并聚焦
+        qty.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); addRow(true); }
+        });
+
+        recalc();
+        if (focus) taRoot.querySelector('.ta-input').focus();
+    }
+
+    function removeRow(tr) {
+        if (tbody.querySelectorAll('.item-row').length <= 1) {
+            window.showToast && window.showToast('warn', '至少保留 1 行明细');
+            return;
+        }
+        tr.remove();
+        recalc();
+    }
+
+    function recalc() {
+        const rows = tbody.querySelectorAll('.item-row');
+        document.getElementById('stat-rows').textContent = rows.length;
+        document.getElementById('meta-detail').textContent =
+            '输入编码/名称即筛 · 选中自动回填编码/单位/规格/现库存 · 已添加 ' + rows.length + ' 行';
+        let total = 0;
+        tbody.querySelectorAll('input[name="quantity[]"]').forEach(i => { total += parseInt(i.value, 10) || 0; });
+        document.getElementById('stat-total').textContent = total;
+    }
+
+    document.getElementById('add-row-btn').addEventListener('click', () => addRow(true));
+
+    /* ---------- 提交拦截：原型不落库 ---------- */
+    document.getElementById('req-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const lines = [];
+        tbody.querySelectorAll('.item-row').forEach(tr => {
+            const skuId = tr.querySelector('input[name="sku_id[]"]').value;
+            const qty = tr.querySelector('input[name="quantity[]"]').value;
+            const sku = skuById[String(skuId)] || {};
+            lines.push({
+                sku_id: skuId, name: sku.name || '', code: sku.code || '',
+                unit: sku.unit || '', quantity: qty
+            });
+        });
+        const payload = {
+            applicant: document.getElementById('applicant').value,
+            dept_id: document.getElementById('dept-id').value,
+            dept_text: document.getElementById('dept-input').value,
+            location_id: document.getElementById('loc-id').value,
+            location_text: document.getElementById('loc-input').value,
+            req_date: document.getElementById('req-date').value,
+            category_id: document.getElementById('category').value,
+            note: document.getElementById('note').value,
+            lines: lines
+        };
+        console.log('[领用申请单 原型] 拟提交数据：', payload);
+        window.showToast
+            ? window.showToast('success', '这是 UI 原型，提交落库将在下一步接入')
+            : alert('这是 UI 原型，提交落库将在下一步接入');
+    });
+
+    addRow(false);   // 初始一行
+})();
+</script>
+
+{% endblock %}

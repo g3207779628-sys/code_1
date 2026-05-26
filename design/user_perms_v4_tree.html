@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>权限编辑 - 方案 4（折叠树）- 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.page { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+.user-banner {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-left: 4px solid var(--ant-primary);
+    border-radius: 6px;
+    padding: 14px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+}
+.user-banner .info { display: flex; gap: 14px; align-items: center; }
+.user-banner .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--ant-primary); color: #FFF;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+}
+.user-banner h2 { font-size: 15px; font-weight: 600; }
+.user-banner .sub { font-size: 12px; color: var(--ant-text-secondary); margin-top: 2px; }
+.user-banner .value { font-family: var(--font-num); font-size: 22px; font-weight: 600; color: var(--ant-primary); }
+
+.tree {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.tree-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 8px 12px;
+    border-bottom: 1px solid var(--ant-divider);
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+.tree-toolbar .left { color: var(--ant-text-secondary); }
+.tree-toolbar .left strong { color: var(--ant-primary); font-family: var(--font-num); font-size: 16px; }
+
+.tree-node {
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+.tree-group {
+    cursor: pointer;
+    padding: 10px 12px;
+    background: #FAFAFA;
+    border-radius: 4px;
+    display: flex; align-items: center; gap: 10px;
+    transition: background 0.15s;
+    user-select: none;
+}
+.tree-group:hover { background: var(--ant-bg-hover); }
+.tree-group .caret {
+    font-size: 12px;
+    color: var(--ant-text-tertiary);
+    transition: transform 0.2s;
+    width: 12px;
+}
+.tree-group.open .caret { transform: rotate(90deg); color: var(--ant-primary); }
+.tree-group .name { font-weight: 600; font-size: 14px; flex: 1; }
+.tree-group .summary {
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-family: var(--font-num);
+}
+.tree-group .summary.full {
+    background: var(--ant-success-bg); color: var(--ant-success); border: 1px solid #B7EB8F;
+}
+.tree-group .summary.partial {
+    background: var(--ant-warning-bg); color: var(--ant-warning); border: 1px solid #FFE58F;
+}
+.tree-group .summary.empty {
+    background: #FAFAFA; color: var(--ant-text-tertiary); border: 1px solid var(--ant-divider);
+}
+
+.tree-leaves {
+    padding: 6px 12px 10px 36px;
+    display: none;
+}
+.tree-group.open + .tree-leaves { display: block; }
+.tree-leaf {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: background 0.15s;
+}
+.tree-leaf:hover { background: var(--ant-bg-hover); }
+.tree-leaf.checked { color: var(--ant-primary); font-weight: 500; }
+.tree-leaf input { width: 15px; height: 15px; cursor: pointer; }
+
+.footer {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    display: flex; justify-content: flex-end; gap: 8px;
+    position: sticky; bottom: 20px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+    <strong>方案 4：折叠树</strong> ｜ 一级菜单可展开/折叠 · 每组有"全选/半选/未选"汇总徽章 · 占屏最少
+</div>
+
+<div class="page">
+    <a href="user_perms_index.html" class="btn btn-sm" style="margin-bottom: 16px;">‹ 返回方案列表</a>
+
+    <div class="user-banner">
+        <div class="info">
+            <div class="avatar">陈</div>
+            <div>
+                <h2>陈思思 <span class="tag tag-default" style="margin-left:6px;">实习生</span></h2>
+                <div class="sub">入职 3 个月 · 邮箱 chen@example.com</div>
+            </div>
+        </div>
+        <div>
+            <div class="text-secondary" style="font-size:11px;text-align:right;">当前权限</div>
+            <div class="value">3 / 16</div>
+        </div>
+    </div>
+
+    <div class="tree">
+        <div class="tree-toolbar">
+            <div class="left">已勾选 <strong>3</strong> 项</div>
+            <div>
+                <button class="btn btn-sm" onclick="document.querySelectorAll('.tree-group').forEach(e=>e.classList.add('open'))">展开全部</button>
+                <button class="btn btn-sm" onclick="document.querySelectorAll('.tree-group').forEach(e=>e.classList.remove('open'))">折叠全部</button>
+            </div>
+        </div>
+
+        <!-- 日常使用：全选 -->
+        <div class="tree-node">
+            <div class="tree-group open">
+                <span class="caret">›</span>
+                <span class="name">日常使用</span>
+                <span class="summary full">2 / 2 全选</span>
+            </div>
+            <div class="tree-leaves">
+                <label class="tree-leaf checked"><input type="checkbox" checked><span>工作台</span></label>
+                <label class="tree-leaf checked"><input type="checkbox" checked><span>待审批中心</span></label>
+            </div>
+        </div>
+
+        <!-- 日常操作：部分选 -->
+        <div class="tree-node">
+            <div class="tree-group open">
+                <span class="caret">›</span>
+                <span class="name">日常操作</span>
+                <span class="summary partial">1 / 5 部分</span>
+            </div>
+            <div class="tree-leaves">
+                <label class="tree-leaf checked"><input type="checkbox" checked><span>入库</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>出库</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>调拨</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>报损</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>盘点</span></label>
+            </div>
+        </div>
+
+        <!-- 查询分析：折叠 -->
+        <div class="tree-node">
+            <div class="tree-group">
+                <span class="caret">›</span>
+                <span class="name">查询分析</span>
+                <span class="summary empty">0 / 4 未选</span>
+            </div>
+            <div class="tree-leaves">
+                <label class="tree-leaf"><input type="checkbox"><span>库存查询</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>库存流水</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>经营报表</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>库存预测</span></label>
+            </div>
+        </div>
+
+        <!-- 数据维护：折叠 -->
+        <div class="tree-node">
+            <div class="tree-group">
+                <span class="caret">›</span>
+                <span class="name">数据维护</span>
+                <span class="summary empty">0 / 5 未选</span>
+            </div>
+            <div class="tree-leaves">
+                <label class="tree-leaf"><input type="checkbox"><span>商品</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>供应商</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>仓库</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>库位</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>存储区</span></label>
+            </div>
+        </div>
+
+        <!-- 系统：折叠 -->
+        <div class="tree-node">
+            <div class="tree-group">
+                <span class="caret">›</span>
+                <span class="name">系统</span>
+                <span class="summary empty">0 / 4 未选</span>
+            </div>
+            <div class="tree-leaves">
+                <label class="tree-leaf"><input type="checkbox"><span>用户与权限</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>岗位管理</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>通知渠道</span></label>
+                <label class="tree-leaf"><input type="checkbox"><span>数据备份</span></label>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <a class="btn" href="javascript:history.back()">取消</a>
+        <button class="btn btn-primary">保存权限（3 项）</button>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.tree-group').forEach(g => {
+    g.addEventListener('click', () => g.classList.toggle('open'));
+});
+document.querySelectorAll('.tree-leaf input').forEach(cb => {
+    cb.addEventListener('click', e => e.stopPropagation());
+    cb.addEventListener('change', () => cb.closest('label').classList.toggle('checked', cb.checked));
+});
+document.querySelectorAll('.tree-leaf').forEach(leaf => {
+    leaf.addEventListener('click', e => e.stopPropagation());
+});
+</script>
+</body>
+</html>

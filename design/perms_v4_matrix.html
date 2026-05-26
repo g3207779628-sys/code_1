@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>权限管理 - 方案 4（用户 × 菜单矩阵）- 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.perm-page { max-width: 1400px; margin: 0 auto; }
+
+.toolbar {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    padding: 14px 20px;
+    border-radius: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+}
+.toolbar .left { display: flex; gap: 12px; align-items: center; }
+.toolbar h2 { font-size: 16px; font-weight: 600; }
+.toolbar .stats {
+    display: flex; gap: 16px;
+    font-size: 12px; color: var(--ant-text-secondary);
+}
+.toolbar .stats strong {
+    font-family: var(--font-num);
+    font-size: 16px; color: var(--ant-primary);
+    margin-right: 2px;
+}
+
+.matrix-wrap {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.matrix-controls {
+    padding: 12px 16px;
+    background: #FAFAFA;
+    border-bottom: 1px solid var(--ant-divider);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px;
+}
+.search-input {
+    padding: 6px 10px;
+    border: 1px solid var(--ant-divider);
+    border-radius: 4px;
+    font-size: 13px;
+    width: 200px;
+}
+
+.matrix-scroll {
+    overflow-x: auto;
+}
+.matrix-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+.matrix-table thead .group-row th {
+    background: #FAFAFA;
+    color: var(--ant-text-secondary);
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid var(--ant-divider);
+    border-right: 1px solid var(--ant-divider);
+    padding: 6px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.matrix-table thead .col-row th {
+    background: #FFF;
+    color: var(--ant-text);
+    font-weight: 500;
+    text-align: center;
+    border-bottom: 1px solid var(--ant-divider);
+    border-right: 1px solid #F0F0F0;
+    padding: 10px 4px;
+    font-size: 12px;
+    min-width: 70px;
+    max-width: 90px;
+    line-height: 1.4;
+    white-space: nowrap;
+    writing-mode: horizontal-tb;
+}
+.matrix-table thead .col-row th.sticky-col,
+.matrix-table thead .group-row th.sticky-col {
+    background: #FAFAFA;
+    position: sticky; left: 0;
+    z-index: 2;
+    text-align: left;
+    min-width: 180px;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+}
+.matrix-table tbody td {
+    border-bottom: 1px solid #F0F0F0;
+    border-right: 1px solid #F0F0F0;
+    text-align: center;
+    padding: 8px 4px;
+    vertical-align: middle;
+}
+.matrix-table tbody td.sticky-col {
+    text-align: left;
+    padding-left: 16px;
+    background: #FFF;
+    position: sticky; left: 0;
+    z-index: 1;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+}
+.matrix-table tbody tr:hover td { background: #FAFCFF; }
+.matrix-table tbody tr:hover td.sticky-col { background: #F0F7FF; }
+
+.user-cell { display: flex; align-items: center; gap: 10px; }
+.user-cell .avatar-sm {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--ant-primary);
+    color: #FFF;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+}
+.user-cell .avatar-sm.green { background: var(--ant-success); }
+.user-cell .avatar-sm.orange { background: var(--ant-warning); }
+.user-cell .avatar-sm.red { background: var(--ant-error); }
+.user-cell .name { font-weight: 500; }
+.user-cell .role {
+    display: inline-block;
+    font-size: 10px;
+    padding: 0 6px;
+    border-radius: 3px;
+    margin-top: 2px;
+}
+.user-cell .role.admin { background: var(--ant-error-bg); color: var(--ant-error); }
+.user-cell .role.manager { background: var(--ant-warning-bg); color: var(--ant-warning); }
+.user-cell .role.staff { background: var(--ant-divider); color: var(--ant-text-secondary); }
+
+.perm-dot {
+    width: 22px; height: 22px;
+    border: 2px solid var(--ant-divider);
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+}
+.perm-dot.on {
+    background: var(--ant-primary);
+    border-color: var(--ant-primary);
+}
+.perm-dot.on::after {
+    content: "✓";
+    color: #FFF;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+}
+.perm-dot.locked {
+    background: var(--ant-text-tertiary);
+    border-color: var(--ant-text-tertiary);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.perm-dot.locked::after { content: "★"; color: #FFF; font-size: 11px; line-height: 18px;}
+.perm-dot:hover:not(.locked) {
+    transform: scale(1.2);
+    border-color: var(--ant-primary);
+    box-shadow: 0 0 0 3px rgba(22,119,255,0.15);
+}
+
+.col-group-bg-1 { background: #F0F9FF; }
+.col-group-bg-2 { background: #FFFBE6; }
+.col-group-bg-3 { background: #F6FFED; }
+.col-group-bg-4 { background: #FFF1F0; }
+.col-group-bg-5 { background: #F9F0FF; }
+
+.legend {
+    padding: 10px 16px;
+    background: #FAFAFA;
+    border-top: 1px solid var(--ant-divider);
+    font-size: 12px; color: var(--ant-text-secondary);
+    display: flex; gap: 20px; align-items: center;
+}
+.legend .dot-demo {
+    width: 14px; height: 14px;
+    border: 2px solid var(--ant-divider);
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+.legend .dot-demo.on { background: var(--ant-primary); border-color: var(--ant-primary); }
+.legend .dot-demo.locked { background: var(--ant-text-tertiary); border-color: var(--ant-text-tertiary); }
+
+.footer-actions {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    display: flex; justify-content: flex-end; gap: 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+    <strong>UI 方案 4：用户 × 菜单矩阵</strong> ｜ 一屏看清所有用户的所有权限，点格子直接切换 — 适合管理 5-20 人小团队
+</div>
+
+<div class="content" style="padding: 24px;">
+<div class="perm-page">
+
+    <a href="index.html" class="btn btn-sm" style="margin-bottom: 16px;">‹ 返回方案列表</a>
+
+    <div class="toolbar">
+        <div class="left">
+            <h2>权限矩阵</h2>
+            <span class="text-secondary" style="font-size:13px;">点击格子即可切换</span>
+        </div>
+        <div class="stats">
+            <div><strong>7</strong>位用户</div>
+            <div><strong>13</strong>项菜单</div>
+            <div><strong>54</strong>授权</div>
+            <div><strong>59%</strong>覆盖率</div>
+        </div>
+    </div>
+
+    <div class="matrix-wrap">
+        <div class="matrix-controls">
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input class="search-input" placeholder="搜索用户名...">
+                <select class="search-input" style="width:120px;">
+                    <option>所有角色</option>
+                    <option>admin</option>
+                    <option>manager</option>
+                    <option>staff</option>
+                </select>
+                <select class="search-input" style="width:140px;">
+                    <option>所有岗位</option>
+                    <option>仓库经理</option>
+                    <option>采购员</option>
+                    <option>出库员</option>
+                </select>
+            </div>
+            <button class="btn btn-sm">导出矩阵 CSV</button>
+        </div>
+
+        <div class="matrix-scroll">
+            <table class="matrix-table">
+                <thead>
+                    <tr class="group-row">
+                        <th class="sticky-col">用户 \ 菜单</th>
+                        <th class="col-group-bg-1" colspan="2">工作台</th>
+                        <th class="col-group-bg-2" colspan="3">业务</th>
+                        <th class="col-group-bg-3" colspan="5">仓库管理</th>
+                        <th class="col-group-bg-4" colspan="2">商品管理</th>
+                        <th class="col-group-bg-5" colspan="1">系统</th>
+                    </tr>
+                    <tr class="col-row">
+                        <th class="sticky-col"></th>
+                        <th class="col-group-bg-1">首页</th>
+                        <th class="col-group-bg-1">待审批</th>
+                        <th class="col-group-bg-2">入库</th>
+                        <th class="col-group-bg-2">出库</th>
+                        <th class="col-group-bg-2">退换货</th>
+                        <th class="col-group-bg-3">库存查询</th>
+                        <th class="col-group-bg-3">调拨</th>
+                        <th class="col-group-bg-3">存储区</th>
+                        <th class="col-group-bg-3">报损</th>
+                        <th class="col-group-bg-3">盘点</th>
+                        <th class="col-group-bg-4">商品</th>
+                        <th class="col-group-bg-4">供应商</th>
+                        <th class="col-group-bg-5">通知</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- admin -->
+                    <tr>
+                        <td class="sticky-col">
+                            <div class="user-cell">
+                                <div class="avatar-sm red">admin</div>
+                                <div>
+                                    <div class="name">系统管理员</div>
+                                    <div class="role admin">admin</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="perm-dot locked" title="admin 自动拥有全部权限"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                        <td><span class="perm-dot locked"></span></td>
+                    </tr>
+                    <!-- 仓库经理 -->
+                    <tr>
+                        <td class="sticky-col">
+                            <div class="user-cell">
+                                <div class="avatar-sm orange">王</div>
+                                <div>
+                                    <div class="name">王经理</div>
+                                    <div class="role manager">manager · 仓库经理</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                    </tr>
+                    <!-- 采购员 -->
+                    <tr>
+                        <td class="sticky-col">
+                            <div class="user-cell">
+                                <div class="avatar-sm green">李</div>
+                                <div>
+                                    <div class="name">李秀丽</div>
+                                    <div class="role staff">staff · 采购员</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                    </tr>
+                    <!-- 出库员 -->
+                    <tr>
+                        <td class="sticky-col">
+                            <div class="user-cell">
+                                <div class="avatar-sm">张</div>
+                                <div>
+                                    <div class="name">张志强</div>
+                                    <div class="role staff">staff · 出库员</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                    </tr>
+                    <!-- 库存控制员 -->
+                    <tr>
+                        <td class="sticky-col">
+                            <div class="user-cell">
+                                <div class="avatar-sm" style="background:#722ED1;">赵</div>
+                                <div>
+                                    <div class="name">赵敏</div>
+                                    <div class="role staff">staff · 库存控制员</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                    </tr>
+                    <!-- 实习生 -->
+                    <tr>
+                        <td class="sticky-col">
+                            <div class="user-cell">
+                                <div class="avatar-sm" style="background:#13C2C2;">陈</div>
+                                <div>
+                                    <div class="name">陈思思</div>
+                                    <div class="role staff">staff · 实习生</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                    </tr>
+                    <!-- 财务 -->
+                    <tr>
+                        <td class="sticky-col">
+                            <div class="user-cell">
+                                <div class="avatar-sm green">刘</div>
+                                <div>
+                                    <div class="name">刘会计</div>
+                                    <div class="role manager">manager · 财务</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                        <td><span class="perm-dot on"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legend">
+            <span><span class="dot-demo"></span> 未授权</span>
+            <span><span class="dot-demo on"></span> 已授权（点击即可切换）</span>
+            <span><span class="dot-demo locked"></span> admin 自动全权（不可编辑）</span>
+            <span style="margin-left:auto;" class="text-tertiary">变更后点击保存按钮统一提交</span>
+        </div>
+    </div>
+
+    <div class="footer-actions">
+        <div style="margin-right:auto;" class="text-secondary">本次未做修改</div>
+        <button class="btn">放弃修改</button>
+        <button class="btn btn-primary">保存全部权限</button>
+    </div>
+
+</div>
+</div>
+
+<script>
+document.querySelectorAll('.perm-dot').forEach(dot => {
+    if (dot.classList.contains('locked')) return;
+    dot.addEventListener('click', () => dot.classList.toggle('on'));
+});
+</script>
+
+</body>
+</html>

@@ -1,94 +1,187 @@
 {% extends "base.html" %}
 {% block title %}新建入库单{% endblock %}
+{% block crumb %}<span class="sep">/</span><a href="{{ url_for('inbound_list') }}">入库</a><span class="sep">/</span><span class="current">新建</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">新建入库单（草稿）</div>
-    <div class="card-body">
-        <form method="post" id="inbound-form">
-            <div class="form-row">
-                <label>供应商 <span style="color:var(--color-out);">*</span></label>
-                <select name="supplier_id" required>
-                    {% for s in suppliers %}
-                    <option value="{{ s.id }}">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-row">
-                <label>备注</label>
-                <input type="text" name="note" placeholder="可选">
-            </div>
+<form method="post" id="inbound-form" enctype="multipart/form-data">
 
-            <div style="margin: 24px 0 12px 0; font-weight:600; color:var(--color-primary);">入库明细</div>
-            <table id="item-table">
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">新建入库单</div>
+            <div class="page-sub">单号自动生成 · 选完物品后单位/规格/现库存自动填</div>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">取消返回</a>
+    </div>
+
+    <div class="step-bar">
+        <div class="step active"><span class="n">1</span><span>填写</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">2</span><span>提交审批</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">3</span><span>已入库</span></div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>位置信息</h3><span class="meta">必填 1 项</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>入库仓库 <span class="req" style="color:var(--accent);">*</span></label>
+                    <div class="picker-btn" onclick="openPicker('warehouse', 'warehouse-id')">
+                        <input type="hidden" name="warehouse_id" id="warehouse-id" required>
+                        <span class="picker-label empty" id="warehouse-id-label">未选择仓库</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>入库员工 <span class="req" style="color:var(--accent);">*</span></label>
+                    <div class="picker-btn" onclick="openPicker('user', 'operator-id')">
+                        <input type="hidden" name="operator_id" id="operator-id" required>
+                        <span class="picker-label empty" id="operator-id-label">未选择经手员工</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row span2">
+                    <label>备注 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可选</span></label>
+                    <input type="text" name="note">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>入库明细</h3><span class="meta" id="meta-detail">已添加 0 行 · 选物品后单位/规格/现库存自动填</span></div>
+        <div class="body">
+            <datalist id="inb-areas">{% for a in area_options or [] %}<option value="{{ a }}">{% endfor %}</datalist>
+            <datalist id="inb-positions">{% for p in position_options or [] %}<option value="{{ p }}">{% endfor %}</datalist>
+            <table class="line-table" id="item-table">
                 <thead>
                     <tr>
-                        <th>SKU</th>
-                        <th>批次号</th>
-                        <th>生产日期</th>
-                        <th>效期</th>
-                        <th>入库位</th>
-                        <th>数量</th>
-                        <th>单价</th>
-                        <th></th>
+                        <th style="width: 12%;">存放区域 *</th>
+                        <th style="width: 12%;">存放位置 *</th>
+                        <th style="width: 18%;">物品 *</th>
+                        <th style="width: 12%;">编码</th>
+                        <th style="width: 7%;">单位</th>
+                        <th style="width: 10%;">规格</th>
+                        <th style="width: 8%;">现库存</th>
+                        <th style="width: 9%;">入库数量 *</th>
+                        <th style="width: 13%;">批次号</th>
+                        <th style="width: 5%;"></th>
                     </tr>
                 </thead>
-                <tbody id="item-rows">
-                    <!-- 模板行（不提交，给 JS 复制用） -->
-                </tbody>
+                <tbody id="item-rows"></tbody>
             </table>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="addRow()" style="margin-top:8px;">+ 添加一行</button>
-
-            <div style="margin-top:24px;">
-                <button class="btn" type="submit">保存草稿</button>
-                <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">取消</a>
-            </div>
-        </form>
+            <button type="button" class="add-line" onclick="addRow()">+ 添加一行明细</button>
+        </div>
     </div>
-</div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>附件</h3><span class="meta">可选 · 单文件 ≤ 10MB</span></div>
+        <div class="body">
+            <label class="upload-zone">
+                <div class="big">+ 上传</div>
+                <div>采购合同 / 发票 / 验收单照片</div>
+                <div class="hint">jpg / png / pdf · 单文件 ≤ 10MB · 最多 10 份</div>
+                <input type="file" name="attachments[]" multiple>
+            </label>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left">
+            <div>明细 <span class="num" id="stat-rows">0</span> 行</div>
+            <div>合计入库 <span class="num" id="stat-total">0</span> 件</div>
+        </div>
+        <div class="right">
+            <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">取消</a>
+            <button class="btn btn-primary" type="submit">保存草稿 → 提交审批</button>
+        </div>
+    </div>
+
+</form>
 
 <script>
-const SKU_OPTIONS = `
-    <option value="">— 选择 SKU —</option>
-    {% for s in skus %}
-    <option value="{{ s.id }}" data-code="{{ s.code }}">{{ s.code }} | {{ s.name }} {% if s.spec %}({{ s.spec }}){% endif %}</option>
-    {% endfor %}
-`;
-const LOC_OPTIONS = `
-    <option value="">— 选择库位 —</option>
-    {% for l in locations %}
-    <option value="{{ l.id }}">{{ l.code }} [{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻'}[l.zone_type] }}]</option>
-    {% endfor %}
-`;
+let rowCounter = 0;
 
 function addRow() {
+    rowCounter += 1;
+    const idx = rowCounter;
     const tbody = document.getElementById('item-rows');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td><select name="sku_id[]" style="min-width:200px;" onchange="suggestBatchNo(this)">${SKU_OPTIONS}</select></td>
-        <td><input type="text" name="batch_no[]" placeholder="如 YCY-350-N-20260517-01" style="min-width:200px;"></td>
-        <td><input type="date" name="production_date[]"></td>
-        <td><input type="date" name="expiry_date[]"></td>
-        <td><select name="location_id[]">${LOC_OPTIONS}</select></td>
-        <td><input type="number" name="quantity[]" min="1" style="width:80px;"></td>
-        <td><input type="number" name="unit_price[]" min="0" step="0.01" value="0" style="width:80px;"></td>
-        <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">删</button></td>
+        <td>
+            <input type="text" name="storage_area[]" list="inb-areas" required autocomplete="off" placeholder="区域" style="width:100%;">
+        </td>
+        <td>
+            <input type="text" name="storage_position[]" list="inb-positions" required autocomplete="off" placeholder="位置" style="width:100%;">
+        </td>
+        <td>
+            <div class="picker-btn" onclick="pickSku(${idx})" style="padding:6px 10px;">
+                <input type="hidden" name="sku_id[]" id="sku-${idx}" required>
+                <span class="picker-label empty" id="sku-${idx}-label">选物品</span>
+                <span class="picker-arrow">换</span>
+            </div>
+        </td>
+        <td><input type="text" id="sku-${idx}-code" readonly style="background:var(--bg-soft); font-family:var(--font-mono); font-size:11px;"></td>
+        <td><input type="text" id="sku-${idx}-unit" readonly style="background:var(--bg-soft);"></td>
+        <td><input type="text" id="sku-${idx}-spec" readonly style="background:var(--bg-soft); font-size:11px;"></td>
+        <td><input type="text" id="sku-${idx}-onhand" readonly style="background:var(--bg-soft); text-align:right; color:var(--accent-deep); font-family:var(--font-mono);"></td>
+        <td><input type="number" name="quantity[]" min="1" style="width:100%; text-align:right;" oninput="recalc()" required></td>
+        <td><input type="text" name="batch_no[]" placeholder="留空自动" style="font-size:11px;"></td>
+        <td style="text-align:center;"><button type="button" class="del" onclick="removeRow(this)">×</button></td>
     `;
     tbody.appendChild(tr);
+    recalc();
 }
 
-function suggestBatchNo(skuSelect) {
-    // 选了 SKU 后，自动给批次号一个建议（用户可改）
-    const code = skuSelect.options[skuSelect.selectedIndex].dataset.code;
-    if (!code) return;
-    const row = skuSelect.closest('tr');
-    const batchInput = row.querySelector('input[name="batch_no[]"]');
-    if (batchInput.value) return;
-    const today = new Date().toISOString().slice(0, 10).replaceAll('-', '');
-    batchInput.value = `${code}-${today}-01`;
+function pickSku(idx) {
+    // 用 openPicker，但需要拦截回填后调用 sku-info API
+    window.__pendingSkuFillIdx = idx;
+    openPicker('sku', `sku-${idx}`);
 }
 
-// 默认加一行
+// 监听 sku picker 回填后，自动拉 sku-info 填入只读字段
+document.addEventListener('change', async e => {
+    if (e.target.type === 'hidden' && e.target.id && e.target.id.startsWith('sku-')) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) lbl.classList.toggle('empty', !e.target.value);
+        const idx = e.target.id.replace('sku-', '');
+        const skuId = e.target.value;
+        if (!skuId) return;
+        try {
+            const r = await fetch('/api/sku-info?id=' + encodeURIComponent(skuId));
+            if (!r.ok) return;
+            const j = await r.json();
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            set(`sku-${idx}-code`, j.code || '');
+            set(`sku-${idx}-unit`, j.unit || '');
+            set(`sku-${idx}-spec`, j.spec || '');
+            set(`sku-${idx}-onhand`, j.on_hand || 0);
+        } catch (err) {}
+    }
+    // 仓库 / 入库员工 label empty 切换
+    if (e.target.type === 'hidden' && e.target.id && !e.target.id.startsWith('sku-')) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) lbl.classList.toggle('empty', !e.target.value);
+    }
+});
+
+function removeRow(btn) {
+    btn.closest('tr').remove();
+    recalc();
+}
+
+function recalc() {
+    const rows = document.querySelectorAll('#item-rows tr');
+    document.getElementById('stat-rows').textContent = rows.length;
+    document.getElementById('meta-detail').textContent = `已添加 ${rows.length} 行 · 选物品后单位/规格/现库存自动填`;
+    let total = 0;
+    document.querySelectorAll('input[name="quantity[]"]').forEach(i => {
+        total += parseInt(i.value) || 0;
+    });
+    document.getElementById('stat-total').textContent = total;
+}
+
 addRow();
 </script>
 

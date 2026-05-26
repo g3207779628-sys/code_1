@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>权限管理 - 方案 2（角色预设 + 微调）- 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.perm-page { max-width: 1100px; margin: 0 auto; }
+
+.user-banner {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    padding: 18px 24px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+}
+.user-banner .info { display: flex; gap: 16px; align-items: center; }
+.user-banner .avatar-big {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #FAAD14, #FF7A45);
+    color: #FFF; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 600;
+}
+.user-banner h2 { font-size: 17px; font-weight: 600; }
+.user-banner .sub { font-size: 12px; color: var(--ant-text-secondary); margin-top: 4px; }
+
+.section { margin-bottom: 18px; }
+.section-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--ant-text);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+}
+.section-title .step {
+    width: 22px; height: 22px;
+    background: var(--ant-primary);
+    color: #FFF;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px;
+}
+.section-title .hint {
+    font-weight: 400; color: var(--ant-text-tertiary); font-size: 12px;
+}
+
+.preset-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+.preset-card {
+    background: #FFF;
+    border: 2px solid var(--ant-divider);
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.preset-card:hover {
+    border-color: var(--ant-primary);
+    box-shadow: 0 4px 12px rgba(22,119,255,0.1);
+}
+.preset-card.active {
+    border-color: var(--ant-primary);
+    background: var(--ant-primary-light);
+}
+.preset-card .icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+}
+.preset-card .name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.preset-card .desc { font-size: 11px; color: var(--ant-text-secondary); }
+.preset-card .count { font-size: 11px; color: var(--ant-primary); margin-top: 6px; }
+
+.chip-area {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    padding: 16px;
+    min-height: 80px;
+}
+.chip-area.granted { border-left: 3px solid var(--ant-success); }
+.chip-area.available { border-left: 3px solid var(--ant-text-tertiary); background: #FAFAFA; }
+.chip-group {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 10px;
+}
+.chip-group:last-child { margin-bottom: 0; }
+.chip-group-label {
+    width: 100%;
+    font-size: 11px; color: var(--ant-text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+.chip-granted {
+    background: var(--ant-success-bg);
+    color: var(--ant-success);
+    border-color: #B7EB8F;
+}
+.chip-granted:hover { background: #D9F7BE; }
+.chip-granted .x {
+    width: 14px; height: 14px;
+    background: rgba(82,196,26,0.2);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px;
+}
+.chip-granted:hover .x { background: var(--ant-error); color: #FFF; }
+.chip-available {
+    background: #FFF;
+    color: var(--ant-text-secondary);
+    border-color: var(--ant-divider);
+    border-style: dashed;
+}
+.chip-available:hover {
+    color: var(--ant-primary);
+    border-color: var(--ant-primary);
+    background: var(--ant-primary-light);
+    border-style: solid;
+}
+.chip-available .plus {
+    font-weight: 600; color: var(--ant-primary);
+}
+.empty-hint { color: var(--ant-text-tertiary); font-size: 13px; padding: 8px 0; }
+
+.footer-actions {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: #FFF;
+    border-radius: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.03);
+    position: sticky; bottom: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+    <strong>UI 方案 2：角色预设 + 微调</strong> ｜ 先点一个预设角色批量授权，再用 chip 加减微调，适合非技术管理员
+</div>
+
+<div class="content" style="padding: 24px;">
+<div class="perm-page">
+
+    <a href="index.html" class="btn btn-sm" style="margin-bottom: 16px;">‹ 返回方案列表</a>
+
+    <div class="user-banner">
+        <div class="info">
+            <div class="avatar-big">李</div>
+            <div>
+                <h2>李秀丽 <span class="tag tag-default" style="margin-left:8px;">staff</span></h2>
+                <div class="sub">手机 159****2233 · 岗位：采购员 · 入职 3 个月</div>
+            </div>
+        </div>
+        <div class="text-right">
+            <div style="font-size:12px;" class="text-secondary">当前权限</div>
+            <div style="font-family:var(--font-num); font-size:20px; font-weight:600;" class="text-primary">5 / 13</div>
+        </div>
+    </div>
+
+    <!-- 步骤 1：预设角色 -->
+    <div class="section">
+        <div class="section-title">
+            <span class="step">1</span> 一键套用预设角色
+            <span class="hint">（点击后会清空现有权限并应用模板，可在下方微调）</span>
+        </div>
+        <div class="preset-row">
+            <div class="preset-card">
+                <div class="icon" style="background:#FFF1F0;color:#FF4D4F;">⚐</div>
+                <div class="name">仓库经理</div>
+                <div class="desc">查看所有 + 审批权</div>
+                <div class="count">13 / 13 项</div>
+            </div>
+            <div class="preset-card active">
+                <div class="icon" style="background:#FFFBE6;color:#FAAD14;">⛟</div>
+                <div class="name">采购员</div>
+                <div class="desc">入库 + 商品 + 供应商</div>
+                <div class="count">5 / 13 项</div>
+            </div>
+            <div class="preset-card">
+                <div class="icon" style="background:#E6F4FF;color:#1677FF;">▣</div>
+                <div class="name">出库员</div>
+                <div class="desc">仅出库 + 库存查询</div>
+                <div class="count">3 / 13 项</div>
+            </div>
+            <div class="preset-card">
+                <div class="icon" style="background:#F6FFED;color:#52C41A;">⚙</div>
+                <div class="name">普通员工</div>
+                <div class="desc">仅工作台</div>
+                <div class="count">1 / 13 项</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 步骤 2：当前权限 -->
+    <div class="section">
+        <div class="section-title">
+            <span class="step">2</span> 当前已授权（5 项）
+            <span class="hint">悬停在 chip 上点 × 移除</span>
+        </div>
+        <div class="chip-area granted">
+            <div class="chip-group">
+                <span class="chip-group-label">工作台</span>
+                <span class="chip chip-granted">工作台首页 <span class="x">×</span></span>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">业务</span>
+                <span class="chip chip-granted">入库管理 <span class="x">×</span></span>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">仓库管理</span>
+                <span class="chip chip-granted">库存查询 <span class="x">×</span></span>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">商品管理</span>
+                <span class="chip chip-granted">商品列表 <span class="x">×</span></span>
+                <span class="chip chip-granted">供应商 <span class="x">×</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 步骤 3：可添加 -->
+    <div class="section">
+        <div class="section-title">
+            <span class="step">3</span> 可添加权限（8 项）
+            <span class="hint">点 chip 加入</span>
+        </div>
+        <div class="chip-area available">
+            <div class="chip-group">
+                <span class="chip-group-label">工作台</span>
+                <span class="chip chip-available"><span class="plus">+</span> 待审批中心</span>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">业务</span>
+                <span class="chip chip-available"><span class="plus">+</span> 出库管理</span>
+                <span class="chip chip-available"><span class="plus">+</span> 退换货</span>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">仓库管理</span>
+                <span class="chip chip-available"><span class="plus">+</span> 商品调拨</span>
+                <span class="chip chip-available"><span class="plus">+</span> 存储区管理</span>
+                <span class="chip chip-available"><span class="plus">+</span> 报损管理</span>
+                <span class="chip chip-available"><span class="plus">+</span> 盘点</span>
+            </div>
+            <div class="chip-group">
+                <span class="chip-group-label">系统</span>
+                <span class="chip chip-available"><span class="plus">+</span> 通知渠道与预警</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-actions">
+        <div class="text-secondary">本次变化：<span class="text-success">+ 0</span> · <span class="text-error">- 0</span></div>
+        <div>
+            <button class="btn">取消</button>
+            <button class="btn btn-primary">保存权限（5 项）</button>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+// Chip 点击交互（mockup 简化版）
+document.querySelectorAll('.chip-granted').forEach(c => {
+    c.addEventListener('click', () => c.style.opacity = c.style.opacity === '0.4' ? '1' : '0.4');
+});
+document.querySelectorAll('.preset-card').forEach(c => {
+    c.addEventListener('click', () => {
+        document.querySelectorAll('.preset-card').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+    });
+});
+</script>
+
+</body>
+</html>

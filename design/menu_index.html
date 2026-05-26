@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>左侧菜单结构 — 6 套方案对比 · 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.page { max-width: 1200px; margin: 40px auto; padding: 0 24px; }
+
+.hero {
+    background: linear-gradient(135deg, #001529 0%, #1677FF 100%);
+    color: #FFF;
+    padding: 40px 48px;
+    border-radius: 12px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 24px rgba(0,21,41,0.2);
+}
+.hero h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+.hero .subtitle { font-size: 14px; opacity: 0.85; }
+
+.now-status {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-left: 4px solid var(--ant-warning);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+.now-status h3 { font-size: 14px; margin-bottom: 6px; }
+.now-status .pain {
+    display: flex; gap: 16px; margin-top: 8px;
+    font-size: 12px;
+    color: var(--ant-text-secondary);
+}
+.now-status .pain li {
+    list-style: none;
+    padding: 4px 10px;
+    background: #FFF7E6;
+    border-radius: 4px;
+}
+
+.compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.option-card {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s;
+    display: flex; flex-direction: column;
+    cursor: pointer;
+}
+.option-card:hover {
+    border-color: var(--ant-primary);
+    box-shadow: 0 6px 16px rgba(22,119,255,0.1);
+    transform: translateY(-2px);
+}
+
+.option-preview {
+    background: #001529;
+    padding: 12px 0;
+    min-height: 360px;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+}
+.option-preview .brand {
+    color: #FFF; font-weight: 600;
+    padding: 0 18px 12px; margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.option-preview .group {
+    color: rgba(255,255,255,0.45);
+    font-size: 9px;
+    padding: 8px 18px 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.option-preview .item {
+    padding: 4px 18px 4px 26px;
+    line-height: 1.5;
+}
+.option-preview .item.active {
+    background: #1677FF;
+    color: #FFF;
+    position: relative;
+}
+.option-preview .item.active::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: #FFF;
+}
+.option-preview .item .count {
+    float: right; color: rgba(255,255,255,0.4); font-size: 10px;
+}
+
+.option-meta { padding: 20px; flex: 1; }
+.option-meta h2 {
+    font-size: 16px; font-weight: 600; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+}
+.option-meta h2 .num {
+    width: 24px; height: 24px;
+    background: var(--ant-primary);
+    color: #FFF; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-family: var(--font-num);
+}
+.option-meta .feature {
+    font-size: 12px; color: var(--ant-text-secondary);
+    line-height: 1.7; margin: 8px 0 12px;
+}
+.option-meta .scene {
+    font-size: 11px;
+    padding: 6px 10px;
+    background: #FAFAFA;
+    border-left: 3px solid var(--ant-text-tertiary);
+    border-radius: 0 4px 4px 0;
+    color: var(--ant-text-secondary);
+    margin-bottom: 10px;
+}
+.option-meta .pros-cons {
+    display: grid; grid-template-columns: 1fr; gap: 8px;
+    margin-bottom: 12px;
+}
+.option-meta .pros, .option-meta .cons {
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+.option-meta .pros { background: var(--ant-success-bg); border-left: 3px solid var(--ant-success); }
+.option-meta .cons { background: #FFF7E6; border-left: 3px solid var(--ant-warning); }
+.option-meta .pros strong, .option-meta .cons strong {
+    display: block; font-size: 10px; margin-bottom: 2px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.option-meta .pros strong { color: var(--ant-success); }
+.option-meta .cons strong { color: var(--ant-warning); }
+.option-meta .pros ul, .option-meta .cons ul { padding-left: 14px; margin: 0; }
+
+.option-actions {
+    padding: 12px 20px;
+    border-top: 1px solid var(--ant-divider);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.option-actions .meta { font-size: 11px; color: var(--ant-text-tertiary); }
+
+.suggestion {
+    margin-top: 32px;
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 8px;
+    padding: 24px;
+}
+.suggestion h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+.suggestion ul { padding-left: 20px; }
+.suggestion li {
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.7;
+}
+.suggestion li strong { color: var(--ant-primary); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="hero">
+        <h1>左侧菜单结构 — 6 套方案对比</h1>
+        <div class="subtitle">为「金山仓储」的菜单做信息架构（IA）重组 — 请挑出最符合贵公司日常使用习惯的一套</div>
+    </div>
+
+    <div class="now-status">
+        <h3>当前菜单的问题（为什么要重组）</h3>
+        <div class="pain">
+            <li>⚠ "业务" 只有 2 项 — 入库 + 出库（过空）</li>
+            <li>⚠ "仓库管理" 塞了 9 项 — 库存查询/调拨/存储区/仓库/库位/报损/盘点/流水/预测（超载）</li>
+            <li>⚠ 一级 "仓库管理" 和二级 "仓库管理"（warehouse_list）重名（混淆）</li>
+            <li>⚠ "报损" / "盘点" 是动作不是查询，归在"仓库管理"下不直观</li>
+        </div>
+    </div>
+
+    <div class="compare-grid">
+
+        <!-- 方案 1：业务流程导向 -->
+        <a href="menu_v1_flow.html" style="color:inherit;text-decoration:none;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="brand">⚐ 金山仓储</div>
+                <div class="group">看板</div>
+                <div class="item">▦ 工作台</div>
+                <div class="item">▦ 报表</div>
+                <div class="group">业务流程</div>
+                <div class="item">▸ 进货管理</div>
+                <div class="item active">▸ 库存中心 <span class="count">5</span></div>
+                <div class="item">▸ 出货管理</div>
+                <div class="group">数据</div>
+                <div class="item">▦ 商品资料</div>
+                <div class="item">▦ 供应商</div>
+                <div class="item">▦ 基础设施 <span class="count">3</span></div>
+                <div class="group">系统</div>
+                <div class="item">▦ 用户/通知/备份 <span class="count">4</span></div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">1</span> 业务流程导向</h2>
+                <div class="feature">按"进货 → 库存 → 出货 → 分析"4 个阶段组织，每个一级承担一个业务环节。</div>
+                <div class="scene">📌 适合：标准化业务流程、希望按"东西怎么进出"找菜单的同事</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul><li>符合真实工作流</li><li>一级菜单划分明确</li></ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul><li>跨阶段动作（如报损）需放到具体环节，可能不直观</li></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">一级 5 个 · 二级 13 项</span>
+                <span class="btn btn-primary btn-sm">完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 2：操作 vs 配置 -->
+        <a href="menu_v2_action_vs_config.html" style="color:inherit;text-decoration:none;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="brand">⚐ 金山仓储</div>
+                <div class="group">日常使用</div>
+                <div class="item">▦ 工作台</div>
+                <div class="item active">▸ 日常操作 <span class="count">4</span></div>
+                <div class="item">▸ 查询分析 <span class="count">4</span></div>
+                <div class="group">数据维护</div>
+                <div class="item">▸ 商品/供应商 <span class="count">2</span></div>
+                <div class="item">▸ 仓库设施 <span class="count">3</span></div>
+                <div class="group">系统设置</div>
+                <div class="item">▸ 系统配置 <span class="count">5</span></div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">2</span> 操作 vs 配置</h2>
+                <div class="feature">把"动"的（建单/操作）和"静"的（查询/配置）分开。员工 80% 时间在前者。</div>
+                <div class="scene">📌 适合：日常操作员居多、希望"常用的放最上面"</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul><li>常用最快触达</li><li>权限分配清晰</li></ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul><li>"操作"和"查询"边界有时模糊（如盘点）</li></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">一级 5 个 · 二级 14 项</span>
+                <span class="btn btn-primary btn-sm">完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 3：动作-资源-洞察 -->
+        <a href="menu_v3_three_pillars.html" style="color:inherit;text-decoration:none;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="brand">⚐ 金山仓储</div>
+                <div class="item">▦ 工作台</div>
+                <div class="group">主功能</div>
+                <div class="item active">▸ 操作 <span class="count">5</span></div>
+                <div class="item">▸ 资源 <span class="count">5</span></div>
+                <div class="item">▸ 洞察 <span class="count">3</span></div>
+                <div class="group">设置</div>
+                <div class="item">▸ 系统 <span class="count">5</span></div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">3</span> 三支柱（动作-资源-洞察）</h2>
+                <div class="feature">借鉴产品设计三分法：操作（做什么）/ 资源（看什么）/ 洞察（学什么）。</div>
+                <div class="scene">📌 适合：管理视角、汇报时菜单结构本身就是"故事"</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul><li>顶层抽象有美感</li><li>未来扩展空间大</li></ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul><li>抽象层级高，新员工要学</li></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">一级 4 个 · 二级 13 项</span>
+                <span class="btn btn-primary btn-sm">完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 4：扁平化 -->
+        <a href="menu_v4_flat.html" style="color:inherit;text-decoration:none;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="brand">⚐ 金山仓储</div>
+                <div class="item">▦ 工作台</div>
+                <div class="item">▦ 入库</div>
+                <div class="item active">▦ 出库 <span class="count">●</span></div>
+                <div class="item">▦ 调拨</div>
+                <div class="item">▦ 库存</div>
+                <div class="item">▦ 报损</div>
+                <div class="item">▦ 盘点</div>
+                <div class="item">▦ 商品</div>
+                <div class="item">▦ 供应商</div>
+                <div class="item">▦ 仓库</div>
+                <div class="item">▦ 库位</div>
+                <div class="item">▦ 报表/流水</div>
+                <div class="item">▦ 设置</div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">4</span> 全扁平化</h2>
+                <div class="feature">完全没有一级菜单分组，所有功能直接平铺在侧栏。一次点击直达。</div>
+                <div class="scene">📌 适合：每个菜单都常用、新员工最快上手</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul><li>0 学习成本</li><li>1 次点击直达</li></ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul><li>菜单 >12 项时显得拥挤</li><li>无法逻辑分组</li></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">一级 13 个 · 0 二级</span>
+                <span class="btn btn-primary btn-sm">完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 5：细粒度（每组 1-3 项） -->
+        <a href="menu_v5_finegrained.html" style="color:inherit;text-decoration:none;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="brand">⚐ 金山仓储</div>
+                <div class="item">▦ 工作台</div>
+                <div class="group">物流操作</div>
+                <div class="item">▦ 入库</div>
+                <div class="item active">▦ 出库</div>
+                <div class="item">▦ 调拨</div>
+                <div class="group">库存</div>
+                <div class="item">▦ 查询</div>
+                <div class="item">▦ 流水</div>
+                <div class="group">库存调整</div>
+                <div class="item">▦ 报损</div>
+                <div class="item">▦ 盘点</div>
+                <div class="group">主数据</div>
+                <div class="item">▦ 商品/供应商 <span class="count">2</span></div>
+                <div class="item">▦ 仓库/库位/存储区 <span class="count">3</span></div>
+                <div class="group">系统</div>
+                <div class="item">▦ 系统 <span class="count">5</span></div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">5</span> 细粒度分组</h2>
+                <div class="feature">7 个一级组，每组 1-3 项二级。每组的语义都很精确。</div>
+                <div class="scene">📌 适合：菜单未来会大量增加、需要清晰的分类轴</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul><li>分类语义最精确</li><li>易于未来扩展</li></ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul><li>层级多，找路径稍长</li></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">一级 7 个 · 二级 14 项</span>
+                <span class="btn btn-primary btn-sm">完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 6：角色视角 -->
+        <a href="menu_v6_role_view.html" style="color:inherit;text-decoration:none;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="brand">⚐ 金山仓储</div>
+                <div class="item">▦ 工作台</div>
+                <div class="group">现场工作</div>
+                <div class="item">▸ 我的任务 <span class="count">3</span></div>
+                <div class="item active">▸ 单据登记 <span class="count">4</span></div>
+                <div class="group">仓库浏览</div>
+                <div class="item">▸ 看货 <span class="count">3</span></div>
+                <div class="group">老板视角</div>
+                <div class="item">▸ 经营分析 <span class="count">2</span></div>
+                <div class="item">▸ 主数据维护 <span class="count">5</span></div>
+                <div class="group">系统</div>
+                <div class="item">▸ 系统 <span class="count">5</span></div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">6</span> 角色视角</h2>
+                <div class="feature">按"谁会用"做分组：现场工人 / 仓库浏览者 / 老板视角。让登录后第一眼找到自己。</div>
+                <div class="scene">📌 适合：用户角色差异大、人员流动频繁需快速适应</div>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul><li>角色感强</li><li>权限映射直接</li></ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul><li>同一功能可能跨角色，需取舍归属</li></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">一级 6 个 · 二级 14 项</span>
+                <span class="btn btn-primary btn-sm">完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+    </div>
+
+    <div class="suggestion">
+        <h3>🎯 选型建议</h3>
+        <ul>
+            <li>如果贵公司 <strong>业务流程很标准化（货怎么进、怎么存、怎么出）</strong>，推荐 <strong>方案 1（业务流程导向）</strong> — 符合自然心智</li>
+            <li>如果 <strong>员工日常 80% 时间都在登记单据</strong>，推荐 <strong>方案 2（操作 vs 配置）</strong> — 常用的最快触达</li>
+            <li>如果 <strong>用户喜欢"产品感"，追求极简结构</strong>，推荐 <strong>方案 3（三支柱）</strong> — 顶层最美</li>
+            <li>如果 <strong>菜单总数 ≤ 13 项，希望新人零学习成本</strong>，推荐 <strong>方案 4（全扁平）</strong> — 一击直达</li>
+            <li>如果 <strong>未来还会加 5-10 个新菜单</strong>，推荐 <strong>方案 5（细粒度分组）</strong> — 留有扩展空间</li>
+            <li>如果 <strong>不同岗位差异大、希望登录后立刻找到自己的活</strong>，推荐 <strong>方案 6（角色视角）</strong> — 角色感最强</li>
+        </ul>
+    </div>
+
+    <div style="text-align:center; margin-top: 40px; padding: 20px; color: var(--ant-text-tertiary); font-size: 12px;">
+        金山仓储 · 菜单 IA 重组方案 · 2026-05-20 · 选定后将进入实装阶段
+    </div>
+
+</div>
+
+</body>
+</html>

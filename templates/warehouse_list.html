@@ -1,36 +1,56 @@
 {% extends "base.html" %}
 {% block title %}仓库管理{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">仓库</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">
-        <span>仓库列表（共 {{ warehouses|length }} 个）</span>
-        {% if session.role == 'admin' %}
-        <a class="btn" href="{{ url_for('warehouse_new') }}">新增仓库</a>
-        {% endif %}
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">仓库</div>
+        <div class="page-sub">共 {{ rows|length }} 个 · 主数据维护</div>
     </div>
-    <div class="card-body" style="padding:0;">
-        {% if warehouses %}
-        <table>
-            <thead><tr><th>名称</th><th>地址</th><th>库位数</th><th>创建时间</th>{% if session.role == 'admin' %}<th>操作</th>{% endif %}</tr></thead>
-            <tbody>
-                {% for w in warehouses %}
+    {% if session.role in ['admin','manager'] %}
+    <a class="btn btn-primary" href="{{ url_for('warehouse_new') }}">+ 新建仓库</a>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>仓库列表</h3><span class="meta">{{ rows|length }} 个</span></div>
+    <div class="body" style="padding:0;">
+        {% if rows %}
+        <table class="dense-table">
+            <thead>
                 <tr>
-                    <td>{{ w.name }}</td>
-                    <td>{{ w.address or '-' }}</td>
-                    <td class="mono">{{ w.location_count }}</td>
-                    <td class="mono">{{ w.created_at }}</td>
-                    {% if session.role == 'admin' %}
-                    <td class="actions">
-                        <a class="btn btn-sm btn-secondary" href="{{ url_for('warehouse_edit', warehouse_id=w.id) }}">编辑</a>
+                    <th>仓库名</th>
+                    <th>地址</th>
+                    <th style="width:80px;" class="text-right">库位数</th>
+                    <th style="width:140px;">创建时间</th>
+                    <th style="width:140px;" class="text-right">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="sku-name"><strong>{{ r.name }}</strong></td>
+                    <td style="color:var(--ink-quiet);">{{ r.address or '—' }}</td>
+                    <td class="num-mono text-right">{{ r.loc_count }}</td>
+                    <td class="mono" style="font-size:11px; color:var(--ink-quiet);">{{ (r.created_at or '')[:16] }}</td>
+                    <td class="text-right">
+                        {% if session.role in ['admin','manager'] %}
+                        <a class="btn btn-sm btn-link" href="{{ url_for('warehouse_edit', wh_id=r.id) }}">编辑</a>
+                        <form method="post" action="{{ url_for('warehouse_delete', wh_id=r.id) }}" style="display:inline;"
+                              onsubmit="return confirm('删除仓库「{{ r.name }}」？仅未含库位时可删');">
+                            <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                        </form>
+                        {% endif %}
                     </td>
-                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <div class="empty">还没有仓库。</div>
+        <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
+            还没有仓库。点击右上「+ 新建仓库」开始。
+        </div>
         {% endif %}
     </div>
 </div>

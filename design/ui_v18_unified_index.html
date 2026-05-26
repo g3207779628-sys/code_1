@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v18 统一查询页方案对比 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { background: var(--bg-soft); font-size: 13px; padding: 32px 40px; color: var(--ink); }
+.page { max-width: 1280px; margin: 0 auto; }
+.head-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 26px 32px; margin-bottom: 22px; }
+.head-card .pre { font-family: var(--font-mono); font-size: 11px; color: var(--accent-deep); letter-spacing: 5px; margin-bottom: 8px; }
+.head-card h1 { font-size: 26px; font-weight: 800; letter-spacing: 4px; margin-bottom: 12px; }
+.head-card h1 .accent { color: var(--accent-deep); }
+.head-card .lead { font-size: 13px; color: var(--ink-quiet); line-height: 1.8; }
+.head-card .lead strong { color: var(--ink); }
+.head-card code { background: var(--bg-soft); padding: 1px 6px; border-radius: 3px; font-size: 12px; color: var(--accent-deep); }
+
+.filter-summary {
+    background: var(--accent-soft); border-left: 3px solid var(--accent-deep);
+    padding: 14px 20px; margin-top: 18px; border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+.filter-summary .title { font-size: 11px; font-weight: 700; color: var(--accent-deep); letter-spacing: 3px; margin-bottom: 10px; }
+.filter-summary .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 12px; }
+.filter-summary .col strong { color: var(--ink); display: block; margin-bottom: 6px; }
+.filter-summary .col ul { padding-left: 18px; margin: 0; color: var(--ink-soft); line-height: 1.7; }
+
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 22px; }
+.scheme-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; transition: all 0.15s; display: flex; flex-direction: column; }
+.scheme-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(255,69,0,0.1); }
+.scheme-card .thumb { height: 200px; background: var(--bg-soft); border-bottom: 1px solid var(--line); padding: 12px; position: relative; overflow: hidden; }
+.thumb-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--ink-quiet); text-transform: uppercase; margin-bottom: 8px; }
+
+/* P1: 双侧栏 */
+.thumb-p1 .layout3 { display: grid; grid-template-columns: 50px 1fr 50px; gap: 4px; height: calc(100% - 22px); }
+.thumb-p1 .col { background: var(--bg-card); border: 1px solid var(--line); border-radius: 3px; padding: 4px; }
+.thumb-p1 .col.left { border-left: 2px solid var(--info); }
+.thumb-p1 .col.right { border-right: 2px solid var(--accent); }
+.thumb-p1 .col .chip { background: var(--bg-input); height: 8px; border-radius: 2px; margin-bottom: 3px; }
+.thumb-p1 .col .chip.checked { background: var(--accent); }
+.thumb-p1 .col .chip.info { background: var(--info); }
+.thumb-p1 .col.mid { background: var(--bg-card); padding: 5px; }
+.thumb-p1 .col.mid .row { height: 12px; background: var(--bg-input); border-radius: 2px; margin-bottom: 3px; }
+
+/* P2: 顶部统一 */
+.thumb-p2 .topbar { background: var(--bg-card); border: 1px solid var(--line); border-radius: 3px; padding: 5px; margin-bottom: 4px; }
+.thumb-p2 .topbar .row { display: flex; gap: 3px; }
+.thumb-p2 .topbar .chip { background: var(--bg-input); height: 10px; flex: 1; border-radius: 2px; }
+.thumb-p2 .topbar .chip.active { background: var(--accent); }
+.thumb-p2 .more { font-size: 8px; color: var(--accent); text-align: right; padding: 3px 4px; }
+.thumb-p2 .advanced { background: var(--bg-card); border: 1px solid var(--line); border-radius: 3px; padding: 5px; margin-bottom: 4px; }
+.thumb-p2 .advanced .grid { display: grid; grid-template-columns: 1fr 2px 1fr; gap: 3px; }
+.thumb-p2 .advanced .col .label { font-size: 6px; color: var(--accent-deep); margin-bottom: 2px; font-weight: 700; letter-spacing: 1px; }
+.thumb-p2 .advanced .col .chip { background: var(--bg-input); height: 7px; border-radius: 2px; margin-bottom: 2px; }
+.thumb-p2 .advanced .col .chip.info { background: var(--info-bg); border: 1px solid var(--info); }
+.thumb-p2 .advanced .col .chip.accent { background: var(--accent-soft); border: 1px solid var(--accent); }
+.thumb-p2 .advanced .sep { background: var(--line); }
+.thumb-p2 .table-area { background: var(--bg-card); border: 1px solid var(--line); border-radius: 3px; padding: 4px; height: 30%; }
+.thumb-p2 .table-area .row { height: 8px; background: var(--bg-input); border-radius: 2px; margin-bottom: 2px; }
+
+/* P3: 双视角切换 */
+.thumb-p3 .switch { display: flex; background: var(--bg-card); border: 1px solid var(--line); border-radius: 3px; padding: 3px; margin-bottom: 4px; gap: 2px; }
+.thumb-p3 .switch .opt { flex: 1; font-size: 7px; padding: 3px; text-align: center; border-radius: 2px; color: var(--ink-quiet); }
+.thumb-p3 .switch .opt.active { background: var(--accent); color: #FFF; font-weight: 700; }
+.thumb-p3 .filter { background: var(--bg-card); border: 1px solid var(--line); border-radius: 3px; padding: 4px; margin-bottom: 4px; }
+.thumb-p3 .filter .row { display: flex; gap: 2px; }
+.thumb-p3 .filter .chip { background: var(--bg-input); height: 9px; flex: 1; border-radius: 2px; }
+.thumb-p3 .filter .chip.active { background: var(--accent); }
+.thumb-p3 .table-area { background: var(--bg-card); border: 1px solid var(--line); border-radius: 3px; padding: 4px; height: calc(100% - 60px); }
+.thumb-p3 .table-area .main-row { height: 10px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 2px; margin-bottom: 3px; }
+.thumb-p3 .table-area .sub-row { height: 6px; background: var(--bg-input); border-radius: 2px; margin-left: 12px; margin-bottom: 2px; }
+
+.scheme-card .body { padding: 16px 20px 18px; display: flex; flex-direction: column; flex: 1; }
+.scheme-card .tag { display: inline-block; font-size: 10px; letter-spacing: 2px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent-deep); border-radius: 2px; margin-bottom: 8px; font-weight: 600; align-self: flex-start; }
+.scheme-card h3 { font-size: 15px; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
+.scheme-card .desc { font-size: 12px; color: var(--ink-quiet); line-height: 1.7; margin-bottom: 14px; min-height: 100px; }
+.scheme-card .open { display: block; text-align: center; padding: 9px; background: var(--accent); color: #FFF; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: 500; margin-top: auto; }
+.scheme-card .open:hover { background: var(--accent-deep); }
+
+.compare { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px 26px; margin-bottom: 22px; }
+.compare h2 { font-size: 12px; font-weight: 700; letter-spacing: 4px; color: var(--ink-quiet); margin-bottom: 14px; text-transform: uppercase; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl th, table.tbl td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line-soft); }
+table.tbl th { background: var(--bg-input); color: var(--ink); font-weight: 700; font-size: 14px; letter-spacing: 1px; }
+table.tbl td.center { text-align: center; }
+table.tbl td.score { font-family: var(--font-mono); color: var(--accent-deep); }
+table.tbl tr.best { background: var(--accent-soft); }
+table.tbl tr.best td { font-weight: 600; }
+
+.rec { background: var(--ok-bg); border-left: 3px solid var(--ok); padding: 14px 20px; margin-top: 16px; border-radius: 0 var(--r-md) var(--r-md) 0; }
+.rec .pre { font-size: 10px; letter-spacing: 3px; color: var(--ok); font-weight: 700; margin-bottom: 6px; }
+.rec .text { font-size: 13px; line-height: 1.7; }
+.rec .text strong { color: var(--accent-deep); }
+
+.foot { margin-top: 28px; text-align: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: 3px; color: var(--ink-faded); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<div class="head-card">
+    <div class="pre">// V18 · UNIFIED INVENTORY QUERY · 2026-05</div>
+    <h1><span class="accent">v18</span> 统一查询页 · 物品 + 仓库 一站式</h1>
+    <div class="lead">
+        把<strong>物品 7 项筛选</strong>和<strong>仓库 10 项筛选合到一个查询页</strong>。一次过滤同时按物品维度（品牌/类别/管理方）+ 仓库维度（楼栋/楼层/库位/部门/类型/责任人/整改状态）筛出结果。
+        新版库位表加 <code>note</code>（备注）+ <code>attachments</code>（附件）字段，整改状态作为预留字段（先做查询 UI，字段后续 v19 实装）。
+    </div>
+
+    <div class="filter-summary">
+        <div class="title">// 17 个筛选维度合并清单</div>
+        <div class="grid">
+            <div class="col">
+                <strong>🛍 物品维度（7 项 · sku 表）</strong>
+                <ul>
+                    <li>物品编号 / 品牌 / 用途 → sku 文本字段</li>
+                    <li>物品类别 / 物品大类 → sku FK</li>
+                    <li>物品所属方 / 物品管理方 → sku FK</li>
+                </ul>
+            </div>
+            <div class="col">
+                <strong>🏢 仓库维度（10 项 · location + warehouse）</strong>
+                <ul>
+                    <li>楼栋号 / 楼层 / 库位 → location 文本/FK</li>
+                    <li>仓库（仓库编号） → warehouse FK</li>
+                    <li>分配部门 / 使用部门 / 类型 / 责任人 → location FK</li>
+                    <li>是否分配 / 整改状态 → 库位状态字段</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cards">
+
+    <div class="scheme-card">
+        <div class="thumb">
+            <div class="thumb-title">P1 · 双侧栏（左物品 · 右仓库）</div>
+            <div class="thumb-p1">
+                <div class="layout3">
+                    <div class="col left">
+                        <div class="chip info"></div>
+                        <div class="chip"></div>
+                        <div class="chip info"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                    </div>
+                    <div class="col mid">
+                        <div class="row"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                    </div>
+                    <div class="col right">
+                        <div class="chip checked"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip checked"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="body">
+            <span class="tag">P1 · 双侧栏</span>
+            <h3>左 物品 / 右 仓库 · 全展开</h3>
+            <div class="desc">
+                左 220px 蓝色侧栏（物品 7 项），右 220px 橙色侧栏（仓库 10 项），中间表格区显示结果。**所有 17 项一眼可见**，复杂查询场景效率最高。代价：主表格区只剩 60% 宽度，列多时会挤。
+            </div>
+            <a class="open" href="ui_v18_p1.html">查看 P1 →</a>
+        </div>
+    </div>
+
+    <div class="scheme-card">
+        <div class="thumb">
+            <div class="thumb-title">P2 · 顶部统一 · 高级展开两栏</div>
+            <div class="thumb-p2">
+                <div class="topbar">
+                    <div class="row">
+                        <div class="chip active"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                        <div class="chip active"></div>
+                        <div class="chip"></div>
+                    </div>
+                </div>
+                <div class="more">+ 高级筛选 (12)</div>
+                <div class="advanced">
+                    <div class="grid">
+                        <div class="col">
+                            <div class="label">🛍 物品</div>
+                            <div class="chip info"></div>
+                            <div class="chip info"></div>
+                            <div class="chip info"></div>
+                            <div class="chip info"></div>
+                        </div>
+                        <div class="sep"></div>
+                        <div class="col">
+                            <div class="label">🏢 仓库</div>
+                            <div class="chip accent"></div>
+                            <div class="chip accent"></div>
+                            <div class="chip accent"></div>
+                            <div class="chip accent"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-area">
+                    <div class="row"></div>
+                    <div class="row"></div>
+                    <div class="row"></div>
+                    <div class="row"></div>
+                </div>
+            </div>
+        </div>
+        <div class="body">
+            <span class="tag">P2 · 顶部统一</span>
+            <h3>常用 5 项 + 高级两栏展开</h3>
+            <div class="desc">
+                顶部一行 5 个最常用（搜索 + 仓库 + 部门 + 大类 + 状态）；点"+ 高级筛选"展开下方两栏区——左边 6 个物品高级，右边 7 个仓库高级，视觉上明确分类。主表 100% 宽。**日常快、复杂不慢**。
+            </div>
+            <a class="open" href="ui_v18_p2.html">查看 P2 →</a>
+        </div>
+    </div>
+
+    <div class="scheme-card">
+        <div class="thumb">
+            <div class="thumb-title">P3 · 双视角 · 物品 vs 库位</div>
+            <div class="thumb-p3">
+                <div class="switch">
+                    <div class="opt active">🛍 物品中心</div>
+                    <div class="opt">🏢 库位中心</div>
+                </div>
+                <div class="filter">
+                    <div class="row">
+                        <div class="chip"></div>
+                        <div class="chip active"></div>
+                        <div class="chip"></div>
+                        <div class="chip"></div>
+                    </div>
+                </div>
+                <div class="table-area">
+                    <div class="main-row"></div>
+                    <div class="sub-row"></div>
+                    <div class="sub-row"></div>
+                    <div class="main-row"></div>
+                    <div class="sub-row"></div>
+                    <div class="sub-row"></div>
+                </div>
+            </div>
+        </div>
+        <div class="body">
+            <span class="tag">P3 · 双视角</span>
+            <h3>「物品为中心」vs「库位为中心」</h3>
+            <div class="desc">
+                顶部切换：**物品中心**——每行一个物品，展开子行显示在哪些库位/部门/楼层；**库位中心**——每行一个库位，展开显示该位上含哪些物品。筛选项随视角联动调整（物品模式只显示物品筛选 + 仓库快捷过滤）。最适合**有明确视角**的查询。
+            </div>
+            <a class="open" href="ui_v18_p3.html">查看 P3 →</a>
+        </div>
+    </div>
+
+</div>
+
+<div class="compare">
+    <h2>// 5 维度对比</h2>
+    <table class="tbl">
+        <thead>
+            <tr><th>维度</th><th class="center">P1 双侧栏</th><th class="center">P2 顶部统一</th><th class="center">P3 双视角</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>17 项筛选一眼看清</td><td class="center score">★★★★★</td><td class="center score">★★★（点开展）</td><td class="center score">★★（按视角分）</td></tr>
+            <tr><td>主表格区宽度</td><td class="center score">60%</td><td class="center score">100%</td><td class="center score">100%</td></tr>
+            <tr class="best"><td>日常使用速度（2-3 筛选）</td><td class="center score">★★★</td><td class="center score">★★★★★</td><td class="center score">★★★★</td></tr>
+            <tr><td>复杂筛选场景（5+ 条件）</td><td class="center score">★★★★★</td><td class="center score">★★★★</td><td class="center score">★★★</td></tr>
+            <tr><td>「先看物品分布」/「先看库位含什么」</td><td class="center score">★★（同视角）</td><td class="center score">★★（同视角）</td><td class="center score">★★★★★ 强项</td></tr>
+            <tr><td>实装工作量</td><td class="center score">★★★（最大）</td><td class="center score">★★（中）</td><td class="center score">★★★★（最大）</td></tr>
+        </tbody>
+    </table>
+
+    <div class="rec">
+        <div class="pre">// RECOMMENDED</div>
+        <div class="text">
+            推荐 <strong>P2 顶部统一</strong>。理由：① 你团队 20 人日常多用 2-3 个筛选，P2 顶部一行最快；② 真要"按 5+ 条件挖数据"点"+ 高级"展开两栏（物品蓝 / 仓库橙），分类清楚；③ 主表 100% 宽，列再多也能容下（楼栋·楼层·库位 / 部门 / 责任人 / 物品 / 数量 / 状态 / 整改）；④ 实装工作量适中，能在 v19 一次推完。<br>
+            <strong>选 P1</strong> 如果团队里有数据分析师天天用复杂查询；<strong>选 P3</strong> 如果你希望"按场景切换"的查询体验（早上盘活物品流转、下午检查库位归属）。
+        </div>
+    </div>
+</div>
+
+<div class="foot">
+    KINGSOFT-WMS · V18 UNIFIED QUERY · BUILD 20260522
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>方案 3 · 内联消息 · 金山仓储</title>
+<link rel="stylesheet" href="ui_cream_shared.css">
+<style>
+.page { max-width: 900px; margin: 0 auto; padding: 0 32px 60px; }
+.page-title { padding: 40px 0 6px; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+.page-sub { color: var(--ink-quiet); margin-bottom: 32px; }
+.section { margin-bottom: 32px; }
+.section h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.section h2::before { content: ""; width: 4px; height: 14px; background: var(--accent); border-radius: 2px; }
+
+/* ====== 内联消息：极简一行 ====== */
+.inline-msg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 4px 0;
+}
+.inline-msg .ico {
+    font-size: 14px;
+    width: 14px; height: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.inline-success { color: var(--accent); }
+.inline-error   { color: var(--err); }
+.inline-warn    { color: var(--warn); }
+.inline-info    { color: var(--ink-quiet); }
+
+/* 表单字段 + 内联校验 */
+.demo-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 22px 26px;
+    margin-bottom: 14px;
+}
+.form-field { margin-bottom: 16px; }
+.form-field label {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-quiet);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+.form-field input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--line-input);
+    border-radius: var(--r-md);
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--ink);
+}
+.form-field input.has-error { border-color: var(--err); background: #FFF7F5; }
+.form-field input.has-success { border-color: var(--accent); }
+.form-field .msg { margin-top: 6px; }
+
+/* 内联在标题旁 */
+.title-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 14px;
+}
+.title-row h3 { font-size: 15px; font-weight: 600; }
+
+.scene-label {
+    font-size: 11px; color: var(--ink-quiet);
+    letter-spacing: 1px;
+    font-family: monospace;
+    margin: 12px 0 8px;
+    text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>方案 3 · 内联消息</strong> · 一行小字 + 小图标 · 紧贴字段或操作 · 不打断页面流</div>
+
+<div class="page">
+    <div class="page-title">方案 3：内联消息</div>
+    <div class="page-sub">不用大色块，仅一行小字 + 小图标，紧贴对应的字段或操作。适合：表单校验、单字段反馈、操作旁注</div>
+
+    <!-- 表单内联校验 -->
+    <div class="section">
+        <h2>① 表单字段校验</h2>
+
+        <div class="demo-card">
+            <div class="scene-label">// 登录表单</div>
+
+            <div class="form-field">
+                <label>用户名</label>
+                <input type="text" value="admin" class="has-success">
+                <div class="msg">
+                    <span class="inline-msg inline-success">
+                        <span class="ico">✓</span> 用户名可用
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label>密码</label>
+                <input type="password" value="••••" class="has-error">
+                <div class="msg">
+                    <span class="inline-msg inline-error">
+                        <span class="ico">✕</span> 密码错误，连续输错 5 次将锁定 10 分钟
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label>新密码 <span style="color: var(--ink-faded);">（至少 6 位）</span></label>
+                <input type="password" value="abc" class="has-error">
+                <div class="msg">
+                    <span class="inline-msg inline-error">
+                        <span class="ico">✕</span> 密码至少 6 位
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label>邮箱 <span style="color: var(--ink-faded);">（可选）</span></label>
+                <input type="email" value="wang@qq.com">
+                <div class="msg">
+                    <span class="inline-msg inline-info">
+                        <span class="ico">ⓘ</span> 用于接收邮件预警
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 标题旁内联 -->
+    <div class="section">
+        <h2>② 标题旁状态</h2>
+
+        <div class="demo-card">
+            <div class="scene-label">// 登录后欢迎</div>
+            <div class="title-row">
+                <h3>工作台</h3>
+                <span class="inline-msg inline-success">
+                    <span class="ico">✓</span> 欢迎回来，王经理
+                </span>
+            </div>
+
+            <div class="scene-label">// 列表页带统计</div>
+            <div class="title-row">
+                <h3>库存查询</h3>
+                <span class="inline-msg inline-warn">
+                    <span class="ico">⚠</span> 3 个商品低于安全库存
+                </span>
+            </div>
+
+            <div class="scene-label">// 表单页带提示</div>
+            <div class="title-row">
+                <h3>新建入库单</h3>
+                <span class="inline-msg inline-info">
+                    <span class="ico">ⓘ</span> 保存后需要仓库经理审批
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按钮旁内联 -->
+    <div class="section">
+        <h2>③ 操作旁注</h2>
+
+        <div class="demo-card">
+            <div class="scene-label">// 操作刚成功</div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <button class="btn btn-primary">保存</button>
+                <span class="inline-msg inline-success">
+                    <span class="ico">✓</span> 已保存 · 2 秒前
+                </span>
+            </div>
+
+            <div class="scene-label">// 操作受限</div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <button class="btn btn-danger" disabled style="opacity: 0.5; cursor: not-allowed;">删除</button>
+                <span class="inline-msg inline-warn">
+                    <span class="ico">⚠</span> 该岗位仍被 3 位用户使用，无法删除
+                </span>
+            </div>
+
+            <div class="scene-label">// 字段下方</div>
+            <div>
+                <button class="btn">立即扫描</button>
+                <div class="msg" style="margin-top: 6px;">
+                    <span class="inline-msg inline-info">
+                        <span class="ico">ⓘ</span> 上次扫描：今天 09:00 · 命中 3 项预警
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; padding: 20px 0;">
+        <a href="ui_a_alert_v2_toast.html" class="btn btn-sm">‹ 方案 2</a>
+        <a href="ui_a_alert_index.html" class="btn btn-sm">返回方案对比</a>
+        <a href="ui_a_alert_v4_soft_card.html" class="btn btn-sm">方案 4 →</a>
+    </div>
+
+</div>
+
+</body>
+</html>

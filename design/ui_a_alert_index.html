@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>提示消息方案对比 · 金山仓储</title>
+<link rel="stylesheet" href="ui_cream_shared.css">
+<style>
+.page { max-width: 1280px; margin: 0 auto; padding: 0 32px 60px; }
+
+.hero {
+    padding: 50px 40px 40px;
+    text-align: center;
+    background: radial-gradient(circle at 50% 30%, #FFF7EE 0%, #FBFAF7 70%);
+    margin: 0 -32px 32px;
+    border-bottom: 1px solid var(--line);
+}
+.hero h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+.hero .sub { color: var(--ink-quiet); font-size: 14px; max-width: 700px; margin: 0 auto; line-height: 1.8; }
+.hero .stat-row { margin-top: 22px; display: flex; justify-content: center; gap: 40px; font-family: monospace; font-size: 11px; color: var(--ink-faded); letter-spacing: 1px; }
+.hero .stat-row strong { color: var(--accent); font-size: 14px; }
+
+.must-have {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    padding: 18px 24px;
+    border-radius: var(--r-md);
+    margin-bottom: 32px;
+}
+.must-have h3 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.must-have ul { padding-left: 20px; font-size: 13px; line-height: 1.9; color: var(--ink-soft); }
+.must-have ul li strong { color: var(--ink); }
+
+.section-mark { font-family: monospace; font-size: 11px; color: var(--accent); letter-spacing: 2px; margin-bottom: 8px; }
+.section h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 18px; }
+
+.plan-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+.plan-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    transition: all 0.2s;
+    display: flex; flex-direction: column;
+}
+.plan-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(217,119,55,0.1);
+}
+
+/* 缩略预览 */
+.plan-preview {
+    padding: 22px;
+    background: var(--bg-warm);
+    min-height: 220px;
+    border-bottom: 1px solid var(--line);
+}
+
+/* 1. banner 预览 */
+.mini-banner {
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid;
+    font-size: 11px;
+    background: var(--bg-card);
+    display: flex; align-items: center; gap: 8px;
+}
+.mini-banner .ico { width: 14px; height: 14px; border-radius: 50%; color: #FFF; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+.mini-banner.s { background: var(--accent-soft); border-color: var(--accent); }
+.mini-banner.s .ico { background: var(--accent); }
+.mini-banner.e { background: var(--err-bg); border-color: var(--err); }
+.mini-banner.e .ico { background: var(--err); }
+.mini-banner.w { background: var(--warn-bg); border-color: var(--warn); }
+.mini-banner.w .ico { background: var(--warn); }
+.mini-banner.i { background: var(--bg-row-hover); border-color: var(--ink-soft); }
+.mini-banner.i .ico { background: var(--ink-soft); }
+
+/* 2. toast 预览 */
+.toast-preview { position: relative; height: 180px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.toast-preview .bg-fade { padding: 20px; opacity: 0.3; }
+.toast-preview .bg-fade .b { background: var(--line-soft); height: 12px; border-radius: 2px; margin-bottom: 6px; }
+.mini-toast-stack { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; width: 180px; }
+.mini-toast {
+    background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid;
+    border-radius: 4px; padding: 7px 10px; font-size: 10px;
+    box-shadow: 0 4px 12px rgba(47,42,38,0.08);
+    display: flex; align-items: center; gap: 6px;
+}
+.mini-toast .ico { width: 12px; height: 12px; border-radius: 50%; color: #FFF; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
+.mini-toast.s { border-left-color: var(--accent); }
+.mini-toast.s .ico { background: var(--accent); }
+.mini-toast.e { border-left-color: var(--err); }
+.mini-toast.e .ico { background: var(--err); }
+.mini-toast.w { border-left-color: var(--warn); }
+.mini-toast.w .ico { background: var(--warn); }
+
+/* 3. inline 预览 */
+.inline-preview { background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; padding: 14px; }
+.inline-field { margin-bottom: 10px; }
+.inline-field .lbl { font-size: 10px; color: var(--ink-quiet); margin-bottom: 4px; }
+.inline-field .inp { background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 3px; padding: 5px 8px; font-size: 10px; color: var(--ink); }
+.inline-field .inp.err { border-color: var(--err); background: #FFF7F5; }
+.inline-field .msg { font-size: 9px; margin-top: 3px; display: flex; align-items: center; gap: 3px; }
+.inline-field .msg.s { color: var(--accent); }
+.inline-field .msg.e { color: var(--err); }
+.inline-field .msg.w { color: var(--warn); }
+
+/* 4. soft card 预览 */
+.soft-preview { background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 4px; padding: 12px 14px; display: flex; gap: 10px; background: linear-gradient(to right, var(--accent-soft) 0%, var(--bg-card) 80px); }
+.soft-preview .ico-big { width: 22px; height: 22px; background: var(--accent); color: #FFF; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.soft-preview .body { flex: 1; }
+.soft-preview .t { font-size: 11px; font-weight: 600; margin-bottom: 3px; }
+.soft-preview .d { font-size: 10px; color: var(--ink-quiet); margin-bottom: 6px; }
+.soft-preview .acts { display: flex; gap: 4px; }
+.soft-preview .btn-mini { background: var(--accent); color: #FFF; padding: 2px 8px; border-radius: 2px; font-size: 9px; }
+.soft-preview .btn-mini.gray { background: var(--bg-card); color: var(--ink); border: 1px solid var(--line); }
+
+.plan-meta { padding: 22px 24px; flex: 1; display: flex; flex-direction: column; }
+.plan-meta h3 {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+}
+.plan-meta h3 .num {
+    width: 24px; height: 24px;
+    background: var(--accent); color: #FFF;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+}
+.plan-meta .feature { font-size: 13px; color: var(--ink-quiet); line-height: 1.7; margin: 8px 0 12px; flex: 1; }
+
+.plan-meta .scenes {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 8px 0 12px;
+    padding: 10px 14px;
+    background: var(--bg-warm);
+    border-radius: 4px;
+}
+.plan-meta .scenes strong { color: var(--accent); display: block; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+.plan-meta .pros, .plan-meta .cons {
+    font-size: 12px; line-height: 1.6;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    margin-bottom: 6px;
+}
+.plan-meta .pros { background: var(--accent-soft); color: var(--accent-deep); border-left: 3px solid var(--accent); }
+.plan-meta .cons { background: var(--warn-bg); color: var(--warn); border-left: 3px solid var(--warn); }
+.plan-meta strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+
+.plan-foot {
+    border-top: 1px solid var(--line);
+    padding: 12px 24px;
+    background: var(--bg-warm);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.plan-foot a {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+}
+.plan-foot .case-count {
+    font-size: 11px; color: var(--ink-quiet); letter-spacing: 1px;
+    font-family: monospace;
+}
+
+.compare-table {
+    margin-top: 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+.compare-table h3 { padding: 16px 22px; border-bottom: 1px solid var(--line); font-size: 15px; font-weight: 700; }
+.compare-table table { width: 100%; border-collapse: collapse; }
+.compare-table th, .compare-table td { padding: 11px 16px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
+.compare-table th { background: var(--bg-row-hover); font-weight: 600; color: var(--ink-quiet); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.compare-table tbody tr:last-child td { border: none; }
+.compare-table .check { color: var(--accent); font-weight: 700; }
+.compare-table .nope { color: var(--ink-faded); }
+
+.tip {
+    margin-top: 28px;
+    padding: 18px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+}
+.tip h3 { font-size: 15px; margin-bottom: 10px; font-weight: 700; }
+.tip ul { padding-left: 22px; font-size: 13px; line-height: 2; color: var(--ink-soft); }
+.tip ul li strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>提示消息设计</strong> · 方案 A 配套 · 4 套方案 × 4 种情况</div>
+
+<div class="page">
+
+    <div class="hero">
+        <h1>提示消息（Alert）设计</h1>
+        <div class="sub">登录欢迎、密码错误、保存成功、低库存等所有系统提示统一的视觉规范 · 4 套方案 · 选一个用</div>
+        <div class="stat-row">
+            <div><strong>4</strong> 套方案</div>
+            <div><strong>4</strong> 种情况</div>
+            <div>≥<strong>12</strong> 个具体场景</div>
+            <div><strong>1</strong> 套色板（沿用方案 A）</div>
+        </div>
+    </div>
+
+    <div class="must-have">
+        <h3>⚐ 4 套方案都遵守的硬规则</h3>
+        <ul>
+            <li><strong>4 种情况各一色</strong>：成功 → 橙色 <code>#D97737</code>（方案 A 主色） · 错误 → 红色 <code>#C5221F</code> · 警告 → 棕黄 <code>#B25600</code> · 信息 → 灰棕 <code>#6B6661</code></li>
+            <li><strong>都带图标</strong>：✓ 成功 · ! 错误/警告 · i 信息（小圆形 + 白字）</li>
+            <li><strong>都可手动关闭</strong>：×按钮在右侧 · ESC 也能关</li>
+            <li><strong>沿用方案 A 色板</strong>：暖米白 + 橙色辅助 · 不引入新色</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-mark">// FOUR VARIANTS</div>
+        <h2>4 套方案</h2>
+
+        <div class="plan-grid">
+
+            <!-- 方案 1 banner -->
+            <a href="ui_a_alert_v1_banner.html" style="color:inherit; text-decoration:none;">
+            <div class="plan-card">
+                <div class="plan-preview">
+                    <div class="mini-banner s"><span class="ico">✓</span> 欢迎回来，王经理</div>
+                    <div class="mini-banner e"><span class="ico">!</span> 用户名或密码错误</div>
+                    <div class="mini-banner w"><span class="ico">!</span> 3 个商品低于安全库存</div>
+                    <div class="mini-banner i"><span class="ico">i</span> 系统今晚 02:00 自动备份</div>
+                </div>
+                <div class="plan-meta">
+                    <h3><span class="num">1</span> 顶部横幅</h3>
+                    <div class="feature">显示在主内容区顶部，全宽。每条占一行，左侧粗色边 + 图标 + 文字 + 关闭按钮。可叠加多条。</div>
+                    <div class="scenes">
+                        <strong>典型场景</strong>
+                        登录欢迎 · 表单提交结果 · 系统级通知 · 阻塞性消息（如首次必须改密）
+                    </div>
+                    <div class="pros"><strong>优点</strong>占地明显 · 不会被忽略 · 可显示长文案</div>
+                    <div class="cons"><strong>缺点</strong>挤压页面布局 · 长时间留着会持续占用顶部空间</div>
+                </div>
+                <div class="plan-foot">
+                    <div class="case-count">4 种情况 · 12 个场景</div>
+                    <a>查看完整方案 →</a>
+                </div>
+            </div>
+            </a>
+
+            <!-- 方案 2 toast -->
+            <a href="ui_a_alert_v2_toast.html" style="color:inherit; text-decoration:none;">
+            <div class="plan-card">
+                <div class="plan-preview">
+                    <div class="toast-preview">
+                        <div class="bg-fade">
+                            <div class="b" style="width:60%"></div>
+                            <div class="b" style="width:90%"></div>
+                            <div class="b" style="width:70%"></div>
+                            <div class="b" style="width:50%"></div>
+                            <div class="b" style="width:80%"></div>
+                        </div>
+                        <div class="mini-toast-stack">
+                            <div class="mini-toast s"><span class="ico">✓</span><span>欢迎回来，王经理</span></div>
+                            <div class="mini-toast e"><span class="ico">!</span><span>用户名或密码错误</span></div>
+                            <div class="mini-toast w"><span class="ico">!</span><span>低库存提醒</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="plan-meta">
+                    <h3><span class="num">2</span> 右上角 Toast</h3>
+                    <div class="feature">浮在右上角的小卡片，不挤压页面布局。Success 自动 3 秒消失（带进度条），Error 永久显示直到手动关闭。</div>
+                    <div class="scenes">
+                        <strong>典型场景</strong>
+                        保存成功 · 删除成功 · 短暂通知 · 后台任务完成
+                    </div>
+                    <div class="pros"><strong>优点</strong>不打扰 · 可叠加多个 · 现代主流（Linear / Notion）</div>
+                    <div class="cons"><strong>缺点</strong>容易被忽略 · 长文案不适合 · 需要 JS 实现自动消失</div>
+                </div>
+                <div class="plan-foot">
+                    <div class="case-count">4 种情况 · 9 个场景</div>
+                    <a>查看完整方案 →</a>
+                </div>
+            </div>
+            </a>
+
+            <!-- 方案 3 inline -->
+            <a href="ui_a_alert_v3_inline.html" style="color:inherit; text-decoration:none;">
+            <div class="plan-card">
+                <div class="plan-preview">
+                    <div class="inline-preview">
+                        <div class="inline-field">
+                            <div class="lbl">用户名</div>
+                            <div class="inp">admin</div>
+                            <div class="msg s">✓ 用户名可用</div>
+                        </div>
+                        <div class="inline-field">
+                            <div class="lbl">密码</div>
+                            <div class="inp err">••••</div>
+                            <div class="msg e">✕ 密码错误</div>
+                        </div>
+                        <div class="inline-field">
+                            <div class="lbl">手机号</div>
+                            <div class="inp">138****6688</div>
+                            <div class="msg w">⚠ 该号码已被注册</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="plan-meta">
+                    <h3><span class="num">3</span> 内联消息</h3>
+                    <div class="feature">不用大色块，仅一行小字 + 小图标。紧贴对应的字段或按钮下方。视觉最克制。</div>
+                    <div class="scenes">
+                        <strong>典型场景</strong>
+                        表单字段校验 · 按钮旁注 · 标题旁状态 · 单条不需用户行动的提示
+                    </div>
+                    <div class="pros"><strong>优点</strong>视觉最轻 · 紧贴上下文 · 不打断阅读</div>
+                    <div class="cons"><strong>缺点</strong>不够醒目 · 不适合系统级通知 · 长文案显得拥挤</div>
+                </div>
+                <div class="plan-foot">
+                    <div class="case-count">4 种情况 · 10+ 个场景</div>
+                    <a>查看完整方案 →</a>
+                </div>
+            </div>
+            </a>
+
+            <!-- 方案 4 soft card -->
+            <a href="ui_a_alert_v4_soft_card.html" style="color:inherit; text-decoration:none;">
+            <div class="plan-card">
+                <div class="plan-preview">
+                    <div class="soft-preview">
+                        <div class="ico-big">✓</div>
+                        <div class="body">
+                            <div class="t">欢迎回来，王经理</div>
+                            <div class="d">3 项待审批 · 3 个低库存</div>
+                            <div class="acts">
+                                <span class="btn-mini">查看待审批 →</span>
+                                <span class="btn-mini gray">稍后</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="plan-meta">
+                    <h3><span class="num">4</span> 软卡片</h3>
+                    <div class="feature">大色块卡片：左侧粗色边 + 渐变背景 + 大图标 + 标题 + 描述 + 行动按钮。信息丰富、可承载多行内容和操作。</div>
+                    <div class="scenes">
+                        <strong>典型场景</strong>
+                        欢迎页带统计和行动 · 需要决策的提示 · 错误带帮助链接 · 警告带补救按钮
+                    </div>
+                    <div class="pros"><strong>优点</strong>信息最丰富 · 可带行动按钮 · 高端感强</div>
+                    <div class="cons"><strong>缺点</strong>占地最大 · 不适合频繁出现 · 视觉重</div>
+                </div>
+                <div class="plan-foot">
+                    <div class="case-count">4 种情况 · 8 个场景</div>
+                    <a>查看完整方案 →</a>
+                </div>
+            </div>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- 横向对比表 -->
+    <div class="compare-table">
+        <h3>4 套方案横向对比</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>对比项</th>
+                    <th>1 顶部横幅</th>
+                    <th>2 Toast 浮窗</th>
+                    <th>3 内联消息</th>
+                    <th>4 软卡片</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>视觉醒目度</td><td class="check">高</td><td>中</td><td>低</td><td class="check">最高</td></tr>
+                <tr><td>占地面积</td><td>中</td><td class="check">最小</td><td class="check">最小</td><td>大</td></tr>
+                <tr><td>自动消失</td><td class="nope">否</td><td class="check">是</td><td class="nope">否</td><td class="nope">否</td></tr>
+                <tr><td>可叠加多条</td><td>是（垂直堆叠）</td><td class="check">是（最适合）</td><td class="nope">否（每字段一条）</td><td>是（不推荐多于 2 条）</td></tr>
+                <tr><td>可带行动按钮</td><td>不适合</td><td>不适合</td><td class="nope">不行</td><td class="check">是</td></tr>
+                <tr><td>用于密码错误</td><td class="check">合适</td><td>合适</td><td class="check">最合适</td><td>合适但太重</td></tr>
+                <tr><td>用于欢迎回来</td><td class="check">合适</td><td class="check">合适</td><td>过于安静</td><td class="check">合适带统计</td></tr>
+                <tr><td>用于表单校验</td><td>太重</td><td>不合适</td><td class="check">最合适</td><td>太重</td></tr>
+                <tr><td>开发工作量</td><td>小</td><td>中（需 JS）</td><td>小</td><td>中</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="tip">
+        <h3>📋 选型建议</h3>
+        <ul>
+            <li>如果你希望 <strong>一套方案统一所有场景</strong> → 选 <strong>方案 1 顶部横幅</strong>（视觉一致、实现简单、对 Flask flash 最贴合）</li>
+            <li>如果是 <strong>现代化体验优先</strong>（保存成功 / 删除成功这类快消息） → 选 <strong>方案 2 Toast</strong></li>
+            <li>如果重点是 <strong>表单页校验</strong> → 选 <strong>方案 3 内联</strong>（不打断、紧贴字段）</li>
+            <li>如果希望 <strong>欢迎页特别隆重 + 错误带帮助引导</strong> → 选 <strong>方案 4 软卡片</strong></li>
+            <li><strong>实战推荐组合</strong>：
+                <ul style="margin-top:6px;">
+                    <li><strong>方案 1（顶部横幅）</strong>用于：登录欢迎、表单提交结果、系统通知（Flask flash 的主要消费场景）</li>
+                    <li><strong>方案 3（内联）</strong>用于：表单字段校验</li>
+                    <li><strong>方案 2（Toast）</strong>用于：操作反馈（保存成功、删除）— 可选</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; margin-top: 32px;">
+        <a href="ui_redesign_index.html" class="btn btn-sm">‹ 返回 UI 重做总入口</a>
+    </div>
+
+</div>
+
+</body>
+</html>

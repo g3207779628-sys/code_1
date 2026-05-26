@@ -239,6 +239,11 @@ button { font-family: inherit; }
 /* .submenu-child 复用 .submenu 的绝对定位向右弹出；微调 top 让首项与父项对齐 */
 .submenu-child { top: -6px; }
 .submenu-parent:hover > .submenu-child { display: block; }
+/* ===== 通用分页控件 ===== */
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:12px 4px;margin-top:10px;font-size:13px;color:var(--ink-soft);}
+.pager-info{white-space:nowrap;}
+.pager-btns{display:flex;gap:6px;flex-wrap:wrap;}
 
 /* 旧单层菜单 class 兼容（如果仍有页面引用，不再使用但保留样式不至于错位） */
 .sider-section {

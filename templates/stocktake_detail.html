@@ -4,28 +4,53 @@
 
 <div class="card">
     <div class="card-header">
-        <span>盘点单 <span class="mono">{{ order.order_no }}</span></span>
-        <span>
-            {% if order.status == 'open' %}<span class="badge badge-downgrade">进行中</span>
-            {% else %}<span class="badge badge-in">已关闭</span>{% endif %}
+        <span>盘点单 <span class="mono">{{ order.order_no }}</span>
+            {% if order.status == 'open' %}<span class="badge">进行中</span>{% else %}<span class="badge">已关闭</span>{% endif %}
         </span>
+        <details>
+            <summary class="btn btn-secondary btn-sm" style="display:inline-block;">导出</summary>
+            <form method="get" action="{{ url_for('export_data', resource='stocktake_' ~ order.order_no) }}" style="position:absolute; right:20px; background:var(--bg-alt); border:1px solid var(--line); padding:12px; margin-top:8px; border-radius:6px; min-width:320px; z-index:10;">
+                <div style="margin-bottom:8px;"><strong>导出字段</strong>（不选 = 全部）</div>
+                {% for label in ['SKU','物品名','批次','库位','账面数','盘点数','差异','已处理'] %}
+                <label style="display:inline-block;margin-right:10px;font-weight:400;font-size:12px;">
+                    <input type="checkbox" name="col" value="{{ label }}" checked> {{ label }}
+                </label>
+                {% endfor %}
+                <div style="margin-top:10px;">
+                    <label style="font-weight:400;">格式：
+                        <select name="format">
+                            <option value="xlsx">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                        </select>
+                    </label>
+                    <button class="btn btn-primary btn-sm" type="submit" style="margin-left:8px;">下载</button>
+                </div>
+            </form>
+        </details>
     </div>
     <div class="card-body">
-        <div style="margin-bottom:16px; font-size:13px; color:var(--color-text-soft);">
+        {% if order.title %}<div style="font-size:18px; font-weight:600; margin-bottom:8px;">{{ order.title }}</div>{% endif %}
+        <div style="margin-bottom:8px; font-size:13px; color:var(--color-text-soft);">
             创建：{{ order.creator_name }} · <span class="mono">{{ order.created_at }}</span>
             {% if order.closer_name %} | 关闭：{{ order.closer_name }} · <span class="mono">{{ order.closed_at }}</span>{% endif %}
             {% if order.note %} | 备注：{{ order.note }}{% endif %}
         </div>
-
+        {% set atts = order.attachments | attachments_list %}
+        {% if atts %}
+        <div style="margin-bottom:16px; padding:10px; background:var(--bg-alt); border-radius:4px;">
+            <strong>附件：</strong>
+            {% for path in atts %}
+            <a href="{{ url_for('download_attachment', filepath=path) }}" target="_blank" style="margin-right:12px;">{{ path.split('/')[-1] }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
         <form method="post" action="{{ url_for('stocktake_save', order_no=order.order_no) }}">
             <table>
                 <thead>
                     <tr>
                         <th>库位</th>
-                        <th>SKU</th>
-                        <th>商品</th>
+                        <th>物品</th>
                         <th>批次</th>
-                        <th>效期</th>
                         <th>账面数</th>
                         <th>实物数</th>
                         <th>差异</th>
@@ -36,10 +61,8 @@
                     {% set diff = (it.actual_qty - it.expected_qty) if it.actual_qty is not none else None %}
                     <tr {% if diff is not none and diff != 0 %}style="background:#FBE9D0;"{% endif %}>
                         <td class="mono">{{ it.location_code }}</td>
-                        <td class="mono">{{ it.sku_code }}</td>
-                        <td>{{ it.sku_name }}</td>
+                        <td>{{ it.sku_name }} <span class="text-tertiary mono" style="font-size:11px;">{{ it.sku_code }}</span></td>
                         <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
-                        <td class="mono">{{ it.expiry_date }}</td>
                         <td class="mono"><strong>{{ it.expected_qty }}</strong></td>
                         <td>
                             <input type="hidden" name="item_id[]" value="{{ it.id }}">

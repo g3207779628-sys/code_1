@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}数据库备份{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>SQLite 备份（共 {{ files|length }} 份）</span>
+        <span>
+            <form method="post" style="display:inline;"
+                  onsubmit="return confirm('⚠️ 重置演示数据会：\n1) 清空所有库存/流水/批次/入库/出库/报损/盘点/调拨\n2) 删除非默认的 SKU 和供应商\n3) 重新塞 30 天 demo + 3 张待审入库 + 5 条待审报损\n\n操作前已自动备份。确认？');">
+                <input type="hidden" name="action" value="reset_demo">
+                <button class="btn btn-danger btn-sm" type="submit">⚠ 重置演示数据</button>
+            </form>
+            <form method="post" style="display:inline;">
+                <input type="hidden" name="action" value="backup_now">
+                <button class="btn btn-primary btn-sm" type="submit">立即备份</button>
+            </form>
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="text-tertiary" style="font-size:12px; margin-bottom:12px;">
+            <strong>备份目录</strong>：<span class="mono">backups/</span>，文件名形如 <span class="mono">warehouse_20260518_143025.db</span>。
+            APScheduler 每日 02:00 自动跑一次，保留最近 30 份。可挂 OneDrive / 共享盘到此目录自动同步上云。<br>
+            <strong>恢复说明</strong>：点击"恢复到此版本"会把当前数据库**完全替换**为该备份；操作前会自动生成
+            <span class="mono">warehouse_pre_restore_*.db</span> 快照，可反悔。强烈建议在无人操作时（如下班后）做。
+        </div>
+        {% if files %}
+        <table>
+            <thead><tr><th>文件名</th><th>大小</th><th>修改时间</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for name, size, mtime in files %}
+                <tr {% if name.startswith('warehouse_pre_restore_') %}style="background:var(--warn-bg);"{% endif %}>
+                    <td class="mono">
+                        {{ name }}
+                        {% if name.startswith('warehouse_pre_restore_') %}
+                        <span class="badge" style="margin-left:6px; color:var(--warn);">恢复前快照</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono">{{ (size / 1024)|round(1) }} KB</td>
+                    <td class="text-tertiary mono" style="font-size:12px;">
+                        {{ (mtime * 1000)|int }}
+                        <script>document.write(new Date({{ (mtime * 1000)|int }}).toLocaleString('zh-CN'));</script>
+                    </td>
+                    <td class="actions">
+                        <form method="post" style="display:inline;"
+                              onsubmit="return confirm('确认恢复到 {{ name }}？\n\n这将覆盖当前所有数据（包括今天的入库/出库/用户改动）。\n\n操作前系统会自动生成『恢复前快照』，可反悔。\n\n建议在无人操作时进行。');">
+                            <input type="hidden" name="action" value="restore">
+                            <input type="hidden" name="filename" value="{{ name }}">
+                            <button class="btn btn-sm btn-primary" type="submit">恢复到此版本</button>
+                        </form>
+                        <form method="post" style="display:inline;"
+                              onsubmit="return confirm('确认删除备份 {{ name }}？此操作不可撤销。');">
+                            <input type="hidden" name="action" value="delete_backup">
+                            <input type="hidden" name="filename" value="{{ name }}">
+                            <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<div class="empty">还没有备份。点击右上"立即备份"或等待每日 02:00 自动备份。</div>{% endif %}
+    </div>
+</div>
+
+{% endblock %}

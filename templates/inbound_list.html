@@ -1,39 +1,108 @@
 {% extends "base.html" %}
 {% block title %}入库单{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">入库</span>{% endblock %}
 {% block content %}
+{% from "_pager.html" import pager %}
 
-<div class="card">
-    <div class="card-header">
-        <span>入库单列表（共 {{ orders|length }} 张）</span>
-        <a class="btn" href="{{ url_for('inbound_new') }}">新建入库单</a>
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">入库单</div>
+        <div class="page-sub">共 {{ pg.total }} 张</div>
     </div>
-    <div class="card-body" style="padding:0;">
+    <a class="btn btn-primary" href="{{ url_for('inbound_new') }}">+ 新建入库单</a>
+</div>
+
+<form class="list-filter" method="get" action="{{ url_for('inbound_list') }}"
+      style="background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+  <div style="display:flex;flex-direction:column;gap:5px;min-width:200px;flex:1;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">单号 / 物品</label>
+    <input type="text" name="q" value="{{ f.q }}" placeholder="关键字" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">状态</label>
+    <select name="status" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+      <option value="">全部</option>
+      <option value="draft" {% if f.status=='draft' %}selected{% endif %}>草稿</option>
+      <option value="approved" {% if f.status=='approved' %}selected{% endif %}>已审核</option>
+      <option value="rejected" {% if f.status=='rejected' %}selected{% endif %}>已驳回</option>
+    </select>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">创建时间 从</label>
+    <input type="date" name="date_from" value="{{ f.date_from }}" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">到</label>
+    <input type="date" name="date_to" value="{{ f.date_to }}" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button type="submit" class="btn btn-primary">筛选</button>
+    <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">重置</a>
+  </div>
+</form>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>入库单列表</h3><span class="meta">{{ pg.total }} 张</span></div>
+    <div class="body" style="padding:0;">
         {% if orders %}
-        <table>
+        <table class="dense-table">
             <thead>
-                <tr><th>单号</th><th>供应商</th><th>状态</th><th>总数量</th><th>创建人</th><th>创建时间</th><th>审核人</th><th>操作</th></tr>
+                <tr>
+                    <th>单号</th>
+                    <th>仓库</th>
+                    <th>存放区域 / 位置</th>
+                    <th>物品</th>
+                    <th>入库员工</th>
+                    <th>状态</th>
+                    <th class="text-right">明细行</th>
+                    <th class="text-right">总数量</th>
+                    <th>创建人</th>
+                    <th>创建时间</th>
+                    <th class="text-right" style="width:160px;">操作</th>
+                </tr>
             </thead>
             <tbody>
                 {% for o in orders %}
+                {% set s = order_summary.get(o.order_no) %}
                 <tr>
                     <td class="mono"><a href="{{ url_for('inbound_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
-                    <td>{{ o.supplier_name or '-' }}</td>
+                    <td>{{ s.wh_name if s and s.wh_name else '—' }}</td>
                     <td>
-                        {% if o.status == 'draft' %}<span class="badge badge-normal">草稿</span>
-                        {% elif o.status == 'approved' %}<span class="badge badge-in">已审核</span>
-                        {% else %}<span class="badge badge-out">已驳回</span>{% endif %}
+                        {% if s and s.storage_area %}<span style="color:var(--accent-deep);">{{ s.storage_area }}</span>{% endif %}
+                        {% if s and s.storage_position %} / {{ s.storage_position }}{% endif %}
+                        {% if not s or (not s.storage_area and not s.storage_position) %}—{% endif %}
                     </td>
-                    <td class="mono">{{ o.total_qty }}</td>
-                    <td>{{ o.creator_name or '-' }}</td>
-                    <td class="mono">{{ o.created_at }}</td>
-                    <td>{{ o.approver_name or '-' }}</td>
-                    <td><a class="btn btn-sm btn-secondary" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">查看</a></td>
+                    <td class="sku-name" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ s.sku_names if s and s.sku_names else '—' }}
+                    </td>
+                    <td>{{ o.operator_name or '—' }}</td>
+                    <td>
+                        {% if o.status == 'draft' %}<span class="tag tag-warn">草稿</span>
+                        {% elif o.status == 'approved' %}<span class="tag tag-success">已审核</span>
+                        {% elif o.status == 'cancelled' %}<span class="tag">已撤销</span>
+                        {% else %}<span class="tag tag-error">已驳回</span>{% endif %}
+                    </td>
+                    <td class="num-mono text-right">{{ o.line_count }}</td>
+                    <td class="num-mono text-right"><strong>{{ o.total_qty }}</strong></td>
+                    <td>{{ o.creator_name or '—' }}</td>
+                    <td class="mono" style="font-size:11px; color:var(--ink-quiet);">{{ (o.created_at or '')[:16] }}</td>
+                    <td class="text-right">
+                        <a class="btn btn-sm btn-link" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">查看</a>
+                        {% if o.status == 'draft' %}
+                        <form method="post" action="{{ url_for('inbound_cancel', order_no=o.order_no) }}" style="display:inline;" onsubmit="return confirm('撤销该入库单（草稿）？');">
+                            <button class="btn btn-sm btn-danger" type="submit">撤销</button>
+                        </form>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        <div style="padding:0 12px 8px;">{{ pager(pg) }}</div>
         {% else %}
-        <div class="empty">还没有入库单。点击"新建入库单"开始。</div>
+        <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
+            {% if f.q or f.status or f.date_from or f.date_to %}没有符合筛选条件的入库单。<a href="{{ url_for('inbound_list') }}">重置</a>{% else %}还没有入库单。点击右上「+ 新建入库单」开始。{% endif %}
+        </div>
         {% endif %}
     </div>
 </div>

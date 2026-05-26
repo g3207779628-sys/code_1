@@ -1,67 +1,132 @@
 {% extends "base.html" %}
-{% block title %}决策驾驶舱{% endblock %}
-{% block crumb %}<span class="sep">/</span><span class="current">仓库经理工作台</span>{% endblock %}
+{% block title %}工作台{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">工作台</span>{% endblock %}
 {% block content %}
 
-<div style="margin-bottom:24px;">
-    <h1>决策驾驶舱</h1>
-    <div class="text-secondary" style="font-size:14px;margin-top:4px;">早上好，{{ session.display_name }} · 今天是 2026-05-17 · 全仓 11 人在岗</div>
+{# === 6 列 KPI strip（无背景色块，仅彩色数字） === #}
+<div class="kpi-strip">
+    <div>
+        <div class="label">在仓总数</div>
+        <div class="num">{{ "{:,}".format(stats.total_on_hand) }}<span class="unit">件</span></div>
+        <div class="delta">{{ stats.sku }} 种物品</div>
+    </div>
+    <div>
+        <div class="label">物品数</div>
+        <div class="num">{{ stats.sku }}</div>
+        <div class="delta">{{ stats.batch }} 个批次</div>
+    </div>
+    <div>
+        <div class="label">低库存</div>
+        <div class="num {% if stats.low_stock_count >= 3 %}err{% elif stats.low_stock_count %}warn{% endif %}">{{ stats.low_stock_count }}</div>
+        {% if stats.low_stock_count %}<div class="delta">需补货</div>{% endif %}
+    </div>
+    <div>
+        <div class="label">待审批</div>
+        <div class="num warn">{{ stats.pending_damage + stats.draft_inbound }}</div>
+        <div class="delta">入 {{ stats.draft_inbound }} · 损 {{ stats.pending_damage }}</div>
+    </div>
+    <div>
+        <div class="label">本月入库</div>
+        <div class="num">{{ stats.month_inbound }}<span class="unit">单</span></div>
+        <div class="delta">已审批</div>
+    </div>
+    <div>
+        <div class="label">本月出库</div>
+        <div class="num">{{ stats.month_outbound }}<span class="unit">单</span></div>
+        <div class="delta">已完成</div>
+    </div>
 </div>
 
-<div class="stat-grid" style="margin-bottom:24px;">
-    <div class="stat-card"><div class="num">¥{{ '{:,.0f}'.format(stats.today_revenue) }}</div><div class="label">今日营业额</div></div>
-    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日销售单</div></div>
-    <div class="stat-card"><div class="num">{{ stats.pending_damage + stats.draft_inbound }}</div><div class="label">待审批</div></div>
-    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">在仓总数</div></div>
-    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">待拣货任务</div></div>
-    <div class="stat-card"><div class="num">{{ stats.expiry_warn }}</div><div class="label">临期/过期批次</div></div>
-    <div class="stat-card"><div class="num">{{ stats.open_return }}</div><div class="label">处理中退货</div></div>
-    <div class="stat-card"><div class="num">{{ stats.approved_today }}</div><div class="label">今日已审批</div></div>
+{# === 3 列 dense-card 中段（待审入库 / 低库存 / 最近出入库） === #}
+<div class="grid-3" style="margin-bottom:14px;">
+
+    <div class="dense-card">
+        <div class="head">
+            <h3>待审入库单 <span class="count">{{ stats.draft_inbound }}</span></h3>
+            <a class="more" href="{{ url_for('pending_approvals_list') }}">全部 →</a>
+        </div>
+        <table class="dense-table">
+            <thead><tr><th>单号</th><th>入库员工</th><th class="text-right">件数</th><th>状态</th></tr></thead>
+            <tbody>
+                {% for a in pending_approvals if a.type == '入库' %}
+                <tr>
+                    <td class="id-cell">{{ a.id }}</td>
+                    <td>{{ a.detail }}</td>
+                    <td class="num-mono text-right">{{ a.qty }}</td>
+                    <td><span class="tag tag-warn">待审</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="color:var(--ink-quiet); text-align:center;">无</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="dense-card">
+        <div class="head">
+            <h3>低库存物品 <span class="count">{{ stats.low_stock_count }}</span></h3>
+            <a class="more" href="{{ url_for('inventory_list') }}?state=low">补货 →</a>
+        </div>
+        <table class="dense-table">
+            <thead><tr><th>物品</th><th>库位</th><th class="text-right">在仓</th><th class="text-right">阈值</th></tr></thead>
+            <tbody>
+                {% for s in low_stock_top3 %}
+                <tr>
+                    <td class="sku-name">{{ s.name }}</td>
+                    <td class="mono" style="color:var(--ink-quiet);">{{ s.location_code or '-' }}</td>
+                    <td class="num-mono text-right" style="color:var(--err);">{{ s.on_hand }}</td>
+                    <td class="num-mono text-right">{{ s.safety_stock }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="color:var(--ink-quiet); text-align:center;">无低库存</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="dense-card">
+        <div class="head">
+            <h3>最近出入库</h3>
+            <a class="more" href="{{ url_for('stock_log_view') }}">流水 →</a>
+        </div>
+        <table class="dense-table">
+            <thead><tr><th>时间</th><th>物品</th><th class="text-right">变动</th></tr></thead>
+            <tbody>
+                {% for r in recent_inout5 %}
+                <tr>
+                    <td class="mono" style="color:var(--ink-quiet);">{{ r.occurred_at[5:16] }}</td>
+                    <td class="sku-name">{{ r.sku_name }}</td>
+                    <td class="num-mono text-right {{ 'delta-in' if r.delta > 0 else 'delta-out' }}">{{ '+' if r.delta > 0 }}{{ r.delta }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="color:var(--ink-quiet); text-align:center;">无</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-    <div class="card">
-        <div class="card-header">待审批中心 · {{ pending_approvals|length }} <a href="{{ url_for('damage_list') }}">全部 →</a></div>
-        <div class="card-body" style="padding:0;">
-            <table>
-                <thead><tr><th>类型</th><th>单号</th><th>申请人</th><th class="text-right">数量</th><th></th></tr></thead>
-                <tbody>
-                    {% for a in pending_approvals %}
-                    <tr>
-                        <td><span class="tag">{{ a.type }}</span></td>
-                        <td class="mono" style="font-size:12px;">{{ a.id }}</td>
-                        <td>{{ a.by or '-' }}</td>
-                        <td class="mono text-right">{{ a.qty }}</td>
-                        <td><a class="btn btn-sm" href="{{ a.url }}">审</a></td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="5" class="empty">无待审批</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">今日团队工作量</div>
-        <div class="card-body" style="padding:0;">
-            <table>
-                <thead><tr><th>员工</th><th>岗位</th><th class="text-right">拣货</th><th class="text-right">审批</th></tr></thead>
-                <tbody>
-                    {% for t in team_workload %}
-                    <tr>
-                        <td>{{ t.name }}</td>
-                        <td class="text-secondary" style="font-size:12px;">{{ POSITIONS.get(t.position, t.position) }}</td>
-                        <td class="mono text-right">{{ t.picked }}</td>
-                        <td class="mono text-right">{{ t.approved }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="4" class="empty">暂无数据</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+{# === 团队工作量（近 30 天，紧凑表格） === #}
+<div class="dense-card">
+    <div class="head"><h3>团队工作量 <span style="font-size:10px; color:var(--ink-quiet); font-weight:400;">· 近 30 天</span></h3></div>
+    <table class="dense-table">
+        <thead><tr><th>员工</th><th>岗位</th><th class="text-right">入库审批</th><th class="text-right">出库拣货</th><th class="text-right">报损审批</th><th class="text-right">总流水</th></tr></thead>
+        <tbody>
+            {% for t in team_workload %}
+            <tr>
+                <td class="sku-name">{{ t.name }}</td>
+                <td style="color:var(--ink-quiet); font-size:11px;">{{ POSITIONS.get(t.position, t.position) }}</td>
+                <td class="num-mono text-right">{{ t.inbound_approved }}</td>
+                <td class="num-mono text-right">{{ t.picked }}</td>
+                <td class="num-mono text-right">{{ t.approved }}</td>
+                <td class="num-mono text-right" style="color:var(--accent);">{{ t.log_count }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" style="color:var(--ink-quiet); text-align:center;">暂无数据</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% endblock %}

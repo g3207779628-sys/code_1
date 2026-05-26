@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>方案 C · 工作台 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+/* 方案 C 紧凑工业：表格密集、mono 数字、橙红只点状态徽标 */
+body { font-size: 13px; }
+.content { padding: 20px 28px; background: var(--bg-base); }
+.layout { background: var(--bg-base); }
+.sider { width: 200px; }
+.menu li > a { padding: 7px 18px; font-size: 13px; }
+.menu-group { font-size: 10px; letter-spacing: 1px; padding: 12px 20px 4px; }
+.header { height: 52px; }
+
+.page-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 16px;
+}
+.page-title { font-size: 18px; font-weight: 700; margin-bottom: 0; }
+.page-sub { display: inline; font-size: 12px; color: var(--ink-quiet); margin-left: 10px; }
+
+.kpi-strip {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-card);
+    margin-bottom: 16px;
+}
+.kpi-strip > div {
+    padding: 12px 16px;
+    border-right: 1px solid var(--line-soft);
+}
+.kpi-strip > div:last-child { border-right: none; }
+.kpi-strip .label { font-size: 10px; color: var(--ink-quiet); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.kpi-strip .num {
+    font-family: var(--font-mono);
+    font-size: 22px; font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+}
+.kpi-strip .num .unit { font-size: 11px; color: var(--ink-quiet); font-weight: 400; margin-left: 2px; font-family: var(--font-cn); }
+.kpi-strip .num.warn { color: var(--accent); }
+.kpi-strip .num.err  { color: var(--err); }
+.kpi-strip .delta { font-size: 10px; color: var(--ink-quiet); margin-top: 3px; font-family: var(--font-mono); }
+.kpi-strip .delta .up { color: var(--ok); }
+.kpi-strip .delta .down { color: var(--err); }
+
+.grid-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; }
+
+.dense-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.dense-card .head {
+    padding: 10px 14px;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.dense-card .head h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.dense-card .head .more { font-size: 11px; color: var(--accent); }
+.dense-card .head .count {
+    font-family: var(--font-mono);
+    color: var(--accent);
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.dense-table { width: 100%; border-collapse: collapse; }
+.dense-table th, .dense-table td { padding: 8px 12px; font-size: 12px; text-align: left; border-bottom: 1px solid var(--line-soft); }
+.dense-table th { background: transparent; color: var(--ink-quiet); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+.dense-table tr:hover { background: var(--bg-row-hover); }
+.dense-table tr:last-child td { border-bottom: none; }
+.dense-table .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.dense-table .num-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.dense-table .text-right { text-align: right; }
+.dense-table .id-cell { font-family: var(--font-mono); font-size: 11px; color: var(--ink-quiet); }
+.dense-table .sku-name { font-weight: 600; color: var(--ink); }
+
+.tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    line-height: 1.5;
+    border-radius: 2px;
+}
+
+.chart-card .body {
+    padding: 12px 14px;
+    height: 200px;
+    display: flex; align-items: flex-end; gap: 6px;
+}
+.bar { flex: 1; background: var(--bg-soft); border-radius: 2px 2px 0 0; position: relative; }
+.bar.accent { background: var(--accent); }
+.bar .day {
+    position: absolute; bottom: -16px;
+    font-size: 9px; color: var(--ink-faded);
+    width: 100%; text-align: center;
+    font-family: var(--font-mono);
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>方案 C · 紧凑工业</strong> · 工作台 · 白底 + 橙红</div>
+
+<div class="layout">
+    <aside class="sider">
+        <div class="sider-brand"><span class="mark">金</span>金山仓储</div>
+        <ul class="menu">
+            <li class="menu-group">日常使用</li>
+            <li><a href="#" class="active">工作台 <span class="arrow">›</span></a></li>
+            <li><a href="#">待审批中心 <span class="arrow">›</span></a></li>
+            <li class="menu-group">日常操作</li>
+            <li><a href="#">入库 <span class="arrow">›</span></a></li>
+            <li><a href="#">出库 <span class="arrow">›</span></a></li>
+            <li><a href="#">调拨 <span class="arrow">›</span></a></li>
+            <li><a href="#">报损 <span class="arrow">›</span></a></li>
+            <li><a href="#">盘点 <span class="arrow">›</span></a></li>
+            <li class="menu-group">查询分析</li>
+            <li><a href="ui_white_c_inventory.html">库存查询 <span class="arrow">›</span></a></li>
+            <li><a href="ui_white_c_stock_log.html">库存流水 <span class="arrow">›</span></a></li>
+            <li><a href="#">经营报表 <span class="arrow">›</span></a></li>
+            <li><a href="#">库存预测 <span class="arrow">›</span></a></li>
+            <li class="menu-group">数据维护</li>
+            <li><a href="#">商品 <span class="arrow">›</span></a></li>
+            <li><a href="#">供应商 <span class="arrow">›</span></a></li>
+            <li><a href="#">仓库 <span class="arrow">›</span></a></li>
+            <li><a href="#">库位 <span class="arrow">›</span></a></li>
+            <li class="menu-group">系统</li>
+            <li><a href="#">用户与权限 <span class="arrow">›</span></a></li>
+            <li><a href="#">预设角色 <span class="arrow">›</span></a></li>
+            <li><a href="#">通知渠道 <span class="arrow">›</span></a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <div class="crumb"><span class="prev">首页</span><span class="sep">/</span><span class="now">工作台</span></div>
+            <div class="header-actions">
+                <span class="user-name" style="font-size:12px;">王经理</span>
+                <span class="quiet">改密</span>
+                <span class="quiet">退出</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="page-head">
+                <div>
+                    <span class="page-title">工作台</span>
+                    <span class="page-sub">2026-05-21 周三 · 14:23:18 · 数据 5 秒前刷新</span>
+                </div>
+                <div class="flex gap-8">
+                    <a href="#" class="btn btn-sm">刷新</a>
+                    <a href="#" class="btn btn-sm btn-primary">+ 入库</a>
+                </div>
+            </div>
+
+            <div class="kpi-strip">
+                <div>
+                    <div class="label">在仓总数</div>
+                    <div class="num">2,847<span class="unit">件</span></div>
+                    <div class="delta"><span class="up">+12</span> vs 昨</div>
+                </div>
+                <div>
+                    <div class="label">SKU 数</div>
+                    <div class="num">5</div>
+                    <div class="delta">无变化</div>
+                </div>
+                <div>
+                    <div class="label">低库存</div>
+                    <div class="num warn">3</div>
+                    <div class="delta">需补货</div>
+                </div>
+                <div>
+                    <div class="label">待审批</div>
+                    <div class="num">8</div>
+                    <div class="delta">入 3 · 损 5</div>
+                </div>
+                <div>
+                    <div class="label">本月入库</div>
+                    <div class="num">42<span class="unit">单</span></div>
+                    <div class="delta"><span class="up">+8</span> vs 上月</div>
+                </div>
+                <div>
+                    <div class="label">本月出库</div>
+                    <div class="num">31<span class="unit">单</span></div>
+                    <div class="delta"><span class="up">+5</span> vs 上月</div>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="dense-card">
+                    <div class="head">
+                        <h3>待审批入库单<span class="count">3</span></h3>
+                        <a href="#" class="more">全部 →</a>
+                    </div>
+                    <table class="dense-table">
+                        <thead>
+                            <tr>
+                                <th>单号</th>
+                                <th>供应商</th>
+                                <th class="text-right">件数</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="id-cell">RKD-...-001</td>
+                                <td>贵州茅台经销商</td>
+                                <td class="text-right num-mono">32</td>
+                                <td><span class="tag tag-accent">待审</span></td>
+                            </tr>
+                            <tr>
+                                <td class="id-cell">RKD-...-002</td>
+                                <td>得力办公用品</td>
+                                <td class="text-right num-mono">560</td>
+                                <td><span class="tag tag-accent">待审</span></td>
+                            </tr>
+                            <tr>
+                                <td class="id-cell">RKD-...-003</td>
+                                <td>贵州茅台经销商</td>
+                                <td class="text-right num-mono">8</td>
+                                <td><span class="tag tag-accent">待审</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="dense-card">
+                    <div class="head">
+                        <h3>低库存 SKU<span class="count">3</span></h3>
+                        <a href="#" class="more">补货 →</a>
+                    </div>
+                    <table class="dense-table">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>库位</th>
+                                <th class="text-right">在仓</th>
+                                <th class="text-right">阈值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="sku-name">签字笔</td>
+                                <td class="mono">B1</td>
+                                <td class="text-right num-mono" style="color:var(--accent);">22</td>
+                                <td class="text-right mono text-quiet">30</td>
+                            </tr>
+                            <tr>
+                                <td class="sku-name">龙井</td>
+                                <td class="mono">C1</td>
+                                <td class="text-right num-mono" style="color:var(--err);">6</td>
+                                <td class="text-right mono text-quiet">8</td>
+                            </tr>
+                            <tr>
+                                <td class="sku-name">A4 复印纸</td>
+                                <td class="mono">B2</td>
+                                <td class="text-right num-mono" style="color:var(--accent);">15</td>
+                                <td class="text-right mono text-quiet">20</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="dense-card">
+                    <div class="head">
+                        <h3>最近出入库</h3>
+                        <a href="#" class="more">流水 →</a>
+                    </div>
+                    <table class="dense-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>SKU</th>
+                                <th class="text-right">变动</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono text-quiet">14:08</td>
+                                <td class="sku-name">茅台</td>
+                                <td class="text-right num-mono text-success">+20</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-quiet">13:42</td>
+                                <td class="sku-name">A4 纸</td>
+                                <td class="text-right num-mono text-success">+500</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-quiet">11:20</td>
+                                <td class="sku-name">签字笔</td>
+                                <td class="text-right num-mono text-error">-12</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-quiet">10:45</td>
+                                <td class="sku-name">龙井</td>
+                                <td class="text-right num-mono text-error">-2</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-quiet">09:30</td>
+                                <td class="sku-name">茅台</td>
+                                <td class="text-right num-mono text-error">-5</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="grid-3" style="margin-top: 14px; grid-template-columns: 2fr 1fr;">
+                <div class="dense-card chart-card">
+                    <div class="head">
+                        <h3>近 14 天出入库 · 件</h3>
+                        <span style="font-size: 11px; color: var(--ink-quiet);">
+                            <span style="display:inline-block; width:8px; height:8px; background:var(--bg-soft); border:1px solid var(--ink-faded); margin-right:4px; vertical-align: middle;"></span>入库
+                            <span style="display:inline-block; width:8px; height:8px; background:var(--accent); margin: 0 4px 0 10px; vertical-align: middle;"></span>出库
+                        </span>
+                    </div>
+                    <div class="body" style="padding: 16px 14px 28px;">
+                        <div class="bar" style="height: 40%;"><div class="day">08</div></div>
+                        <div class="bar accent" style="height: 30%;"><div class="day">09</div></div>
+                        <div class="bar" style="height: 60%;"><div class="day">10</div></div>
+                        <div class="bar accent" style="height: 45%;"><div class="day">11</div></div>
+                        <div class="bar" style="height: 70%;"><div class="day">12</div></div>
+                        <div class="bar accent" style="height: 35%;"><div class="day">13</div></div>
+                        <div class="bar" style="height: 25%;"><div class="day">14</div></div>
+                        <div class="bar accent" style="height: 50%;"><div class="day">15</div></div>
+                        <div class="bar" style="height: 80%;"><div class="day">16</div></div>
+                        <div class="bar accent" style="height: 60%;"><div class="day">17</div></div>
+                        <div class="bar" style="height: 55%;"><div class="day">18</div></div>
+                        <div class="bar accent" style="height: 40%;"><div class="day">19</div></div>
+                        <div class="bar" style="height: 90%;"><div class="day">20</div></div>
+                        <div class="bar accent" style="height: 70%;"><div class="day">21</div></div>
+                    </div>
+                </div>
+
+                <div class="dense-card">
+                    <div class="head"><h3>库位占用率</h3></div>
+                    <table class="dense-table">
+                        <tr>
+                            <td>金山主仓</td>
+                            <td class="text-right num-mono">6 <span class="text-quiet">/ 6</span></td>
+                            <td class="text-right"><span class="tag tag-accent">满</span></td>
+                        </tr>
+                        <tr>
+                            <td>研发中心仓</td>
+                            <td class="text-right num-mono">1 <span class="text-quiet">/ 3</span></td>
+                            <td class="text-right"><span class="tag tag-success">空闲</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-quiet" colspan="3" style="background:var(--bg-soft); padding-top:10px;">合计 7/9 = 78%</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="page-nav">
+                <a href="ui_white_c_inventory.html" class="btn btn-sm">下一页 库存查询 →</a>
+                <a href="ui_white_index.html" class="btn btn-sm">返回方案对比</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

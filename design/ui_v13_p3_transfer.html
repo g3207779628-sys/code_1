@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v13 · P3 · 新建调拨单 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+.content { padding: 22px 30px; background: var(--bg-soft); }
+.layout { background: var(--bg-soft); }
+.sider { width: 200px; }
+.menu li > a { padding: 7px 18px; font-size: 13px; }
+.menu li > a.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); }
+.header { height: 52px; }
+.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.page-head .page-title { font-size: 20px; font-weight: 700; }
+.page-head .page-sub { font-size: 12px; color: var(--ink-quiet); margin-left: 10px; }
+.split-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.panel { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.panel .head { padding: 12px 18px; background: var(--bg-soft); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; }
+.panel .head .meta { color: var(--ink-quiet); font-size: 11px; font-weight: 400; }
+.panel .body { padding: 16px 18px; }
+.right-panel { position: sticky; top: 16px; align-self: start; }
+.right-panel .head { border-left: 4px solid var(--accent); }
+.flow-strip-h { padding: 14px 18px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--line-soft); background: var(--bg-soft); }
+.flow-strip-h .side { flex: 1; }
+.flow-strip-h .side .label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-quiet); font-weight: 600; margin-bottom: 4px; }
+.flow-strip-h .side .picker { padding: 7px 10px; background: var(--bg-card); border: 1px solid var(--line-input); border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.flow-strip-h .side .picker .ar { color: var(--accent); font-size: 11px; }
+.flow-strip-h .arrow { font-size: 22px; color: var(--accent); font-weight: 700; align-self: flex-end; padding-bottom: 4px; }
+.line-table { width: 100%; border-collapse: collapse; }
+.line-table th, .line-table td { padding: 9px 12px; font-size: 13px; text-align: left; }
+.line-table th { background: var(--bg-soft); color: var(--ink-quiet); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.line-table td { border-bottom: 1px solid var(--line-soft); }
+.line-table input { padding: 6px 10px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; }
+.line-table .picker { padding: 6px 10px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.line-table .picker .ar { color: var(--accent); font-size: 10px; }
+.line-table .del { color: var(--ink-faded); cursor: pointer; font-size: 16px; }
+.line-table tfoot td { background: var(--bg-soft); border-top: 1px solid var(--line); font-weight: 700; }
+.add-line { margin: 12px 18px; color: var(--accent); font-size: 13px; cursor: pointer; padding: 10px; border: 1px dashed var(--accent-fade); border-radius: var(--r-md); text-align: center; background: var(--accent-soft); font-weight: 600; }
+.attr-row { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.attr-row label { display: block; font-size: 11px; color: var(--ink-quiet); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 5px; }
+.attr-row input, .attr-row select, .attr-row textarea { width: 100%; padding: 7px 10px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; }
+.attr-row .req { color: var(--accent); }
+.summary-block { background: var(--bg-soft); border-top: 1px solid var(--line); padding: 12px 18px; font-size: 12px; }
+.summary-block .row { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--ink-quiet); }
+.summary-block .row strong { color: var(--accent); font-family: var(--font-mono); font-size: 14px; }
+.actions-stack { padding: 12px 18px; display: flex; flex-direction: column; gap: 8px; }
+.actions-stack .btn { width: 100%; justify-content: center; }
+.demo-tag { position: fixed; top: 12px; right: 12px; background: var(--accent-deep); color: #FFF; font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; padding: 4px 10px; border-radius: 2px; z-index: 999; }
+</style>
+</head>
+<body>
+<div class="demo-tag">MOCKUP · v13 P3 · TRANSFER</div>
+
+<div class="layout">
+    <aside class="sider">
+        <div class="sider-brand">金山仓储</div>
+        <ul class="menu">
+            <li class="menu-group">日常使用</li>
+            <li><a href="#">工作台</a></li>
+            <li class="menu-group">日常操作</li>
+            <li><a href="#">入库</a></li>
+            <li><a href="#">出库</a></li>
+            <li><a href="#" class="active">调拨</a></li>
+            <li><a href="#">盘点</a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <div class="crumb"><span class="prev">调拨</span><span class="sep">/</span><span class="now">新建</span></div>
+            <div class="header-actions"><span class="user-name">张经理</span><span class="quiet">退出</span></div>
+        </header>
+
+        <div class="content">
+            <div class="page-head">
+                <div><span class="page-title">新建调拨单</span><span class="page-sub">DBD-20260521-006 · 跨仓 / 跨库位</span></div>
+                <a href="ui_v13_index.html" class="btn btn-sm">取消</a>
+            </div>
+
+            <div class="split-layout">
+                <div>
+                    <div class="panel">
+                        <div class="head">调拨方向 + 明细<span class="meta">1 行 · 共 10 件</span></div>
+                        <div class="flow-strip-h">
+                            <div class="side">
+                                <div class="label">调出仓库 / 库位 *</div>
+                                <div class="picker">金山主仓 · 酒柜-A1<span class="ar">更换 →</span></div>
+                            </div>
+                            <div class="arrow">→</div>
+                            <div class="side">
+                                <div class="label">调入仓库 / 库位 *</div>
+                                <div class="picker">研发中心仓 · 分仓-酒柜<span class="ar">更换 →</span></div>
+                            </div>
+                        </div>
+                        <table class="line-table">
+                            <thead><tr><th style="width:36%;">商品</th><th style="width:24%;">来源批次</th><th style="width:12%;">数量</th><th style="width:10%;">单位</th><th style="width:12%;">可调存量</th><th style="width:6%;"></th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><div class="picker">茅台<span class="ar">换</span></div></td>
+                                    <td><div class="picker">自动 (FIFO)<span class="ar">指定</span></div></td>
+                                    <td><input type="number" value="10" style="text-align:right;"></td>
+                                    <td><input value="瓶" readonly></td>
+                                    <td style="color:var(--ok); font-family:var(--font-mono);">128</td>
+                                    <td style="text-align:center;"><span class="del">×</span></td>
+                                </tr>
+                            </tbody>
+                            <tfoot><tr><td colspan="2" style="text-align:right;">合计</td><td style="text-align:right; color:var(--accent); font-size:15px;">10</td><td>瓶</td><td colspan="2"></td></tr></tfoot>
+                        </table>
+                        <div class="add-line">+ 添加一行明细</div>
+                    </div>
+                </div>
+
+                <div class="panel right-panel">
+                    <div class="head">基本信息<span class="meta">必填 3 项</span></div>
+                    <div class="body">
+                        <div class="attr-row"><label>调拨日期 <span class="req">*</span></label><input type="date" value="2026-05-21"></div>
+                        <div class="attr-row"><label>调拨原因</label>
+                            <select><option>分仓补货</option><option>盘点后调整</option><option>临期商品转移</option><option>跨区调整</option></select>
+                        </div>
+                        <div class="attr-row" style="border-bottom: none;"><label>备注</label><textarea rows="3" placeholder="如：分仓酒柜库存偏低 / 季节性转移"></textarea></div>
+                    </div>
+                    <div class="summary-block">
+                        <div class="row"><span>明细行数</span><strong>1</strong></div>
+                        <div class="row"><span>合计件数</span><strong>10</strong></div>
+                    </div>
+                    <div class="actions-stack">
+                        <a href="#" class="btn btn-primary">立即执行调拨 →</a>
+                        <a href="#" class="btn">存为草稿</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

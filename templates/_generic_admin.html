@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} 管理{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">{{ title }}</span>{% endblock %}
+{% block content %}
+
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">{{ title }}</div>
+        <div class="page-sub">共 {{ rows|length }} 条 · 主数据管理</div>
+    </div>
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>新增 {{ title }}</h3></div>
+    <div class="body">
+        <form method="post" style="display:flex; gap:12px; align-items:flex-end;">
+            <input type="hidden" name="action" value="create">
+            <div class="form-row" style="flex:1; margin:0;">
+                <label>名称 <span style="color:var(--accent);">*</span></label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-row" style="flex:2; margin:0;">
+                <label>备注</label>
+                <input type="text" name="note">
+            </div>
+            <button class="btn btn-primary" type="submit" style="height:38px;">+ 新增</button>
+        </form>
+    </div>
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>{{ title }} 列表</h3><span class="meta">{{ rows|length }} 条</span></div>
+    <div class="body" style="padding:0;">
+        <table class="dense-table">
+            <thead>
+                <tr><th style="width:80px;">ID</th><th>名称</th><th>备注</th><th style="width:160px;">创建时间</th><th style="width:140px;" class="text-right">操作</th></tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="id-cell">{{ r.id }}</td>
+                    <td class="sku-name">{{ r.name }}</td>
+                    <td style="color:var(--ink-quiet);">{{ r.note or '-' }}</td>
+                    <td class="mono" style="color:var(--ink-quiet); font-size:11px;">{{ r.created_at[:16] if r.created_at else '-' }}</td>
+                    <td class="text-right">
+                        <form method="post" style="display:inline;" onsubmit="return confirm('确认删除「{{ r.name }}」？被引用的不能删');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="id" value="{{ r.id }}">
+                            <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align:center; color:var(--ink-quiet); padding:24px;">暂无数据 — 在上方表单添加</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

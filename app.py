@@ -101,6 +101,36 @@ def _user_menus(user_id, role):
     return menus
 
 
+PER_PAGE_DEFAULT = 50
+
+
+def _pagination(total, per_page=PER_PAGE_DEFAULT, page_arg="page"):
+    """统一分页：读 ?page= 参数，返回分页上下文 dict（供各列表页 + _pager.html 共用）。
+    total 是筛选后的总条数。offset 用于 SQL LIMIT/OFFSET 或 Python 切片。"""
+    try:
+        page = int(request.args.get(page_arg, 1))
+    except (TypeError, ValueError):
+        page = 1
+    if page < 1:
+        page = 1
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+    offset = (page - 1) * per_page
+    return {"page": page, "per_page": per_page, "total": total,
+            "total_pages": total_pages, "offset": offset,
+            "has_prev": page > 1, "has_next": page < total_pages}
+
+
+def _storage_options(conn):
+    """取已有的 distinct 存放区域 / 存放位置，供 datalist 输入即搜下拉用。"""
+    areas = [r["storage_area"] for r in conn.execute(
+        "SELECT DISTINCT storage_area FROM location WHERE IFNULL(storage_area,'')<>'' ORDER BY storage_area").fetchall()]
+    positions = [r["storage_position"] for r in conn.execute(
+        "SELECT DISTINCT storage_position FROM location WHERE IFNULL(storage_position,'')<>'' ORDER BY storage_position").fetchall()]
+    return areas, positions
+
+
 @app.template_filter("attachments_list")
 def attachments_list(json_str):
     """单据的 attachments 字段 JSON 字符串 → 路径列表。"""
@@ -765,7 +795,7 @@ def index():
             ).fetchall()
             ctx["low_stock_top3"] = conn.execute(
                 "SELECT s.code, s.name, s.safety_stock, COALESCE(SUM(i.on_hand),0) AS on_hand, "
-                "(SELECT l.code FROM location l JOIN inventory i2 ON i2.location_id=l.id "
+                "(SELECT (l.storage_area || ' / ' || l.storage_position) FROM location l JOIN inventory i2 ON i2.location_id=l.id "
                 " WHERE i2.sku_id=s.id ORDER BY i2.id LIMIT 1) AS location_code "
                 "FROM sku s LEFT JOIN inventory i ON i.sku_id=s.id GROUP BY s.id "
                 "HAVING on_hand < s.safety_stock AND s.safety_stock > 0 "
@@ -778,7 +808,7 @@ def index():
             ).fetchall()
         elif pos == "inventory_ctrl":
             ctx["pending_damage"] = conn.execute(
-                "SELECT d.id, s.code AS sku_code, s.name AS sku_name, b.batch_no, l.code AS loc, d.quantity, d.reason_type, u.display_name AS applicant "
+                "SELECT d.id, s.code AS sku_code, s.name AS sku_name, b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS loc, d.quantity, d.reason_type, u.display_name AS applicant "
                 "FROM damage_log d JOIN sku s ON s.id=d.sku_id JOIN batch b ON b.id=d.batch_id JOIN location l ON l.id=d.location_id "
                 "LEFT JOIN user u ON u.id=d.applicant_id WHERE d.status='pending' ORDER BY d.id DESC LIMIT 10"
             ).fetchall()
@@ -806,14 +836,14 @@ def index():
                 "WHERE o.status='draft' ORDER BY o.created_at DESC LIMIT 10"
             ).fetchall()
             ctx["recent_log"] = conn.execute(
-                "SELECT sl.delta, sl.occurred_at, s.code AS sku, b.batch_no, l.code AS loc "
+                "SELECT sl.delta, sl.occurred_at, s.code AS sku, b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS loc "
                 "FROM stock_log sl JOIN sku s ON s.id=sl.sku_id JOIN batch b ON b.id=sl.batch_id JOIN location l ON l.id=sl.location_id "
                 "WHERE sl.event_type='inbound' ORDER BY sl.id DESC LIMIT 10"
             ).fetchall()
         elif pos == "putaway":
             ctx["loc_occupancy"] = conn.execute(
-                "SELECT l.code, COALESCE(SUM(i.on_hand),0) AS used "
-                "FROM location l LEFT JOIN inventory i ON i.location_id=l.id GROUP BY l.id ORDER BY l.code"
+                "SELECT (l.storage_area || ' / ' || l.storage_position) AS code, COALESCE(SUM(i.on_hand),0) AS used "
+                "FROM location l LEFT JOIN inventory i ON i.location_id=l.id GROUP BY l.id ORDER BY l.storage_area, l.storage_position"
             ).fetchall()
             ctx["recent_inbound"] = conn.execute(
                 "SELECT o.order_no, uo.display_name AS operator, o.created_at, "
@@ -1035,79 +1065,70 @@ def sku_delete(sku_id):
 @app.route("/sku/<int:sku_id>/detail")
 @login_required
 def sku_detail(sku_id):
-    from datetime import date, timedelta
-    date_from = request.args.get("date_from") or (date.today() - timedelta(days=30)).isoformat()
-    date_to = request.args.get("date_to") or date.today().isoformat()
-    event_types = request.args.getlist("event_type") or ["inbound", "outbound", "damage", "adjust", "transfer", "return_in"]
-
     with database.get_conn() as conn:
         sku = conn.execute("SELECT * FROM sku WHERE id = ?", (sku_id,)).fetchone()
         if not sku:
             flash("SKU 不存在", "error")
             return redirect(url_for("sku_list"))
 
-        placeholders = ",".join("?" * len(event_types))
-        params = [sku_id, date_from, date_to] + list(event_types)
-
-        inbound_rows = conn.execute(
-            f"""SELECT sl.occurred_at, sl.delta, sl.source_doc, sl.note,
-                       b.batch_no, l.code AS location_code, u.display_name AS operator
-                FROM stock_log sl
-                JOIN batch b ON b.id = sl.batch_id
-                JOIN location l ON l.id = sl.location_id
-                LEFT JOIN user u ON u.id = sl.operator_id
-                WHERE sl.sku_id = ?
-                  AND date(sl.occurred_at) BETWEEN ? AND ?
-                  AND sl.event_type = 'inbound'
-                  AND sl.event_type IN ({placeholders})
-                ORDER BY sl.occurred_at DESC""",
-            params,
-        ).fetchall()
-
-        outbound_rows = conn.execute(
-            f"""SELECT sl.occurred_at, sl.delta, sl.event_type, sl.source_doc, sl.note,
-                       b.batch_no, l.code AS location_code, u.display_name AS operator
-                FROM stock_log sl
-                JOIN batch b ON b.id = sl.batch_id
-                JOIN location l ON l.id = sl.location_id
-                LEFT JOIN user u ON u.id = sl.operator_id
-                WHERE sl.sku_id = ?
-                  AND date(sl.occurred_at) BETWEEN ? AND ?
-                  AND sl.event_type IN ('outbound', 'damage')
-                  AND sl.event_type IN ({placeholders})
-                ORDER BY sl.occurred_at DESC""",
-            params,
-        ).fetchall()
+        # 关联主数据名称：物资所属单位 / 物资管理方
+        owner_unit = owner_party = None
+        if sku["owner_unit_id"]:
+            r = conn.execute("SELECT name FROM owner_unit WHERE id=?", (sku["owner_unit_id"],)).fetchone()
+            owner_unit = r["name"] if r else None
+        if sku["owner_party_id"]:
+            r = conn.execute("SELECT name FROM owner_party WHERE id=?", (sku["owner_party_id"],)).fetchone()
+            owner_party = r["name"] if r else None
 
         current_total = conn.execute(
             "SELECT COALESCE(SUM(on_hand), 0) AS total FROM inventory WHERE sku_id = ?",
             (sku_id,),
         ).fetchone()["total"]
 
-        # 库存分布：按仓库 + 库位 列出该 SKU 的所有库存行（v16: 砸存储区）
-        distribution = conn.execute(
-            """SELECT w.name AS wh_name, NULL AS area_name,
-                      l.code AS loc_code,
-                      b.batch_no, i.on_hand, i.reserved
-               FROM inventory i
-               JOIN location l ON l.id = i.location_id
-               JOIN warehouse w ON w.id = l.warehouse_id
-               JOIN batch b ON b.id = i.batch_id
-               WHERE i.sku_id = ? AND i.on_hand > 0
-               ORDER BY w.id, l.code, b.id""",
+        # 存放位置（该物品有库存的库位，去重；不显示存储区）
+        positions = [
+            r["storage_position"] for r in conn.execute(
+                "SELECT DISTINCT l.storage_position FROM inventory i "
+                "JOIN location l ON l.id = i.location_id "
+                "WHERE i.sku_id = ? AND i.on_hand > 0 "
+                "ORDER BY l.storage_position",
+                (sku_id,),
+            ).fetchall()
+        ]
+
+        # 采购记录（导入的入库单据：采购数量 + 采购时间）
+        purchases = conn.execute(
+            """SELECT io.created_at AS purchase_time, ii.quantity, io.order_no,
+                      l.storage_position AS loc
+               FROM inbound_item ii
+               JOIN inbound_order io ON io.order_no = ii.order_no
+               JOIN location l ON l.id = ii.location_id
+               WHERE ii.sku_id = ?
+               ORDER BY io.created_at DESC, io.order_no DESC""",
+            (sku_id,),
+        ).fetchall()
+
+        # 出库流水（客服出入库台账导入的月度出库；只显示存放位置）
+        outbound_rows = conn.execute(
+            """SELECT sl.occurred_at, sl.delta, sl.event_type, sl.source_doc, sl.note,
+                      l.storage_position AS loc
+               FROM stock_log sl
+               JOIN location l ON l.id = sl.location_id
+               WHERE sl.sku_id = ?
+                 AND sl.event_type IN ('outbound', 'damage')
+               ORDER BY sl.occurred_at DESC""",
             (sku_id,),
         ).fetchall()
 
     return render_template(
         "sku_detail.html",
         sku=sku,
-        inbound_rows=inbound_rows,
-        outbound_rows=outbound_rows,
+        owner_unit=owner_unit,
+        owner_party=owner_party,
         current_total=current_total,
-        distribution=distribution,
-        date_from=date_from,
-        date_to=date_to,
-        event_types=event_types,
+        positions=positions,
+        purchases=purchases,
+        outbound_rows=outbound_rows,
     )
 
 
@@ -1116,26 +1137,49 @@ def sku_detail(sku_id):
 @app.route("/inbound")
 @login_required
 def inbound_list():
-    """v20: 列表加 仓库 / 楼栋 / 楼层 / 物品 / 数量 信息（聚合自 inbound_item）。"""
+    """v20: 列表加 仓库 / 楼栋 / 楼层 / 物品 / 数量 信息（聚合自 inbound_item）。
+    v24: 加条件查询(单号/状态/物品) + 创建时间区间 + 分页。"""
+    f = {
+        "q":         request.args.get("q", "").strip(),         # 单号 / 物品
+        "status":    request.args.get("status", "").strip(),
+        "date_from": request.args.get("date_from", "").strip(),  # 创建时间
+        "date_to":   request.args.get("date_to", "").strip(),
+    }
+    where, params = [], []
+    if f["q"]:
+        where.append("(o.order_no LIKE ? OR EXISTS "
+                     "(SELECT 1 FROM inbound_item ii JOIN sku s ON s.id=ii.sku_id "
+                     "WHERE ii.order_no=o.order_no AND (s.name LIKE ? OR s.code LIKE ?)))")
+        params += [f"%{f['q']}%"] * 3
+    if f["status"]:
+        where.append("o.status = ?"); params.append(f["status"])
+    if f["date_from"]:
+        where.append("date(o.created_at) >= ?"); params.append(f["date_from"])
+    if f["date_to"]:
+        where.append("date(o.created_at) <= ?"); params.append(f["date_to"])
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+
+    base = """SELECT o.*,
+                     uo.display_name AS operator_name,
+                     uc.display_name AS creator_name,
+                     ua.display_name AS approver_name,
+                     (SELECT COALESCE(SUM(quantity), 0) FROM inbound_item WHERE order_no = o.order_no) AS total_qty,
+                     (SELECT COUNT(*) FROM inbound_item WHERE order_no = o.order_no) AS line_count
+              FROM inbound_order o
+              LEFT JOIN user uo ON uo.id = o.operator_id
+              LEFT JOIN user uc ON uc.id = o.creator_id
+              LEFT JOIN user ua ON ua.id = o.approver_id"""
     with database.get_conn() as conn:
-        orders = conn.execute(
-            """SELECT o.*,
-                      uo.display_name AS operator_name,
-                      uc.display_name AS creator_name,
-                      ua.display_name AS approver_name,
-                      (SELECT COALESCE(SUM(quantity), 0) FROM inbound_item WHERE order_no = o.order_no) AS total_qty,
-                      (SELECT COUNT(*) FROM inbound_item WHERE order_no = o.order_no) AS line_count
-               FROM inbound_order o
-               LEFT JOIN user uo ON uo.id = o.operator_id
-               LEFT JOIN user uc ON uc.id = o.creator_id
-               LEFT JOIN user ua ON ua.id = o.approver_id
-               ORDER BY o.id DESC"""
-        ).fetchall()
+        filtered_total = conn.execute(
+            "SELECT COUNT(*) AS c FROM inbound_order o" + where_sql, params).fetchone()["c"]
+        pg = _pagination(filtered_total)
+        orders = conn.execute(base + where_sql + " ORDER BY o.id DESC LIMIT ? OFFSET ?",
+                              params + [pg["per_page"], pg["offset"]]).fetchall()
         # 每张订单的首行聚合摘要（仓库/楼栋/楼层/物品）
         order_summary = {}
         for o in orders:
             row = conn.execute(
-                """SELECT w.name AS wh_name, l.building, l.floor,
+                """SELECT w.name AS wh_name, l.storage_area, l.storage_position,
                           GROUP_CONCAT(DISTINCT s.name) AS sku_names
                    FROM inbound_item ii
                    JOIN location l ON l.id = ii.location_id
@@ -1145,7 +1189,7 @@ def inbound_list():
                 (o["order_no"],),
             ).fetchone()
             order_summary[o["order_no"]] = row
-    return render_template("inbound_list.html", orders=orders, order_summary=order_summary)
+    return render_template("inbound_list.html", orders=orders, order_summary=order_summary, f=f, pg=pg)
 
 
 @app.route("/inbound/new", methods=["GET", "POST"])
@@ -1154,25 +1198,26 @@ def inbound_new():
     with database.get_conn() as conn:
         skus = conn.execute("SELECT * FROM sku ORDER BY code").fetchall()
         locations = conn.execute(
-            "SELECT id, code FROM location ORDER BY code"
+            "SELECT id, storage_area, storage_position FROM location ORDER BY storage_area, storage_position"
         ).fetchall()
+        area_options, position_options = _storage_options(conn)
 
         if request.method == "POST":
-            # v20 重做：顶部选仓库；明细行只填 楼栋 + 楼层 + 物品 + 数量 + 批次号
+            # v25：明细行填 存放区域 + 存放位置 + 物品 + 数量 + 批次号
             warehouse_id_raw = request.form.get("warehouse_id", "").strip()
             if not warehouse_id_raw:
                 flash("入库仓库必填", "error")
-                return render_template("inbound_form.html", skus=skus, locations=locations)
+                return render_template("inbound_form.html", skus=skus, locations=locations, area_options=area_options, position_options=position_options)
             warehouse_id = int(warehouse_id_raw)
             operator_raw = request.form.get("operator_id", "").strip()
             if not operator_raw:
                 flash("入库员工必填", "error")
-                return render_template("inbound_form.html", skus=skus, locations=locations)
+                return render_template("inbound_form.html", skus=skus, locations=locations, area_options=area_options, position_options=position_options)
             operator_id = int(operator_raw)
             note = request.form.get("note", "").strip()
 
-            buildings = request.form.getlist("building[]")
-            floors = request.form.getlist("floor[]")
+            areas = request.form.getlist("storage_area[]")
+            positions = request.form.getlist("storage_position[]")
             sku_ids = request.form.getlist("sku_id[]")
             batch_nos = request.form.getlist("batch_no[]")
             quantities = request.form.getlist("quantity[]")
@@ -1187,31 +1232,23 @@ def inbound_new():
                         continue
                 except ValueError:
                     continue
-                building = (buildings[i] if i < len(buildings) else "").strip()
-                floor = (floors[i] if i < len(floors) else "").strip()
-                if not building or not floor:
-                    flash(f"第 {i+1} 行：楼栋 + 楼层 必填", "error")
-                    return render_template("inbound_form.html", skus=skus, locations=locations)
-                # 自动按 (仓库, 楼栋, 楼层) 找 location；找不到自动创建
+                storage_area = (areas[i] if i < len(areas) else "").strip()
+                storage_position = (positions[i] if i < len(positions) else "").strip()
+                if not storage_area or not storage_position:
+                    flash(f"第 {i+1} 行：存放区域 + 存放位置 必填", "error")
+                    return render_template("inbound_form.html", skus=skus, locations=locations,
+                                           area_options=area_options, position_options=position_options)
+                # 自动按 (仓库, 存放区域, 存放位置) 找 location；找不到自动创建
                 loc_row = conn.execute(
-                    "SELECT id FROM location WHERE warehouse_id=? AND building=? AND floor=? LIMIT 1",
-                    (warehouse_id, building, floor),
+                    "SELECT id FROM location WHERE warehouse_id=? AND storage_area=? AND storage_position=? LIMIT 1",
+                    (warehouse_id, storage_area, storage_position),
                 ).fetchone()
                 if loc_row:
                     location_id = loc_row["id"]
                 else:
-                    auto_code = f"{building}栋-{floor}层-自动"
-                    # 避免重名（同仓库下 code 唯一）
-                    n = 1
-                    while conn.execute(
-                        "SELECT 1 FROM location WHERE warehouse_id=? AND code=?",
-                        (warehouse_id, auto_code),
-                    ).fetchone():
-                        n += 1
-                        auto_code = f"{building}栋-{floor}层-自动-{n}"
                     cur = conn.execute(
-                        "INSERT INTO location (warehouse_id, code, building, floor) VALUES (?, ?, ?, ?)",
-                        (warehouse_id, auto_code, building, floor),
+                        "INSERT INTO location (warehouse_id, storage_area, storage_position) VALUES (?, ?, ?)",
+                        (warehouse_id, storage_area, storage_position),
                     )
                     location_id = cur.lastrowid
                 # 批次号留空时自动生成
@@ -1231,7 +1268,7 @@ def inbound_new():
 
             if not valid_rows:
                 flash("至少要填一行明细", "error")
-                return render_template("inbound_form.html", skus=skus, locations=locations)
+                return render_template("inbound_form.html", skus=skus, locations=locations, area_options=area_options, position_options=position_options)
 
             order_no = database.gen_order_no(conn, "RKD", "inbound_order")
             # 附件保存
@@ -1241,7 +1278,7 @@ def inbound_new():
                 paths = _att.save_files(request.files.getlist("attachments[]"), "inbound", order_no)
             except ValueError as e:
                 flash(str(e), "error")
-                return render_template("inbound_form.html", skus=skus, locations=locations)
+                return render_template("inbound_form.html", skus=skus, locations=locations, area_options=area_options, position_options=position_options)
             conn.execute(
                 "INSERT INTO inbound_order (order_no, operator_id, status, creator_id, note, attachments) VALUES (?, ?, 'draft', ?, ?, ?)",
                 (order_no, operator_id, session["user_id"], note,
@@ -1255,7 +1292,7 @@ def inbound_new():
             flash(f"入库单 {order_no} 已创建（草稿，待审核）", "success")
             return redirect(url_for("inbound_detail", order_no=order_no))
 
-    return render_template("inbound_form.html", skus=skus, locations=locations)
+    return render_template("inbound_form.html", skus=skus, locations=locations, area_options=area_options, position_options=position_options)
 
 
 @app.route("/inbound/<order_no>")
@@ -1279,7 +1316,7 @@ def inbound_detail(order_no):
             return redirect(url_for("inbound_list"))
         items = conn.execute(
             """SELECT i.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec,
-                      l.code AS location_code
+                      (l.storage_area || ' / ' || l.storage_position) AS location_code
                FROM inbound_item i
                JOIN sku s ON s.id = i.sku_id
                JOIN location l ON l.id = i.location_id
@@ -1416,8 +1453,8 @@ def inventory_list():
         "owner_party_id":   request.args.get("owner_party_id", "").strip(),
         "owner_admin_id":   request.args.get("owner_admin_id", "").strip(),
         # 仓库高级（6）
-        "building":         request.args.get("building", "").strip(),
-        "floor":            request.args.get("floor", "").strip(),
+        "storage_area":     request.args.get("storage_area", "").strip(),
+        "storage_position": request.args.get("storage_position", "").strip(),
         "location_id":      request.args.get("location_id", "").strip(),
         "alloc_dept_id":    request.args.get("alloc_dept_id", "").strip(),
         "wh_type_id":       request.args.get("wh_type_id", "").strip(),
@@ -1447,10 +1484,10 @@ def inventory_list():
         where.append("s.owner_party_id = ?"); params.append(int(f["owner_party_id"]))
     if f["owner_admin_id"]:
         where.append("s.owner_admin_id = ?"); params.append(int(f["owner_admin_id"]))
-    if f["building"]:
-        where.append("l.building LIKE ?"); params.append(f"%{f['building']}%")
-    if f["floor"]:
-        where.append("l.floor LIKE ?"); params.append(f"%{f['floor']}%")
+    if f["storage_area"]:
+        where.append("l.storage_area LIKE ?"); params.append(f"%{f['storage_area']}%")
+    if f["storage_position"]:
+        where.append("l.storage_position LIKE ?"); params.append(f"%{f['storage_position']}%")
     if f["location_id"]:
         where.append("l.id = ?"); params.append(int(f["location_id"]))
     if f["alloc_dept_id"]:
@@ -1469,7 +1506,7 @@ def inventory_list():
                op.name AS owner_party_name,
                oa.name AS owner_admin_name,
                w.id AS wh_id, w.name AS wh_name,
-               l.id AS loc_id, l.code AS loc_code, l.building, l.floor,
+               l.id AS loc_id, (l.storage_area || ' / ' || l.storage_position) AS loc_code, l.storage_area, l.storage_position,
                wad.name AS alloc_dept_name,
                wud.name AS use_dept_name,
                wt.name AS wh_type_name,
@@ -1490,7 +1527,7 @@ def inventory_list():
     """
     if where:
         sql += " AND " + " AND ".join(where)
-    sql += " ORDER BY s.name, l.code"
+    sql += " ORDER BY s.name, l.storage_area, l.storage_position"
 
     with database.get_conn() as conn:
         rows = conn.execute(sql, params).fetchall()
@@ -1506,7 +1543,9 @@ def inventory_list():
         "unique_locs": unique_locs,
         "low_count": low_count,
     }
-    return render_template("inventory_list.html", rows=rows, f=f, summary=summary)
+    pg = _pagination(len(rows))
+    page_rows = rows[pg["offset"]:pg["offset"] + pg["per_page"]]
+    return render_template("inventory_list.html", rows=page_rows, f=f, summary=summary, pg=pg)
 
 
 @app.route("/inventory/warehouse/<int:warehouse_id>")
@@ -1520,7 +1559,7 @@ def inventory_warehouse(warehouse_id):
             return redirect(url_for("inventory_list", view="by_warehouse"))
         items = conn.execute(
             """SELECT s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec, s.unit,
-                      b.batch_no, l.code AS location_code,
+                      b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code,
                       NULL AS area_name,
                       i.on_hand, i.reserved
                FROM inventory i
@@ -1528,13 +1567,13 @@ def inventory_warehouse(warehouse_id):
                JOIN batch b ON b.id = i.batch_id
                JOIN location l ON l.id = i.location_id
                WHERE l.warehouse_id = ? AND i.on_hand > 0
-               ORDER BY l.code, s.name""",
+               ORDER BY l.storage_area, l.storage_position, s.name""",
             (warehouse_id,),
         ).fetchall()
         locs = conn.execute(
-            """SELECT l.id, l.code, NULL AS area_name
+            """SELECT l.id, (l.storage_area || ' / ' || l.storage_position) AS code, NULL AS area_name
                FROM location l
-               WHERE l.warehouse_id=? ORDER BY l.code""",
+               WHERE l.warehouse_id=? ORDER BY l.storage_area, l.storage_position""",
             (warehouse_id,),
         ).fetchall()
     return render_template("inventory_warehouse.html", wh=wh, items=items, locs=locs)
@@ -1689,8 +1728,8 @@ def _requisition_preview_data():
             "SELECT id, name FROM wh_use_dept ORDER BY name"
         ).fetchall()]
         locations = [dict(r) for r in conn.execute(
-            "SELECT l.id, l.code, w.name AS warehouse_name "
-            "FROM location l JOIN warehouse w ON w.id = l.warehouse_id ORDER BY l.code"
+            "SELECT l.id, (l.storage_area || ' / ' || l.storage_position) AS code, w.name AS warehouse_name "
+            "FROM location l JOIN warehouse w ON w.id = l.warehouse_id ORDER BY l.storage_area, l.storage_position"
         ).fetchall()]
         categories = [dict(r) for r in conn.execute(
             "SELECT id, name FROM item_category_major ORDER BY name"
@@ -1779,15 +1818,17 @@ def requisition_list():
         )
         params.append(f"%{f['sku']}%"); params.append(f"%{f['sku']}%")
 
-    sql = "SELECT ro.* FROM requisition_order ro"
-    if where:
-        sql += " WHERE " + " AND ".join(where)
-    sql += " ORDER BY ro.id DESC"
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    sql = "SELECT ro.* FROM requisition_order ro" + where_sql + " ORDER BY ro.id DESC LIMIT ? OFFSET ?"
 
     items_by = {}
     outbound_by = {}  # requisition order_no -> 已生成的出库单号（handled 单子用）
     with database.get_conn() as conn:
-        orders = conn.execute(sql, params).fetchall()
+        filtered_total = conn.execute(
+            "SELECT COUNT(*) AS c FROM requisition_order ro" + where_sql, params
+        ).fetchone()["c"]
+        pg = _pagination(filtered_total)
+        orders = conn.execute(sql, params + [pg["per_page"], pg["offset"]]).fetchall()
         if orders:
             nos = [o["order_no"] for o in orders]
             qm = ",".join("?" * len(nos))
@@ -1804,7 +1845,7 @@ def requisition_list():
         cats = [dict(r) for r in conn.execute("SELECT name FROM item_category_major ORDER BY name").fetchall()]
 
     return render_template("requisition_list.html", orders=orders, items_by=items_by,
-                           outbound_by=outbound_by,
+                           outbound_by=outbound_by, pg=pg,
                            f=f, total_all=total_all, depts=depts, cats=cats)
 
 
@@ -1896,16 +1937,39 @@ def requisition_confirm_outbound(order_no):
 @app.route("/pick")
 @login_required
 def pick_list():
-    with database.get_conn() as conn:
-        orders = conn.execute(
-            """SELECT ob.*, ob.receiver_desc, up.display_name AS picker_name,
+    f = {
+        "q":         request.args.get("q", "").strip(),         # 单号 / 收件方 / 物品
+        "status":    request.args.get("status", "").strip(),
+        "date_from": request.args.get("date_from", "").strip(),  # 创建时间
+        "date_to":   request.args.get("date_to", "").strip(),
+    }
+    where, params = [], []
+    if f["q"]:
+        where.append("(ob.order_no LIKE ? OR IFNULL(ob.receiver_desc,'') LIKE ? OR EXISTS "
+                     "(SELECT 1 FROM outbound_item oi JOIN sku s ON s.id=oi.sku_id "
+                     "WHERE oi.order_no=ob.order_no AND (s.name LIKE ? OR s.code LIKE ?)))")
+        params += [f"%{f['q']}%"] * 4
+    if f["status"]:
+        where.append("ob.status = ?"); params.append(f["status"])
+    if f["date_from"]:
+        where.append("date(ob.created_at) >= ?"); params.append(f["date_from"])
+    if f["date_to"]:
+        where.append("date(ob.created_at) <= ?"); params.append(f["date_to"])
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+
+    base = """SELECT ob.*, ob.receiver_desc, up.display_name AS picker_name,
                       (SELECT COUNT(*) FROM outbound_item WHERE order_no = ob.order_no) AS line_count,
                       (SELECT COALESCE(SUM(quantity),0) FROM outbound_item WHERE order_no = ob.order_no) AS total_qty,
                       (SELECT COALESCE(SUM(reversed_qty),0) FROM outbound_item WHERE order_no = ob.order_no) AS reversed_qty
                FROM outbound_order ob
-               LEFT JOIN user up ON up.id = ob.picker_id
-               ORDER BY (CASE ob.status WHEN 'pending' THEN 0 ELSE 1 END), ob.id DESC"""
-        ).fetchall()
+               LEFT JOIN user up ON up.id = ob.picker_id"""
+    order_clause = " ORDER BY (CASE ob.status WHEN 'pending' THEN 0 ELSE 1 END), ob.id DESC"
+    with database.get_conn() as conn:
+        filtered_total = conn.execute(
+            "SELECT COUNT(*) AS c FROM outbound_order ob" + where_sql, params).fetchone()["c"]
+        pg = _pagination(filtered_total)
+        orders = conn.execute(base + where_sql + order_clause + " LIMIT ? OFFSET ?",
+                              params + [pg["per_page"], pg["offset"]]).fetchall()
         order_summary = {}
         for o in orders:
             row = conn.execute(
@@ -1919,7 +1983,7 @@ def pick_list():
                 (o["order_no"],),
             ).fetchone()
             order_summary[o["order_no"]] = row
-    return render_template("pick_list.html", orders=orders, order_summary=order_summary)
+    return render_template("pick_list.html", orders=orders, order_summary=order_summary, f=f, pg=pg)
 
 
 @app.route("/pick/<order_no>")
@@ -1938,13 +2002,13 @@ def pick_detail(order_no):
             return redirect(url_for("pick_list"))
         items = conn.execute(
             """SELECT oi.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec,
-                      b.batch_no, l.code AS location_code
+                      b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code
                FROM outbound_item oi
                JOIN sku s ON s.id = oi.sku_id
                JOIN batch b ON b.id = oi.batch_id
                JOIN location l ON l.id = oi.location_id
                WHERE oi.order_no = ?
-               ORDER BY l.code, b.id""",
+               ORDER BY l.storage_area, l.storage_position, b.id""",
             (order_no,),
         ).fetchall()
     return render_template("pick_detail.html", ob=ob, items=items)
@@ -2066,7 +2130,7 @@ def damage_list():
     with database.get_conn() as conn:
         rows = conn.execute(
             """SELECT d.*, s.code AS sku_code, s.name AS sku_name,
-                      b.batch_no, l.code AS location_code,
+                      b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code,
                       ua.display_name AS applicant_name,
                       uv.display_name AS approver_name
                FROM damage_log d
@@ -2087,7 +2151,7 @@ def damage_new():
         # 只能对有库存的批次报损
         invs = conn.execute(
             """SELECT inv.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec,
-                      b.batch_no, l.code AS location_code
+                      b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code
                FROM inventory inv
                JOIN sku s ON s.id = inv.sku_id
                JOIN batch b ON b.id = inv.batch_id
@@ -2282,13 +2346,13 @@ def stocktake_detail(order_no):
             return redirect(url_for("stocktake_list"))
         items = conn.execute(
             """SELECT sti.*, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec,
-                      b.batch_no, l.code AS location_code
+                      b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code
                FROM stocktake_item sti
                JOIN sku s ON s.id = sti.sku_id
                JOIN batch b ON b.id = sti.batch_id
                JOIN location l ON l.id = sti.location_id
                WHERE sti.order_no = ?
-               ORDER BY l.code, s.code, b.id""",
+               ORDER BY l.storage_area, l.storage_position, s.code, b.id""",
             (order_no,),
         ).fetchall()
     return render_template("stocktake_detail.html", order=order, items=items)
@@ -2393,9 +2457,9 @@ def _dashboard_disabled():
 
         # 2. 库存按存储区分布（饼图，按 location 聚合）
         zone_dist = conn.execute(
-            """SELECT l.code AS zone, COALESCE(SUM(i.on_hand), 0) AS total
+            """SELECT (l.storage_area || ' / ' || l.storage_position) AS zone, COALESCE(SUM(i.on_hand), 0) AS total
                FROM location l LEFT JOIN inventory i ON i.location_id = l.id
-               GROUP BY l.id HAVING total > 0 ORDER BY l.code"""
+               GROUP BY l.id HAVING total > 0 ORDER BY l.storage_area, l.storage_position"""
         ).fetchall()
 
         # 3. 流水类型分布（饼图，受日期筛选影响）
@@ -2659,8 +2723,8 @@ def stock_log_view():
         "sku_id":        request.args.get("sku_id", "").strip(),
         "sku_code":      request.args.get("sku_code", "").strip(),
         "warehouse_id":  request.args.get("warehouse_id", "").strip(),
-        "building":      request.args.get("building", "").strip(),
-        "floor":         request.args.get("floor", "").strip(),
+        "storage_area":     request.args.get("storage_area", "").strip(),
+        "storage_position": request.args.get("storage_position", "").strip(),
         "location_id":   request.args.get("location_id", "").strip(),
         "operator_id":   request.args.get("operator_id", "").strip(),
         "owner_user_id": request.args.get("owner_user_id", "").strip(),
@@ -2682,10 +2746,10 @@ def stock_log_view():
         where.append("s.code LIKE ?"); params.append(f"%{f['sku_code']}%")
     if f["warehouse_id"]:
         where.append("l.warehouse_id = ?"); params.append(int(f["warehouse_id"]))
-    if f["building"]:
-        where.append("l.building = ?"); params.append(f["building"])
-    if f["floor"]:
-        where.append("l.floor = ?"); params.append(f["floor"])
+    if f["storage_area"]:
+        where.append("l.storage_area LIKE ?"); params.append(f"%{f['storage_area']}%")
+    if f["storage_position"]:
+        where.append("l.storage_position LIKE ?"); params.append(f"%{f['storage_position']}%")
     if f["location_id"]:
         where.append("sl.location_id = ?"); params.append(int(f["location_id"]))
     if f["operator_id"]:
@@ -2704,7 +2768,7 @@ def stock_log_view():
     sql = """
         SELECT sl.id, sl.sku_id, sl.delta, sl.event_type, sl.source_doc, sl.note, sl.occurred_at,
                s.code AS sku_code, s.name AS sku_name,
-               b.batch_no, l.code AS location_code, l.building, l.floor,
+               b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code, l.storage_area, l.storage_position,
                w.name AS warehouse_name,
                u.display_name AS operator_name,
                wo.name AS owner_user_name,
@@ -2721,12 +2785,18 @@ def stock_log_view():
         LEFT JOIN wh_use_dept wud ON wud.id = l.use_dept_id
         WHERE 1=1
     """
-    if where:
-        sql += " AND " + " AND ".join(where)
-    sql += " ORDER BY sl.id DESC LIMIT 500"
+    where_clause = (" AND " + " AND ".join(where)) if where else ""
+    sql += where_clause + " ORDER BY sl.id DESC LIMIT ? OFFSET ?"
+    count_sql = ("SELECT COUNT(*) AS c FROM stock_log sl "
+                 "JOIN sku s ON s.id = sl.sku_id "
+                 "JOIN batch b ON b.id = sl.batch_id "
+                 "JOIN location l ON l.id = sl.location_id "
+                 "WHERE 1=1") + where_clause
 
     with database.get_conn() as conn:
-        rows = conn.execute(sql, params).fetchall()
+        filtered_total = conn.execute(count_sql, params).fetchone()["c"]
+        pg = _pagination(filtered_total)
+        rows = conn.execute(sql, params + [pg["per_page"], pg["offset"]]).fetchall()
         # tab 计数（独立，不受筛选影响）
         tab_counts = {}
         for r in conn.execute(
@@ -2754,13 +2824,13 @@ def stock_log_view():
     return render_template(
         "stock_log.html",
         rows=rows, f=f, tab_counts=tab_counts, total_count=total_count,
-        attachments_by_doc=attachments_by_doc,
+        attachments_by_doc=attachments_by_doc, pg=pg,
     )
 
 
 def _build_stock_log_query(date_from, date_to, sku_id, event_type, warehouse_id="", operator_id="", limit=None):
     sql = ("""SELECT sl.*, s.code AS sku_code, s.name AS sku_name,
-                     b.batch_no, l.code AS location_code,
+                     b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code,
                      w.name AS warehouse_name,
                      u.display_name AS operator_name
               FROM stock_log sl
@@ -2862,7 +2932,7 @@ def export_data(resource):
         with database.get_conn() as conn:
             rows = conn.execute(
                 """SELECT si.*, s.code AS sku_code, s.name AS sku_name,
-                          b.batch_no, l.code AS location_code
+                          b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS location_code
                    FROM stocktake_item si
                    JOIN sku s ON s.id = si.sku_id
                    JOIN batch b ON b.id = si.batch_id
@@ -3106,7 +3176,7 @@ def location_list():
                LEFT JOIN wh_use_dept   wud ON wud.id=l.use_dept_id
                LEFT JOIN wh_type       wt  ON wt.id=l.wh_type_id
                LEFT JOIN wh_owner      wo  ON wo.id=l.resp_owner_id
-               ORDER BY w.id, l.code"""
+               ORDER BY w.id, l.storage_area, l.storage_position"""
         ).fetchall()
     return render_template("location_list.html", rows=rows, zone_label=ZONE_TYPE_LABEL)
 
@@ -3117,24 +3187,23 @@ def location_new():
     with database.get_conn() as conn:
         if request.method == "POST":
             warehouse_id = int(request.form["warehouse_id"])
-            code = request.form.get("code", "").strip()
-            building = request.form.get("building", "").strip()
-            floor = request.form.get("floor", "").strip()
+            storage_area = request.form.get("storage_area", "").strip()
+            storage_position = request.form.get("storage_position", "").strip()
             note = request.form.get("note", "").strip()  # v19
             # v16: 4 个 picker FK
             alloc_dept_id = request.form.get("alloc_dept_id") or None
             use_dept_id = request.form.get("use_dept_id") or None
             wh_type_id = request.form.get("wh_type_id") or None
             resp_owner_id = request.form.get("resp_owner_id") or None
-            if not code:
-                flash("库位代码必填", "error")
+            if not storage_area or not storage_position:
+                flash("存放区域、存放位置都必填", "error")
             else:
                 try:
                     cur = conn.execute(
-                        "INSERT INTO location (warehouse_id, code, building, floor, "
+                        "INSERT INTO location (warehouse_id, storage_area, storage_position, "
                         "alloc_dept_id, use_dept_id, wh_type_id, resp_owner_id, note) "
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (warehouse_id, code, building, floor,
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        (warehouse_id, storage_area, storage_position,
                          int(alloc_dept_id) if alloc_dept_id else None,
                          int(use_dept_id) if use_dept_id else None,
                          int(wh_type_id) if wh_type_id else None,
@@ -3155,14 +3224,17 @@ def location_new():
                     if request.form.get("inline") == "1":
                         from flask import jsonify
                         wh_name = conn.execute("SELECT name FROM warehouse WHERE id=?", (warehouse_id,)).fetchone()["name"]
-                        return jsonify({"id": new_id, "label": f"{code} ({wh_name})"})
-                    flash(f"库位 {code} 已创建", "success")
+                        return jsonify({"id": new_id, "label": f"{storage_area} / {storage_position} ({wh_name})"})
+                    flash(f"库位 {storage_area} / {storage_position} 已创建", "success")
                     return redirect(url_for("location_list"))
                 except sqlite3.IntegrityError:
                     if request.form.get("inline") == "1":
                         from flask import jsonify
-                        return jsonify({"error": "该仓库下已有同名库位"}), 400
-                    flash("该仓库下已有同名库位", "error")
+                        return jsonify({"error": "该仓库下已有相同 存放区域+存放位置 的库位"}), 400
+                    flash("该仓库下已有相同 存放区域+存放位置 的库位", "error")
+        areas, positions = _storage_options(conn)
+        return render_template("location_form.html", location=None, zone_label=ZONE_TYPE_LABEL,
+                               area_options=areas, position_options=positions)
     return render_template("location_form.html", location=None, zone_label=ZONE_TYPE_LABEL)
 
 
@@ -3176,22 +3248,21 @@ def location_edit(loc_id):
             return redirect(url_for("location_list"))
         if request.method == "POST":
             warehouse_id = int(request.form["warehouse_id"])
-            code = request.form.get("code", "").strip()
-            building = request.form.get("building", "").strip()
-            floor = request.form.get("floor", "").strip()
+            storage_area = request.form.get("storage_area", "").strip()
+            storage_position = request.form.get("storage_position", "").strip()
             note = request.form.get("note", "").strip()  # v19
             alloc_dept_id = request.form.get("alloc_dept_id") or None
             use_dept_id = request.form.get("use_dept_id") or None
             wh_type_id = request.form.get("wh_type_id") or None
             resp_owner_id = request.form.get("resp_owner_id") or None
-            if not code:
-                flash("库位代码必填", "error")
+            if not storage_area or not storage_position:
+                flash("存放区域、存放位置都必填", "error")
             else:
                 try:
                     conn.execute(
-                        "UPDATE location SET warehouse_id=?, code=?, building=?, floor=?, "
+                        "UPDATE location SET warehouse_id=?, storage_area=?, storage_position=?, "
                         "alloc_dept_id=?, use_dept_id=?, wh_type_id=?, resp_owner_id=?, note=? WHERE id=?",
-                        (warehouse_id, code, building, floor,
+                        (warehouse_id, storage_area, storage_position,
                          int(alloc_dept_id) if alloc_dept_id else None,
                          int(use_dept_id) if use_dept_id else None,
                          int(wh_type_id) if wh_type_id else None,
@@ -3213,7 +3284,7 @@ def location_edit(loc_id):
                     flash("库位已更新", "success")
                     return redirect(url_for("location_list"))
                 except sqlite3.IntegrityError:
-                    flash("该仓库下已有同名库位", "error")
+                    flash("该仓库下已有相同 存放区域+存放位置 的库位", "error")
         # 加载关联名称回填
         def _name_of(tbl, idv):
             if not idv:
@@ -3228,12 +3299,14 @@ def location_edit(loc_id):
         use_dept_name = _name_of("wh_use_dept", loc["use_dept_id"])
         wh_type_name = _name_of("wh_type", loc["wh_type_id"])
         owner_name = _name_of("wh_owner", loc["resp_owner_id"])
+        areas, positions = _storage_options(conn)
         return render_template("location_form.html", location=loc, zone_label=ZONE_TYPE_LABEL,
                                wh_name=wh_name,
                                alloc_dept_name=alloc_dept_name,
                                use_dept_name=use_dept_name,
                                wh_type_name=wh_type_name,
-                               owner_name=owner_name)
+                               owner_name=owner_name,
+                               area_options=areas, position_options=positions)
     return render_template("location_form.html", location=loc, warehouses=warehouses, areas=areas, zone_label=ZONE_TYPE_LABEL)
 
 
@@ -3262,9 +3335,7 @@ def transfer_list():
     with database.get_conn() as conn:
         orders = conn.execute(
             """SELECT t.*, fwh.name AS from_wh_name, twh.name AS to_wh_name,
-                      fl.code AS from_loc_code, tl.code AS to_loc_code,
-                      fl.building AS from_building, fl.floor AS from_floor,
-                      tl.building AS to_building, tl.floor AS to_floor,
+                      (fl.storage_area||' / '||fl.storage_position) AS from_loc_code, (tl.storage_area||' / '||tl.storage_position) AS to_loc_code,
                       uc.display_name AS creator_name,
                       (SELECT COUNT(*) FROM transfer_item WHERE order_no=t.order_no) AS line_count,
                       (SELECT COALESCE(SUM(quantity),0) FROM transfer_item WHERE order_no=t.order_no) AS total_qty
@@ -3296,14 +3367,14 @@ def transfer_new():
     with database.get_conn() as conn:
         warehouses = conn.execute("SELECT * FROM warehouse ORDER BY id").fetchall()
         locations = conn.execute(
-            "SELECT l.id, l.code, l.warehouse_id, w.name AS wh_name FROM location l JOIN warehouse w ON w.id=l.warehouse_id ORDER BY l.code"
+            "SELECT l.id, (l.storage_area || ' / ' || l.storage_position) AS code, l.warehouse_id, w.name AS wh_name FROM location l JOIN warehouse w ON w.id=l.warehouse_id ORDER BY l.storage_area, l.storage_position"
         ).fetchall()
         # 候选：所有有库存的批次
         invs = conn.execute(
             """SELECT inv.id AS inv_id, inv.sku_id, inv.batch_id, inv.location_id,
                       inv.on_hand, inv.reserved,
                       s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec,
-                      b.batch_no, l.code AS loc_code
+                      b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS loc_code
                FROM inventory inv
                JOIN sku s ON s.id=inv.sku_id
                JOIN batch b ON b.id=inv.batch_id
@@ -3383,7 +3454,7 @@ def transfer_detail(order_no):
     with database.get_conn() as conn:
         order = conn.execute(
             """SELECT t.*, fwh.name AS from_wh_name, twh.name AS to_wh_name,
-                      fl.code AS from_loc_code, tl.code AS to_loc_code,
+                      (fl.storage_area||' / '||fl.storage_position) AS from_loc_code, (tl.storage_area||' / '||tl.storage_position) AS to_loc_code,
                       uc.display_name AS creator_name
                FROM transfer_order t
                JOIN warehouse fwh ON fwh.id=t.from_warehouse_id
@@ -3605,14 +3676,14 @@ def picker_location():
     current = request.args.get("current", "")
     warehouse_id = request.args.get("warehouse_id", "").strip()
     with database.get_conn() as conn:
-        sql = """SELECT l.id, l.code, w.name AS wh_name
+        sql = """SELECT l.id, (l.storage_area || ' / ' || l.storage_position) AS code, w.name AS wh_name
                  FROM location l
                  JOIN warehouse w ON w.id = l.warehouse_id"""
         params = []
         if warehouse_id:
             sql += " WHERE l.warehouse_id = ?"
             params.append(int(warehouse_id))
-        sql += " ORDER BY w.id, l.code"
+        sql += " ORDER BY w.id, l.storage_area, l.storage_position"
         locs = conn.execute(sql, params).fetchall()
         wh_opts = [(w["id"], w["name"]) for w in conn.execute("SELECT id, name FROM warehouse ORDER BY id").fetchall()]
     rows = [{"id": l["id"], "label": f"{l['code']} ({l['wh_name']})",
@@ -3904,27 +3975,24 @@ def picker_loc_filtered():
     target = request.args.get("target", "")
     require_stock = request.args.get("require_stock", "").strip() == "1"
     f = {
-        "warehouse_id":   request.args.get("warehouse_id", "").strip(),
-        "building":       request.args.get("building", "").strip(),
-        "floor":          request.args.get("floor", "").strip(),
-        "code":           request.args.get("code", "").strip(),
-        "owner_user_id":  request.args.get("owner_user_id", "").strip(),
+        "warehouse_id":     request.args.get("warehouse_id", "").strip(),
+        "storage_area":     request.args.get("storage_area", "").strip(),
+        "storage_position": request.args.get("storage_position", "").strip(),
+        "owner_user_id":    request.args.get("owner_user_id", "").strip(),
     }
     where = []
     params = []
     if f["warehouse_id"]:
         where.append("l.warehouse_id = ?"); params.append(int(f["warehouse_id"]))
-    if f["building"]:
-        where.append("l.building = ?"); params.append(f["building"])
-    if f["floor"]:
-        where.append("l.floor = ?"); params.append(f["floor"])
-    if f["code"]:
-        where.append("l.code LIKE ?"); params.append(f"%{f['code']}%")
+    if f["storage_area"]:
+        where.append("l.storage_area LIKE ?"); params.append(f"%{f['storage_area']}%")
+    if f["storage_position"]:
+        where.append("l.storage_position LIKE ?"); params.append(f"%{f['storage_position']}%")
     if f["owner_user_id"]:
         where.append("l.resp_owner_id = ?"); params.append(int(f["owner_user_id"]))
 
     sql = """
-        SELECT l.id, l.code, l.building, l.floor,
+        SELECT l.id, (l.storage_area || ' / ' || l.storage_position) AS code, l.storage_area, l.storage_position,
                w.name AS wh_name,
                wo.name AS owner_user_name,
                wt.name AS wh_type_name,
@@ -3941,14 +4009,14 @@ def picker_loc_filtered():
         sql += " AND " + " AND ".join(where)
     if require_stock:
         sql += " AND (SELECT COALESCE(SUM(on_hand),0) FROM inventory WHERE location_id = l.id) > 0"
-    sql += " ORDER BY w.id, l.building, l.floor, l.code"
+    sql += " ORDER BY w.id, l.storage_area, l.storage_position"
 
     with database.get_conn() as conn:
         locs = conn.execute(sql, params).fetchall()
 
     title = "调出库位（仅有库存）" if require_stock else "库位"
-    subtitle = "5 维度筛选 · 仅显示当前有库存的库位 · 点行尾「选定」回填" if require_stock \
-               else "5 维度筛选 · 点行尾「选定」回填到上一页"
+    subtitle = "按 仓库/区域/位置/责任人 筛选 · 仅显示当前有库存的库位 · 点行尾「选定」回填" if require_stock \
+               else "按 仓库/区域/位置/责任人 筛选 · 点行尾「选定」回填到上一页"
     return render_template("picker_loc_filtered.html",
                            locs=locs, f=f, return_path=ret, target=target,
                            title=title, subtitle=subtitle, require_stock=require_stock)
@@ -3965,8 +4033,8 @@ def picker_damage_inv():
     location_id = request.args.get("location_id", "").strip()
     batch_no = request.args.get("batch_no", "").strip()
     sql = """SELECT inv.id, s.name AS sku_name, s.spec AS sku_spec, s.code AS sku_code,
-                    b.batch_no, l.code AS loc_code, w.name AS wh_name,
-                    l.building, l.floor, inv.on_hand
+                    b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS loc_code, w.name AS wh_name,
+                    inv.on_hand
              FROM inventory inv
              JOIN sku s ON s.id = inv.sku_id
              JOIN batch b ON b.id = inv.batch_id
@@ -3988,7 +4056,7 @@ def picker_damage_inv():
     rows = [{
         "id": i["id"],
         "label": f"{i['sku_name']}{(' (' + i['sku_spec'] + ')') if i['sku_spec'] else ''} · 批次 {i['batch_no']}",
-        "extra": f"{i['wh_name'] or '-'} · {i['building']+'号楼' if i['building'] else ''} {i['floor']+'层' if i['floor'] else ''} · {i['loc_code']} · 在仓 {i['on_hand']}",
+        "extra": f"{i['wh_name'] or '-'} · {i['loc_code']} · 在仓 {i['on_hand']}",
     } for i in invs]
     return _picker_response(rows, "可报损批次", ret, target, False, None, [], "")
 
@@ -4012,7 +4080,7 @@ def picker_inventory():
                 """SELECT inv.id, inv.sku_id, inv.batch_id, inv.location_id,
                           inv.on_hand, inv.reserved,
                           s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec, s.unit,
-                          b.batch_no, l.code AS loc_code
+                          b.batch_no, (l.storage_area || ' / ' || l.storage_position) AS loc_code
                    FROM inventory inv
                    JOIN sku s ON s.id = inv.sku_id
                    JOIN batch b ON b.id = inv.batch_id

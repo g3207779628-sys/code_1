@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}新建出库单{% endblock %}
+{% block crumb %}<span class="sep">/</span><a href="{{ url_for('pick_list') }}">出库</a><span class="sep">/</span><span class="current">新建</span>{% endblock %}
+{% block content %}
+
+<form method="post" id="outbound-form" enctype="multipart/form-data">
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">新建出库单</div>
+            <div class="page-sub">单号自动生成 · FIFO 自动从最早入库批次扣减</div>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('pick_list') }}">取消返回</a>
+    </div>
+
+    <div class="step-bar">
+        <div class="step active"><span class="n">1</span><span>创建</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">2</span><span>已出库</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">3</span><span>完成（可撤销）</span></div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>基本信息</h3><span class="meta">必填 1 项</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>出库员工 <span class="req" style="color:var(--accent);">*</span></label>
+                    <div class="picker-btn" onclick="openPicker('user', 'operator-id')">
+                        <input type="hidden" name="operator_id" id="operator-id" required>
+                        <span class="picker-label empty" id="operator-id-label">未选择经手员工</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>收件方 / 部门 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可选</span></label>
+                    <input type="text" name="receiver_desc" value="{{ receiver_desc or '' }}">
+                </div>
+                <div class="form-row span2">
+                    <label>备注 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可选</span></label>
+                    <input type="text" name="note" value="{{ note or '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>出库明细</h3><span class="meta" id="meta-detail">FIFO 自动选批次 · 已添加 0 行 · 选物品后编码/单位/现库存自动填</span></div>
+        <div class="body">
+            <table class="line-table" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 26%;">物品 *</th>
+                        <th style="width: 14%;">编码</th>
+                        <th style="width: 9%;">单位</th>
+                        <th style="width: 13%;">规格</th>
+                        <th style="width: 11%;">现库存</th>
+                        <th style="width: 11%;">出库数量 *</th>
+                        <th style="width: 11%;">批次号</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+            </table>
+            <button type="button" class="add-line" onclick="addRow()">+ 添加一行明细</button>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>附件</h3><span class="meta">可选</span></div>
+        <div class="body">
+            <label class="upload-zone">
+                <div class="big">+ 上传</div>
+                <div>领用单 / 审批截图 / 配送回执</div>
+                <div class="hint">jpg / png / pdf · 单文件 ≤ 10MB</div>
+                <input type="file" name="attachments[]" multiple>
+            </label>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left">
+            <div>明细 <span class="num" id="stat-rows">0</span> 行</div>
+            <div>合计 <span class="num" id="stat-total">0</span> 件</div>
+        </div>
+        <div class="right">
+            <a class="btn btn-secondary" href="{{ url_for('pick_list') }}">取消</a>
+            <button class="btn btn-primary" type="submit">创建出库单 →</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+let rowCounter = 0;
+
+function addRow() {
+    rowCounter += 1;
+    const idx = rowCounter;
+    const tbody = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.className = 'item-row';
+    tr.innerHTML = `
+        <td>
+            <div class="picker-btn" onclick="openPicker('sku', 'sku-${idx}')" style="padding:6px 10px;">
+                <input type="hidden" name="sku_id[]" id="sku-${idx}" required>
+                <span class="picker-label empty" id="sku-${idx}-label">选物品</span>
+                <span class="picker-arrow">换</span>
+            </div>
+        </td>
+        <td><input type="text" id="sku-${idx}-code" readonly style="background:var(--bg-soft); font-family:var(--font-mono); font-size:11px;"></td>
+        <td><input type="text" id="sku-${idx}-unit" readonly style="background:var(--bg-soft);"></td>
+        <td><input type="text" id="sku-${idx}-spec" readonly style="background:var(--bg-soft); font-size:11px;"></td>
+        <td><input type="text" id="sku-${idx}-onhand" readonly style="background:var(--bg-soft); text-align:right; color:var(--accent-deep); font-family:var(--font-mono);"></td>
+        <td><input type="number" name="quantity[]" min="1" style="width:100%; text-align:right;" oninput="recalc()" required></td>
+        <td><input type="text" name="batch_no[]" placeholder="留空自动" style="font-size:11px;"></td>
+        <td style="text-align:center;"><button type="button" class="del" onclick="removeRow(this)">×</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+}
+
+document.addEventListener('change', async e => {
+    if (e.target.type === 'hidden' && e.target.id && e.target.id.startsWith('sku-')) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) lbl.classList.toggle('empty', !e.target.value);
+        const idx = e.target.id.replace('sku-', '');
+        const skuId = e.target.value;
+        if (!skuId) return;
+        try {
+            const r = await fetch('/api/sku-info?id=' + encodeURIComponent(skuId));
+            if (!r.ok) return;
+            const j = await r.json();
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            set(`sku-${idx}-code`, j.code || '');
+            set(`sku-${idx}-unit`, j.unit || '');
+            set(`sku-${idx}-spec`, j.spec || '');
+            set(`sku-${idx}-onhand`, j.on_hand || 0);
+        } catch (err) {}
+    }
+});
+
+function removeRow(btn) {
+    const tbody = document.getElementById('items-body');
+    if (tbody.querySelectorAll('.item-row').length <= 1) { alert('至少保留 1 行'); return; }
+    btn.closest('tr').remove();
+    recalc();
+}
+
+function recalc() {
+    const rows = document.querySelectorAll('#items-body .item-row');
+    document.getElementById('stat-rows').textContent = rows.length;
+    document.getElementById('meta-detail').textContent = `FIFO 自动选批次 · 已添加 ${rows.length} 行 · 选物品后编码/单位/现库存自动填`;
+    let total = 0;
+    document.querySelectorAll('input[name="quantity[]"]').forEach(i => {
+        total += parseInt(i.value) || 0;
+    });
+    document.getElementById('stat-total').textContent = total;
+}
+
+addRow();
+</script>
+
+{% endblock %}

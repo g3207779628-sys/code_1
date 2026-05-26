@@ -1,0 +1,544 @@
+{#
+  设计理念：双栏摘要型 —— 左栏录入领用申请单，右栏固定一张「申请单摘要」卡片随输入实时刷新，提交前一眼核对全貌。
+  数据来源说明：所属部门数据源为 wh_use_dept 仓库使用部门，非人员部门，待与现有项目对齐。
+#}
+{% extends "base.html" %}
+{% block title %}领用申请单（原型 C）{% endblock %}
+{% block crumb %}<span class="sep">/</span><span>领用申请</span><span class="sep">/</span><span class="current">新建（原型 C）</span>{% endblock %}
+{% block content %}
+
+<style>
+/* ── 原型 C 专属：双栏布局 + 实时摘要（颜色间距全部走现有 CSS 变量） ── */
+.req-c-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    align-items: start;
+}
+.req-c-main { min-width: 0; }
+
+/* inline typeahead 容器 */
+.ta-wrap { position: relative; }
+.ta-wrap input.ta-input { width: 100%; }
+.ta-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+    z-index: 30;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--line-input);
+    border-radius: var(--radius);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+    max-height: 260px; overflow-y: auto;
+    display: none;
+}
+.ta-menu.open { display: block; }
+.ta-opt {
+    padding: 8px 12px; font-size: 13px; cursor: pointer;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+}
+.ta-opt:last-child { border-bottom: none; }
+.ta-opt:hover, .ta-opt.active { background: var(--accent-soft); }
+.ta-opt .ta-main { color: var(--ink); }
+.ta-opt .ta-code { font-family: var(--font-mono); font-size: 11px; color: var(--ink-quiet); flex-shrink: 0; }
+.ta-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-faded); }
+
+.sample-tag {
+    display: inline-block; margin-left: 6px;
+    font-size: 11px; font-weight: 600;
+    color: var(--accent-deep); background: var(--accent-soft);
+    padding: 1px 7px; border-radius: 10px; vertical-align: middle;
+}
+
+/* 右栏摘要卡片 sticky */
+.summary-card {
+    position: sticky; top: 16px;
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.summary-card .sc-head {
+    padding: 14px 18px; border-bottom: 1px solid var(--line);
+    background: var(--bg-soft);
+    display: flex; align-items: center; gap: 10px;
+}
+.summary-card .sc-head .accent-bar { width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+.summary-card .sc-head h3 { font-size: 14px; font-weight: 700; }
+.summary-card .sc-body { padding: 16px 18px; }
+
+.sc-field { margin-bottom: 12px; }
+.sc-field .k { font-size: 11px; color: var(--ink-quiet); margin-bottom: 2px; }
+.sc-field .v { font-size: 14px; color: var(--ink); font-weight: 600; word-break: break-word; }
+.sc-field .v.empty { color: var(--ink-faded); font-weight: 400; }
+
+.sc-divider { height: 1px; background: var(--line); margin: 14px 0; }
+
+.sc-items-title { font-size: 11px; color: var(--ink-quiet); margin-bottom: 8px; }
+.sc-items { list-style: none; margin: 0; padding: 0; }
+.sc-items li {
+    display: flex; justify-content: space-between; gap: 8px;
+    font-size: 13px; padding: 6px 0; border-bottom: 1px dashed var(--line-soft);
+}
+.sc-items li:last-child { border-bottom: none; }
+.sc-items li .it-name { color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-items li .it-qty { color: var(--accent-deep); font-family: var(--font-mono); font-weight: 700; flex-shrink: 0; }
+.sc-items-empty { font-size: 12px; color: var(--ink-faded); padding: 6px 0; }
+
+.sc-totals {
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+    display: flex; gap: 18px;
+}
+.sc-totals .tt { flex: 1; }
+.sc-totals .tt .k { font-size: 11px; color: var(--ink-quiet); }
+.sc-totals .tt .n { font-size: 20px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
+
+/* 窄屏：右栏摘要折叠到表单上方 */
+@media (max-width: 980px) {
+    .req-c-layout { grid-template-columns: 1fr; }
+    .req-c-side { order: -1; }
+    .summary-card { position: static; }
+}
+</style>
+
+<form method="post" id="req-c-form" autocomplete="off">
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">领用申请单</div>
+            <div class="page-sub">展示型原型 · 实时摘要核对 · 暂不落库</div>
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="resetForm()" aria-label="重置表单">重置</button>
+    </div>
+
+    <div class="req-c-layout">
+
+        <!-- ───── 左栏：录入 ───── -->
+        <div class="req-c-main">
+
+            <section class="form-card">
+                <div class="head"><span class="accent-bar"></span><h3>基本信息</h3><span class="meta">申请人 / 部门 / 库位 / 日期 / 类别</span></div>
+                <div class="body">
+                    <div class="form-grid">
+
+                        <div class="form-row">
+                            <label for="applicant">申请人 <span class="req" style="color:var(--accent);">*</span></label>
+                            <input type="text" id="applicant" name="applicant" placeholder="手填申请人姓名"
+                                   aria-label="申请人" required>
+                        </div>
+
+                        <div class="form-row">
+                            <label for="dept-input">所属部门{% if dept_is_sample %}<span class="sample-tag">示例数据</span>{% endif %}</label>
+                            <div class="ta-wrap" data-ta="dept">
+                                <input type="text" class="ta-input" id="dept-input" autocomplete="off"
+                                       placeholder="输入即筛部门" aria-label="所属部门搜索"
+                                       role="combobox" aria-expanded="false" aria-autocomplete="list">
+                                <input type="hidden" id="dept-id" name="dept_id">
+                                <div class="ta-menu" id="dept-menu" role="listbox" aria-label="部门候选"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <label for="loc-input">库位</label>
+                            <div class="ta-wrap" data-ta="loc">
+                                <input type="text" class="ta-input" id="loc-input" autocomplete="off"
+                                       placeholder="输入库位编码搜索" aria-label="库位搜索"
+                                       role="combobox" aria-expanded="false" aria-autocomplete="list">
+                                <input type="hidden" id="loc-id" name="location_id">
+                                <div class="ta-menu" id="loc-menu" role="listbox" aria-label="库位候选"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <label for="req-date">申请日期 <span class="req" style="color:var(--accent);">*</span></label>
+                            <input type="date" id="req-date" name="req_date" value="{{ today }}"
+                                   aria-label="申请日期" required>
+                        </div>
+
+                        <div class="form-row span2">
+                            <label for="cat-select">领用类别{% if cat_is_sample %}<span class="sample-tag">示例数据</span>{% endif %}</label>
+                            <select id="cat-select" name="category" aria-label="领用类别">
+                                <option value="">— 请选择类别 —</option>
+                                {% for c in categories %}
+                                <option value="{{ c.name }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-card">
+                <div class="head"><span class="accent-bar"></span><h3>申请物品和数量</h3><span class="meta" id="meta-detail">已添加 0 行 · 选物品后编码/单位/规格/现库存自动填</span></div>
+                <div class="body">
+                    <table class="line-table" id="items-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 28%;">物品 *</th>
+                                <th style="width: 14%;">编码</th>
+                                <th style="width: 9%;">单位</th>
+                                <th style="width: 16%;">规格</th>
+                                <th style="width: 12%;">现库存</th>
+                                <th style="width: 14%;">申请数量 *</th>
+                                <th style="width: 5%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-body"></tbody>
+                    </table>
+                    <button type="button" class="add-line" onclick="addRow()" aria-label="添加一行明细">+ 添加一行明细</button>
+                </div>
+            </section>
+
+            <section class="form-card">
+                <div class="head"><span class="accent-bar"></span><h3>申领说明</h3><span class="meta">可选</span></div>
+                <div class="body">
+                    <div class="form-row" style="margin-bottom:0;">
+                        <textarea id="note" name="note" rows="3" placeholder="补充用途、审批参考等说明" aria-label="申领说明"></textarea>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ───── 右栏：实时摘要 ───── -->
+        <aside class="req-c-side">
+            <div class="summary-card" aria-label="申请单摘要" role="region">
+                <div class="sc-head"><span class="accent-bar"></span><h3>申请单摘要</h3></div>
+                <div class="sc-body">
+                    <div class="sc-field">
+                        <div class="k">申请人</div>
+                        <div class="v empty" id="sum-applicant">未填写</div>
+                    </div>
+                    <div class="sc-field">
+                        <div class="k">所属部门</div>
+                        <div class="v empty" id="sum-dept">未选择</div>
+                    </div>
+                    <div class="sc-field">
+                        <div class="k">库位</div>
+                        <div class="v empty" id="sum-loc">未选择</div>
+                    </div>
+                    <div class="sc-field">
+                        <div class="k">申请日期</div>
+                        <div class="v empty" id="sum-date">未填写</div>
+                    </div>
+                    <div class="sc-field" style="margin-bottom:0;">
+                        <div class="k">领用类别</div>
+                        <div class="v empty" id="sum-cat">未选择</div>
+                    </div>
+
+                    <div class="sc-divider"></div>
+
+                    <div class="sc-items-title">物品清单</div>
+                    <ul class="sc-items" id="sum-items"></ul>
+                    <div class="sc-items-empty" id="sum-items-empty">尚未添加物品</div>
+
+                    <div class="sc-totals">
+                        <div class="tt">
+                            <div class="k">合计件数</div>
+                            <div class="n" id="sum-qty">0</div>
+                        </div>
+                        <div class="tt">
+                            <div class="k">明细行数</div>
+                            <div class="n" id="sum-rows">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left">
+            <div>明细 <span class="num" id="stat-rows">0</span> 行</div>
+            <div>合计 <span class="num" id="stat-total">0</span> 件</div>
+        </div>
+        <div class="right">
+            <button class="btn btn-secondary" type="button" onclick="resetForm()" aria-label="重置">重置</button>
+            <button class="btn btn-primary" type="submit" aria-label="提交领用申请单">提交申请 →</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+/* 本地数据源（后端 |tojson 注入，前端原生 JS 过滤，不查库） */
+const DEPTS = {{ depts|tojson }};
+const LOCATIONS = {{ locations|tojson }};
+const CATEGORIES = {{ categories|tojson }};
+const SKUS = {{ skus|tojson }};
+
+/* ───── 通用 inline typeahead ───── */
+function setupTypeahead(cfg) {
+    const input = document.getElementById(cfg.inputId);
+    const hidden = cfg.hiddenId ? document.getElementById(cfg.hiddenId) : null;
+    const menu = document.getElementById(cfg.menuId);
+    let activeIdx = -1;
+    let current = [];
+
+    function render(list) {
+        current = list;
+        activeIdx = -1;
+        if (!list.length) {
+            menu.innerHTML = '<div class="ta-empty">无匹配项</div>';
+        } else {
+            menu.innerHTML = list.map((it, i) =>
+                `<div class="ta-opt" role="option" data-i="${i}">
+                    <span class="ta-main">${escapeHtml(cfg.mainText(it))}</span>
+                    ${cfg.codeText && cfg.codeText(it) ? `<span class="ta-code">${escapeHtml(cfg.codeText(it))}</span>` : ''}
+                 </div>`).join('');
+        }
+        open();
+    }
+    function open() { menu.classList.add('open'); input.setAttribute('aria-expanded', 'true'); }
+    function close() { menu.classList.remove('open'); input.setAttribute('aria-expanded', 'false'); activeIdx = -1; }
+
+    function filter(q) {
+        q = (q || '').trim().toLowerCase();
+        const src = cfg.source();
+        if (!q) return src.slice(0, 50);
+        return src.filter(it => cfg.match(it, q)).slice(0, 50);
+    }
+
+    function choose(it) {
+        input.value = cfg.mainText(it);
+        if (hidden) hidden.value = (it.id !== null && it.id !== undefined) ? it.id : '';
+        close();
+        if (cfg.onChoose) cfg.onChoose(it);
+        updateSummary();
+    }
+
+    input.addEventListener('input', () => {
+        if (hidden) hidden.value = '';   // 改文本即失效旧选中
+        if (cfg.onInput) cfg.onInput();
+        render(filter(input.value));
+        updateSummary();
+    });
+    input.addEventListener('focus', () => render(filter(input.value)));
+    input.addEventListener('keydown', e => {
+        const opts = menu.querySelectorAll('.ta-opt');
+        if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, opts.length - 1); paint(opts); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); paint(opts); }
+        else if (e.key === 'Enter') {
+            if (menu.classList.contains('open') && activeIdx >= 0 && current[activeIdx]) {
+                e.preventDefault(); choose(current[activeIdx]);
+            }
+        } else if (e.key === 'Escape') { close(); }
+    });
+    function paint(opts) {
+        opts.forEach((o, i) => o.classList.toggle('active', i === activeIdx));
+        if (activeIdx >= 0 && opts[activeIdx]) opts[activeIdx].scrollIntoView({block: 'nearest'});
+    }
+    menu.addEventListener('mousedown', e => {
+        const opt = e.target.closest('.ta-opt');
+        if (!opt) return;
+        e.preventDefault();
+        const it = current[parseInt(opt.dataset.i, 10)];
+        if (it) choose(it);
+    });
+    document.addEventListener('click', e => {
+        if (!menu.contains(e.target) && e.target !== input) close();
+    });
+
+    return { reset() { input.value = ''; if (hidden) hidden.value = ''; close(); } };
+}
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* 部门 typeahead */
+const deptTA = setupTypeahead({
+    inputId: 'dept-input', hiddenId: 'dept-id', menuId: 'dept-menu',
+    source: () => DEPTS,
+    match: (it, q) => (it.name || '').toLowerCase().includes(q),
+    mainText: it => it.name,
+});
+
+/* 库位 typeahead */
+const locTA = setupTypeahead({
+    inputId: 'loc-input', hiddenId: 'loc-id', menuId: 'loc-menu',
+    source: () => LOCATIONS,
+    match: (it, q) => (it.code || '').toLowerCase().includes(q) || (it.warehouse_name || '').toLowerCase().includes(q),
+    mainText: it => it.code + (it.warehouse_name ? '（' + it.warehouse_name + '）' : ''),
+    codeText: it => it.warehouse_name || '',
+});
+
+/* ───── 明细行 + 物品 typeahead ───── */
+let rowCounter = 0;
+
+function addRow() {
+    rowCounter += 1;
+    const idx = rowCounter;
+    const tbody = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.className = 'item-row';
+    tr.dataset.idx = idx;
+    tr.innerHTML = `
+        <td>
+            <div class="ta-wrap" data-ta="sku">
+                <input type="text" class="ta-input" id="sku-${idx}-input" autocomplete="off"
+                       placeholder="搜编码或名称" aria-label="物品搜索" role="combobox" aria-autocomplete="list">
+                <input type="hidden" name="sku_id[]" id="sku-${idx}">
+                <div class="ta-menu" id="sku-${idx}-menu" role="listbox" aria-label="物品候选"></div>
+            </div>
+        </td>
+        <td><input type="text" id="sku-${idx}-code" readonly aria-label="编码" style="background:var(--bg-soft); font-family:var(--font-mono); font-size:11px;"></td>
+        <td><input type="text" id="sku-${idx}-unit" readonly aria-label="单位" style="background:var(--bg-soft);"></td>
+        <td><input type="text" id="sku-${idx}-spec" readonly aria-label="规格" style="background:var(--bg-soft); font-size:11px;"></td>
+        <td><input type="text" id="sku-${idx}-onhand" readonly aria-label="现库存" style="background:var(--bg-soft); text-align:right; color:var(--accent-deep); font-family:var(--font-mono);"></td>
+        <td><input type="number" name="quantity[]" id="qty-${idx}" min="1" step="1" style="width:100%; text-align:right;" oninput="updateSummary()" aria-label="申请数量"></td>
+        <td style="text-align:center;"><button type="button" class="del" onclick="removeRow(this)" aria-label="删除此行">×</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    setupTypeahead({
+        inputId: `sku-${idx}-input`, hiddenId: `sku-${idx}`, menuId: `sku-${idx}-menu`,
+        source: () => SKUS,
+        match: (it, q) => (it.code || '').toLowerCase().includes(q) || (it.name || '').toLowerCase().includes(q),
+        mainText: it => it.name,
+        codeText: it => it.code || '',
+        onInput: () => clearSkuRow(idx),
+        onChoose: it => fillSkuRow(idx, it),
+    });
+
+    updateSummary();
+}
+
+function clearSkuRow(idx) {
+    ['code', 'unit', 'spec', 'onhand'].forEach(f => {
+        const el = document.getElementById(`sku-${idx}-${f}`);
+        if (el) el.value = '';
+    });
+}
+
+async function fillSkuRow(idx, it) {
+    const set = (f, v) => { const el = document.getElementById(`sku-${idx}-${f}`); if (el) el.value = (v == null ? '' : v); };
+    // 优先用本地 skus；字段不全时回退到 /api/sku-info
+    if (it.code !== undefined && it.unit !== undefined && it.on_hand !== undefined) {
+        set('code', it.code); set('unit', it.unit); set('spec', it.spec); set('onhand', it.on_hand);
+    } else if (it.id != null) {
+        try {
+            const r = await fetch('/api/sku-info?id=' + encodeURIComponent(it.id));
+            if (r.ok) { const j = await r.json(); set('code', j.code); set('unit', j.unit); set('spec', j.spec); set('onhand', j.on_hand); }
+        } catch (e) {}
+    }
+    updateSummary();
+}
+
+function removeRow(btn) {
+    const tbody = document.getElementById('items-body');
+    if (tbody.querySelectorAll('.item-row').length <= 1) { window.showToast('warn', '至少保留 1 行明细'); return; }
+    btn.closest('tr').remove();
+    updateSummary();
+}
+
+/* ───── 实时摘要刷新 ───── */
+function setV(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const has = val != null && String(val).trim() !== '';
+    el.textContent = has ? val : el.dataset.placeholder || el.textContent;
+    el.classList.toggle('empty', !has);
+}
+
+function updateSummary() {
+    // 基本信息
+    const applicant = document.getElementById('applicant').value;
+    document.getElementById('sum-applicant').textContent = applicant.trim() || '未填写';
+    document.getElementById('sum-applicant').classList.toggle('empty', !applicant.trim());
+
+    const deptV = document.getElementById('dept-input').value.trim();
+    document.getElementById('sum-dept').textContent = deptV || '未选择';
+    document.getElementById('sum-dept').classList.toggle('empty', !deptV);
+
+    const locV = document.getElementById('loc-input').value.trim();
+    document.getElementById('sum-loc').textContent = locV || '未选择';
+    document.getElementById('sum-loc').classList.toggle('empty', !locV);
+
+    const dateV = document.getElementById('req-date').value;
+    document.getElementById('sum-date').textContent = dateV || '未填写';
+    document.getElementById('sum-date').classList.toggle('empty', !dateV);
+
+    const catV = document.getElementById('cat-select').value;
+    document.getElementById('sum-cat').textContent = catV || '未选择';
+    document.getElementById('sum-cat').classList.toggle('empty', !catV);
+
+    // 物品清单
+    const rows = document.querySelectorAll('#items-body .item-row');
+    const ul = document.getElementById('sum-items');
+    const emptyHint = document.getElementById('sum-items-empty');
+    let totalQty = 0, listed = 0, html = '';
+    rows.forEach(tr => {
+        const idx = tr.dataset.idx;
+        const name = (document.getElementById(`sku-${idx}-input`).value || '').trim();
+        const qty = parseInt(document.getElementById(`qty-${idx}`).value, 10) || 0;
+        if (qty > 0) totalQty += qty;
+        if (name) {
+            listed += 1;
+            const qtyTxt = qty > 0 ? '× ' + qty : '× —';
+            html += `<li><span class="it-name">${escapeHtml(name)}</span><span class="it-qty">${qtyTxt}</span></li>`;
+        }
+    });
+    ul.innerHTML = html;
+    emptyHint.style.display = listed ? 'none' : 'block';
+
+    document.getElementById('sum-qty').textContent = totalQty;
+    document.getElementById('sum-rows').textContent = rows.length;
+
+    // 底栏统计
+    document.getElementById('stat-rows').textContent = rows.length;
+    document.getElementById('stat-total').textContent = totalQty;
+    document.getElementById('meta-detail').textContent =
+        `已添加 ${rows.length} 行 · 选物品后编码/单位/规格/现库存自动填`;
+}
+
+['applicant', 'req-date', 'cat-select'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateSummary);
+    document.getElementById(id).addEventListener('change', updateSummary);
+});
+
+/* ───── 重置 ───── */
+function resetForm() {
+    document.getElementById('req-c-form').reset();
+    deptTA.reset(); locTA.reset();
+    document.getElementById('items-body').innerHTML = '';
+    rowCounter = 0;
+    addRow();
+    document.getElementById('req-date').value = {{ today|tojson }};
+    updateSummary();
+}
+
+/* ───── 提交（原型：不落库） ───── */
+document.getElementById('req-c-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const items = [];
+    document.querySelectorAll('#items-body .item-row').forEach(tr => {
+        const idx = tr.dataset.idx;
+        const skuId = document.getElementById(`sku-${idx}`).value;
+        const name = document.getElementById(`sku-${idx}-input`).value.trim();
+        const qty = parseInt(document.getElementById(`qty-${idx}`).value, 10) || 0;
+        if (name || skuId) items.push({ sku_id: skuId || null, name, quantity: qty });
+    });
+    const payload = {
+        applicant: document.getElementById('applicant').value.trim(),
+        dept_id: document.getElementById('dept-id').value || null,
+        dept_text: document.getElementById('dept-input').value.trim(),
+        location_id: document.getElementById('loc-id').value || null,
+        location_text: document.getElementById('loc-input').value.trim(),
+        req_date: document.getElementById('req-date').value,
+        category: document.getElementById('cat-select').value,
+        note: document.getElementById('note').value.trim(),
+        items,
+    };
+    console.log('[领用申请单 原型C] 表单数据（不落库）:', payload);
+    window.showToast('success', '这是 UI 原型，提交落库将在下一步接入');
+});
+
+/* 初始化 */
+addRow();
+updateSummary();
+</script>
+
+{% endblock %}

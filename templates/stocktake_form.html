@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}新建盘点单{% endblock %}
+{% block crumb %}<span class="sep">/</span><a href="{{ url_for('stocktake_list') }}">盘点</a><span class="sep">/</span><span class="current">新建</span>{% endblock %}
+{% block content %}
+
+<form method="post" enctype="multipart/form-data" id="stocktake-form">
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">新建盘点单</div>
+            <div class="page-sub">单号自动生成 · 创建后系统按选定范围生成 expected 行（库存快照）</div>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('stocktake_list') }}">取消返回</a>
+    </div>
+
+    <div class="step-bar">
+        <div class="step active"><span class="n">1</span><span>创建</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">2</span><span>录入实盘</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">3</span><span>处理差异</span></div>
+        <div class="step-sep"></div>
+        <div class="step"><span class="n">4</span><span>已关闭</span></div>
+    </div>
+
+    <div class="info-tip">
+        <strong>下一步 →</strong> 保存后跳到「盘点录入」详情页 — 系统会按你选的范围生成 expected 行（系统库存数），盘点员逐行填 actual（实盘数），有差异的进入第 3 步审批 / 调整。
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>基本信息</h3><span class="meta">必填 2 项</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>盘点主题 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="text" name="title" required placeholder="如：2026 年 5 月月度盘点 / 茅台专项盘点">
+                </div>
+                <div class="form-row">
+                    <label>计划开盘日期 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="date" name="plan_date" id="plan-date">
+                </div>
+                <div class="form-row">
+                    <label>盘点负责人 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可选 · 默认当前登录用户</span></label>
+                    <select name="leader_id">
+                        <option value="">— 我自己（{{ session.display_name }}）—</option>
+                        {% for u in stocktakers %}
+                        <option value="{{ u.id }}">{{ u.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>预计耗时 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可选</span></label>
+                    <select name="estimate">
+                        <option value="">—</option>
+                        <option>半天</option>
+                        <option>1 天</option>
+                        <option selected>2-3 天</option>
+                        <option>1 周</option>
+                    </select>
+                </div>
+                <div class="form-row span2">
+                    <label>盘点备注 / 重点关注 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可选</span></label>
+                    <textarea name="note" rows="2" placeholder="如：本次重点关注高价值酒柜区；上次盘点有 3 项差异未结清"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>盘点范围</h3><span class="meta">选 1 种粒度</span></div>
+        <div class="body">
+            <div class="scope-grid">
+                <label class="scope-card active" data-scope="all">
+                    <input type="radio" name="scope" value="all" checked style="display:none;">
+                    <div class="name">全仓盘点</div>
+                    <div class="desc">所有仓库 / 所有库位 / 所有物品</div>
+                </label>
+                <label class="scope-card" data-scope="warehouse">
+                    <input type="radio" name="scope" value="warehouse" style="display:none;">
+                    <div class="name">单仓库</div>
+                    <div class="desc">选定某一仓库下所有库位</div>
+                </label>
+                <label class="scope-card" data-scope="location">
+                    <input type="radio" name="scope" value="location" style="display:none;">
+                    <div class="name">指定库位</div>
+                    <div class="desc">手动多选若干库位（适合临时抽盘）</div>
+                </label>
+            </div>
+
+            <!-- 单仓库：仓库 picker -->
+            <div id="scope-warehouse-extra" style="margin-top: 14px; display:none;">
+                <div class="form-row">
+                    <label>选择仓库 <span class="req" style="color:var(--accent);">*</span></label>
+                    <div class="picker-btn" onclick="openPicker('warehouse', 'scope-warehouse-id')">
+                        <input type="hidden" name="scope_warehouse_id" id="scope-warehouse-id">
+                        <span class="picker-label empty" id="scope-warehouse-id-label">未选择仓库</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                    <div id="scope-warehouse-selected" style="display:none; margin-top:12px; padding:12px 16px; background:var(--accent-soft); border-left:3px solid var(--accent); border-radius:4px;">
+                        <div style="color:var(--ink-quiet); font-size:12px; margin-bottom:4px;">✓ 已选定仓库</div>
+                        <div style="font-size:15px; font-weight:600; color:var(--accent-deep);" id="scope-warehouse-display">—</div>
+                        <div style="margin-top:6px; color:var(--ink-quiet); font-size:11px;">系统会按该仓库下<strong style="color:var(--ink);">所有库位</strong>生成盘点 expected 行</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 指定库位：多选库位 picker -->
+            <div id="scope-location-extra" style="margin-top: 14px; display:none;">
+                <div class="form-row">
+                    <label>选择库位 <span class="req" style="color:var(--accent);">*</span> <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">可多选</span></label>
+                    <div class="picker-btn" onclick="openPicker('location', 'scope-location-ids', {multi: 1, current: document.getElementById('scope-location-ids').value})">
+                        <input type="hidden" name="scope_location_ids" id="scope-location-ids">
+                        <span class="picker-label empty" id="scope-location-ids-label">未选择库位</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                    <div id="scope-location-selected" style="display:none; margin-top:12px; padding:12px 16px; background:var(--accent-soft); border-left:3px solid var(--accent); border-radius:4px;">
+                        <div style="color:var(--ink-quiet); font-size:12px; margin-bottom:6px;">✓ 已选定库位（<strong id="scope-location-count" style="color:var(--accent-deep);">0</strong> 个）</div>
+                        <div id="scope-location-chips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>附件</h3><span class="meta">可选 · 单文件 ≤ 10MB</span></div>
+        <div class="body">
+            <label class="upload-zone">
+                <div class="big">+ 上传</div>
+                <div>盘点计划 / 上次差异处理表</div>
+                <div class="hint">jpg / png / pdf / xlsx · 单文件 ≤ 10MB</div>
+                <input type="file" name="attachments[]" multiple>
+            </label>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left">
+            <div>盘点范围 <span class="num" id="stat-scope">{{ total_inv }}</span> 行</div>
+            <div>预估 <span class="num" id="stat-est">2-3 天</span></div>
+        </div>
+        <div class="right">
+            <a class="btn btn-secondary" href="{{ url_for('stocktake_list') }}">取消</a>
+            <button class="btn btn-primary" type="submit">创建盘点单 + 进入录入 →</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+// 默认日期 = 今天
+const planDate = document.getElementById('plan-date');
+if (planDate) planDate.valueAsDate = new Date();
+
+// 范围卡片点击切换 + 显示/隐藏对应 extra 区
+function syncScopeExtras() {
+    const active = document.querySelector('.scope-card.active');
+    const scope = active ? active.dataset.scope : 'all';
+    document.getElementById('scope-warehouse-extra').style.display = (scope === 'warehouse') ? '' : 'none';
+    document.getElementById('scope-location-extra').style.display = (scope === 'location') ? '' : 'none';
+}
+document.querySelectorAll('.scope-card').forEach(card => {
+    card.addEventListener('click', e => {
+        document.querySelectorAll('.scope-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        card.querySelector('input[type=radio]').checked = true;
+        syncScopeExtras();
+    });
+});
+syncScopeExtras();
+
+// 已选 chip 显示：picker 回填后清晰展示选中的仓库 / 库位
+function updateSelectedDisplay() {
+    // 单仓库
+    const whInput = document.getElementById('scope-warehouse-id');
+    const whLbl = document.getElementById('scope-warehouse-id-label');
+    const whBox = document.getElementById('scope-warehouse-selected');
+    if (whInput.value && whLbl && !whLbl.classList.contains('empty')) {
+        document.getElementById('scope-warehouse-display').textContent = whLbl.textContent.trim();
+        whBox.style.display = '';
+    } else {
+        whBox.style.display = 'none';
+    }
+    // 指定库位（多选）
+    const locInput = document.getElementById('scope-location-ids');
+    const locLbl = document.getElementById('scope-location-ids-label');
+    const locBox = document.getElementById('scope-location-selected');
+    if (locInput.value && locLbl && !locLbl.classList.contains('empty')) {
+        const ids = locInput.value.split(',').filter(x => x.trim());
+        const names = locLbl.textContent.split(',').map(s => s.trim()).filter(s => s);
+        document.getElementById('scope-location-count').textContent = ids.length;
+        const chipsHtml = names.map(n =>
+            `<span style="display:inline-block; padding:4px 10px; background:#fff; border:1px solid var(--accent); border-radius:3px; font-size:12px; color:var(--accent-deep); font-weight:500;">${n}</span>`
+        ).join('');
+        document.getElementById('scope-location-chips').innerHTML = chipsHtml;
+        locBox.style.display = '';
+    } else {
+        locBox.style.display = 'none';
+    }
+}
+document.addEventListener('change', e => {
+    if (e.target.id === 'scope-warehouse-id' || e.target.id === 'scope-location-ids') {
+        setTimeout(updateSelectedDisplay, 50);
+    }
+});
+updateSelectedDisplay();
+
+// 预估时间同步到底部
+document.querySelector('select[name="estimate"]').addEventListener('change', e => {
+    document.getElementById('stat-est').textContent = e.target.value || '-';
+});
+</script>
+
+{% endblock %}

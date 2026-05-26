@@ -1,51 +1,147 @@
 {% extends "base.html" %}
-{% block title %}{% if sku %}编辑{% else %}新增{% endif %} SKU{% endblock %}
+{% block title %}{% if sku %}编辑{% else %}新增{% endif %}物品{% endblock %}
+{% block crumb %}<span class="sep">/</span><a href="{{ url_for('sku_list') }}">物品</a><span class="sep">/</span><span class="current">{% if sku %}编辑{% else %}新增{% endif %}</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">{% if sku %}编辑 SKU：{{ sku.code }}{% else %}新增 SKU{% endif %}</div>
-    <div class="card-body">
-        <form method="post">
-            <div class="form-row">
-                <label>SKU 编码 <span style="color:var(--color-out);">*</span></label>
-                <input type="text" name="code" required value="{{ sku.code if sku else '' }}" placeholder="如 YCY-350-N（酸菜鱼-350克-正常版）">
-            </div>
-            <div class="form-row">
-                <label>商品名 <span style="color:var(--color-out);">*</span></label>
-                <input type="text" name="name" required value="{{ sku.name if sku else '' }}" placeholder="如 酸菜鱼预制菜">
-            </div>
-            <div class="form-row">
-                <label>规格</label>
-                <input type="text" name="spec" value="{{ sku.spec if sku else '' }}" placeholder="如 350g·正常辣">
-            </div>
-            <div class="form-row">
-                <label>单位</label>
-                <input type="text" name="unit" value="{{ sku.unit if sku else '份' }}">
-            </div>
-            <div class="form-row">
-                <label>存储区 <span style="color:var(--color-out);">*</span></label>
-                <select name="storage_zone" required>
-                    <option value="normal" {% if sku and sku.storage_zone=='normal' %}selected{% endif %}>常温</option>
-                    <option value="cold" {% if sku and sku.storage_zone=='cold' %}selected{% endif %}>冷藏</option>
-                    <option value="freeze" {% if sku and sku.storage_zone=='freeze' %}selected{% endif %}>冷冻</option>
-                </select>
-            </div>
-            <div class="form-row">
-                <label>安全库存</label>
-                <input type="number" name="safety_stock" min="0" value="{{ sku.safety_stock if sku else 0 }}">
-            </div>
-            <div class="form-row">
-                <label>成本价</label>
-                <input type="number" name="cost_price" min="0" step="0.01" value="{{ sku.cost_price if sku else 0 }}">
-            </div>
-            <div class="form-row">
-                <label>售价</label>
-                <input type="number" name="sale_price" min="0" step="0.01" value="{{ sku.sale_price if sku else 0 }}">
-            </div>
-            <button class="btn" type="submit">保存</button>
-            <a class="btn btn-secondary" href="{{ url_for('sku_list') }}">取消</a>
-        </form>
+<form method="post" id="sku-form" enctype="multipart/form-data">
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">{% if sku %}编辑物品：{{ sku.name }}{% else %}新增物品{% endif %}</div>
+            <div class="page-sub">{% if sku %}单号 {{ sku.code }}{% else %}编码留空自动生成 SP000001{% endif %}</div>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('sku_list') }}">取消返回</a>
     </div>
-</div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>基本信息</h3><span class="meta">必填 1 项</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>物品名称 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="text" name="name" required value="{{ sku.name if sku else '' }}">
+                </div>
+                <div class="form-row">
+                    <label>规格</label>
+                    <input type="text" name="spec" value="{{ sku.spec if sku else '' }}">
+                </div>
+                <div class="form-row">
+                    <label>单位</label>
+                    <input type="text" name="unit" value="{{ sku.unit if sku else '份' }}">
+                </div>
+                <div class="form-row">
+                    <label>安全库存</label>
+                    <input type="number" name="safety_stock" min="0" value="{{ sku.safety_stock if sku else 0 }}">
+                </div>
+                <div class="form-row span2">
+                    <label>物品编码 <span class="hint" style="color:var(--ink-quiet); font-weight:400; font-size:11px;">留空自动生成 SP000001</span></label>
+                    <input type="text" name="code" value="{{ sku.code if sku else '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>归属信息</h3><span class="meta">点选择跳新页 · 没有可直接 + 新建</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>物品所属方</label>
+                    <div class="picker-btn" onclick="openPicker('owner-party', 'owner-party-id')">
+                        <input type="hidden" name="owner_party_id" id="owner-party-id" value="{{ sku.owner_party_id if sku else '' }}">
+                        <span class="picker-label {% if not (sku and sku.owner_party_id) %}empty{% endif %}" id="owner-party-id-label">{{ owner_party_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>物品管理方</label>
+                    <div class="picker-btn" onclick="openPicker('owner-admin', 'owner-admin-id')">
+                        <input type="hidden" name="owner_admin_id" id="owner-admin-id" value="{{ sku.owner_admin_id if sku else '' }}">
+                        <span class="picker-label {% if not (sku and sku.owner_admin_id) %}empty{% endif %}" id="owner-admin-id-label">{{ owner_admin_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>分类与用途</h3><span class="meta">类别/大类点选择跳新页</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>品牌</label>
+                    <input type="text" name="brand" value="{{ sku.brand if sku else '' }}">
+                </div>
+                <div class="form-row">
+                    <label>用途</label>
+                    <input type="text" name="usage_purpose" value="{{ sku.usage_purpose if sku else '' }}">
+                </div>
+                <div class="form-row">
+                    <label>物品类别</label>
+                    <div class="picker-btn" onclick="openPicker('item-category', 'category-id')">
+                        <input type="hidden" name="category_id" id="category-id" value="{{ sku.category_id if sku else '' }}">
+                        <span class="picker-label {% if not (sku and sku.category_id) %}empty{% endif %}" id="category-id-label">{{ category_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>物品大类</label>
+                    <div class="picker-btn" onclick="openPicker('item-category-major', 'category-major-id')">
+                        <input type="hidden" name="category_major_id" id="category-major-id" value="{{ sku.category_major_id if sku else '' }}">
+                        <span class="picker-label {% if not (sku and sku.category_major_id) %}empty{% endif %}" id="category-major-id-label">{{ category_major_name or '未选择' }}</span>
+                        <span class="picker-arrow">选择 →</span>
+                    </div>
+                </div>
+                <div class="form-row span2">
+                    <label class="toggle-label" style="cursor:pointer;">
+                        <span class="toggle">
+                            <input type="checkbox" name="in_contract" {% if sku and sku.in_contract %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </span>
+                        <span>是否在合同内</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>物品图片</h3><span class="meta">单图 · 可选 · ≤ 10MB · jpg/png/webp</span></div>
+        <div class="body">
+            {% if sku and sku.image_path %}
+            <div style="margin-bottom:12px;">
+                <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:6px;">当前图片</div>
+                <img src="{{ url_for('download_attachment', filepath=sku.image_path) }}"
+                     style="max-width:160px; max-height:160px; border:1px solid var(--line); border-radius:6px;"
+                     alt="物品图">
+            </div>
+            {% endif %}
+            <input type="file" name="image" accept="image/*">
+            <div style="color:var(--ink-quiet); font-size:11px; margin-top:6px;">
+                {% if sku and sku.image_path %}上传新图会覆盖现有图片；留空则保留{% else %}选一张图片（jpg/png/webp，≤ 10MB）{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left"></div>
+        <div class="right">
+            <a class="btn btn-secondary" href="{{ url_for('sku_list') }}">取消</a>
+            <button class="btn btn-primary" type="submit">{% if sku %}保存修改{% else %}创建物品{% endif %}</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+// picker 回填同步 .empty 类
+document.addEventListener('change', e => {
+    if (e.target.type === 'hidden' && e.target.id) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) lbl.classList.toggle('empty', !e.target.value);
+    }
+});
+</script>
 
 {% endblock %}

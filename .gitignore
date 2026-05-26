@@ -16,6 +16,12 @@ env/
 *.db-journal
 *.sqlite
 *.sqlite3
+*.db.bak*
+warehouse.db.*
+.wiped
+
+# 上传文件（运行时数据，不进版本库）
+uploads/
 
 # IDE / 编辑器
 .vscode/
@@ -29,6 +35,8 @@ env/
 .env
 .env.local
 secrets.json
+.deepseek_key
+.secret
 
 # 操作系统
 Thumbs.db

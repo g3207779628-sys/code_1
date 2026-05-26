@@ -1,45 +1,310 @@
 {% extends "base.html" %}
-{% block title %}库存（按 SKU）{% endblock %}
+{% block title %}库存查询{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">库存查询</span>{% endblock %}
 {% block content %}
+{% from "_pager.html" import pager %}
 
-<div class="card">
-    <div class="card-header">
-        <span>库存（按 SKU 汇总）</span>
-        <a class="btn btn-secondary btn-sm" href="{{ url_for('inventory_by_batch') }}">按批次查看</a>
+<style>
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; color: var(--ink-quiet); }
+.field input, .field .picker {
+    padding: 7px 10px; font-size: 12px; background: var(--bg-input);
+    border: 1px solid var(--line-input); border-radius: 4px;
+    height: 34px; box-sizing: border-box; width: 100%;
+}
+.field .picker {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+}
+.field .picker:hover { border-color: var(--accent); }
+.field .picker.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); }
+.field .picker .ar { color: var(--accent); font-size: 10px; flex-shrink: 0; margin-left: 8px; }
+.field .picker .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.field .picker .lbl.empty { color: var(--ink-faded); }
+.btn-apply {
+    background: var(--accent); color: #FFF;
+    border: 1px solid var(--accent); border-radius: 4px;
+    padding: 7px 14px; font-size: 13px; font-weight: 500;
+    cursor: pointer; height: 34px;
+}
+.btn-apply:hover { background: var(--accent-deep); }
+
+.filter-row1 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
+
+.more-toggle {
+    margin-top: 12px; padding: 8px 14px;
+    background: var(--accent-soft); border: 1px dashed var(--accent);
+    border-radius: 4px; color: var(--accent-deep);
+    font-size: 12px; cursor: pointer; text-align: center; font-weight: 600;
+    user-select: none;
+}
+
+.advanced-grid {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px dashed var(--line);
+    display: grid; grid-template-columns: 1fr 1px 1fr; gap: 16px;
+}
+.advanced-grid .sep { background: var(--line); }
+.adv-col h4 {
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+}
+.adv-col.items h4 { color: var(--info); }
+.adv-col.wh h4 { color: var(--accent-deep); }
+.adv-row { display: grid; gap: 10px; align-items: end; margin-bottom: 10px; }
+.adv-col.items .adv-row { grid-template-columns: 1fr 1fr 1fr; }
+.adv-col.wh .adv-row { grid-template-columns: 1fr 1fr 1fr; }
+
+.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.filter-chip {
+    background: var(--accent-soft); color: var(--accent-deep);
+    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.filter-chip.item { background: var(--info-bg); color: var(--info); }
+.filter-chip .x { cursor: pointer; opacity: 0.6; text-decoration: none; color: inherit; }
+
+.summary-strip {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 12px 18px;
+    display: flex; gap: 28px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.summary-strip .stat { font-size: 11px; color: var(--ink-quiet); }
+.summary-strip .stat .num {
+    font-size: 16px; font-family: var(--font-mono);
+    color: var(--accent-deep); font-weight: 700;
+    display: block; margin-top: 2px;
+}
+.summary-strip .stat.danger .num { color: var(--err); }
+</style>
+
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">库存查询</div>
+        <div class="page-sub">物品 + 仓库 统一查询 · 共 {{ summary.row_count }} 条命中</div>
     </div>
-    <div class="card-body" style="padding:0;">
-        <table>
+</div>
+
+<form method="get" action="{{ url_for('inventory_list') }}" id="query-form">
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>筛选条件</h3><span class="meta">顶部常用 + 高级展开 14 项</span></div>
+    <div class="body">
+
+        <div class="filter-row1">
+            <div class="field">
+                <label>搜索（名称 / 编号 / 品牌）</label>
+                <input type="text" name="q" value="{{ f.q }}" placeholder="如 茅台 / SP000001">
+            </div>
+            <div class="field">
+                <label>仓库</label>
+                <div class="picker {% if f.warehouse_id %}active{% endif %}" onclick="openPicker('warehouse', 'warehouse_id')">
+                    <input type="hidden" name="warehouse_id" id="warehouse_id" value="{{ f.warehouse_id }}">
+                    <span class="lbl {% if not f.warehouse_id %}empty{% endif %}" id="warehouse_id-label">{{ '已选' if f.warehouse_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>使用部门</label>
+                <div class="picker {% if f.use_dept_id %}active{% endif %}" onclick="openPicker('wh-use-dept', 'use_dept_id')">
+                    <input type="hidden" name="use_dept_id" id="use_dept_id" value="{{ f.use_dept_id }}">
+                    <span class="lbl {% if not f.use_dept_id %}empty{% endif %}" id="use_dept_id-label">{{ '已选' if f.use_dept_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>物品大类</label>
+                <div class="picker {% if f.category_major_id %}active{% endif %}" onclick="openPicker('item-category-major', 'category_major_id')">
+                    <input type="hidden" name="category_major_id" id="category_major_id" value="{{ f.category_major_id }}">
+                    <span class="lbl {% if not f.category_major_id %}empty{% endif %}" id="category_major_id-label">{{ '已选' if f.category_major_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <button class="btn-apply" type="submit">应用</button>
+            <a class="btn btn-secondary" href="{{ url_for('inventory_list') }}" style="height:34px;">重置</a>
+        </div>
+
+        <div class="more-toggle" onclick="toggleAdvanced(this)">
+            ↑ 收起高级筛选 (12 项)
+        </div>
+
+        <div class="advanced-grid" id="advanced">
+            <div class="adv-col items">
+                <h4>🛍 物品高级筛选</h4>
+                <div class="adv-row">
+                    <div class="field">
+                        <label>物品编号</label>
+                        <input type="text" name="sku_code" value="{{ f.sku_code }}" placeholder="SP000001">
+                    </div>
+                    <div class="field">
+                        <label>品牌</label>
+                        <input type="text" name="brand" value="{{ f.brand }}" placeholder="精确品牌">
+                    </div>
+                    <div class="field">
+                        <label>用途</label>
+                        <input type="text" name="usage_purpose" value="{{ f.usage_purpose }}" placeholder="如 招待">
+                    </div>
+                </div>
+                <div class="adv-row">
+                    <div class="field">
+                        <label>物品类别</label>
+                        <div class="picker {% if f.category_id %}active{% endif %}" onclick="openPicker('item-category', 'category_id')">
+                            <input type="hidden" name="category_id" id="category_id" value="{{ f.category_id }}">
+                            <span class="lbl {% if not f.category_id %}empty{% endif %}" id="category_id-label">{{ '已选' if f.category_id else '全部' }}</span>
+                            <span class="ar">选 →</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>所属方</label>
+                        <div class="picker {% if f.owner_party_id %}active{% endif %}" onclick="openPicker('owner-party', 'owner_party_id')">
+                            <input type="hidden" name="owner_party_id" id="owner_party_id" value="{{ f.owner_party_id }}">
+                            <span class="lbl {% if not f.owner_party_id %}empty{% endif %}" id="owner_party_id-label">{{ '已选' if f.owner_party_id else '全部' }}</span>
+                            <span class="ar">选 →</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>管理方</label>
+                        <div class="picker {% if f.owner_admin_id %}active{% endif %}" onclick="openPicker('owner-admin', 'owner_admin_id')">
+                            <input type="hidden" name="owner_admin_id" id="owner_admin_id" value="{{ f.owner_admin_id }}">
+                            <span class="lbl {% if not f.owner_admin_id %}empty{% endif %}" id="owner_admin_id-label">{{ '已选' if f.owner_admin_id else '全部' }}</span>
+                            <span class="ar">选 →</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="adv-col wh">
+                <h4>🏢 仓库高级筛选</h4>
+                <div class="adv-row">
+                    <div class="field">
+                        <label>存放区域</label>
+                        <input type="text" name="storage_area" value="{{ f.storage_area }}" placeholder="区域关键字">
+                    </div>
+                    <div class="field">
+                        <label>存放位置</label>
+                        <input type="text" name="storage_position" value="{{ f.storage_position }}" placeholder="位置关键字">
+                    </div>
+                    <div class="field">
+                        <label>库位</label>
+                        <div class="picker {% if f.location_id %}active{% endif %}" onclick="openPicker('location', 'location_id')">
+                            <input type="hidden" name="location_id" id="location_id" value="{{ f.location_id }}">
+                            <span class="lbl {% if not f.location_id %}empty{% endif %}" id="location_id-label">{{ '已选' if f.location_id else '全部' }}</span>
+                            <span class="ar">选 →</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="adv-row">
+                    <div class="field">
+                        <label>分配部门</label>
+                        <div class="picker {% if f.alloc_dept_id %}active{% endif %}" onclick="openPicker('wh-alloc-dept', 'alloc_dept_id')">
+                            <input type="hidden" name="alloc_dept_id" id="alloc_dept_id" value="{{ f.alloc_dept_id }}">
+                            <span class="lbl {% if not f.alloc_dept_id %}empty{% endif %}" id="alloc_dept_id-label">{{ '已选' if f.alloc_dept_id else '全部' }}</span>
+                            <span class="ar">选 →</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>类型</label>
+                        <div class="picker {% if f.wh_type_id %}active{% endif %}" onclick="openPicker('wh-type', 'wh_type_id')">
+                            <input type="hidden" name="wh_type_id" id="wh_type_id" value="{{ f.wh_type_id }}">
+                            <span class="lbl {% if not f.wh_type_id %}empty{% endif %}" id="wh_type_id-label">{{ '已选' if f.wh_type_id else '全部' }}</span>
+                            <span class="ar">选 →</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>责任人</label>
+                        <div class="picker {% if f.owner_user_id %}active{% endif %}" onclick="openPicker('wh-owner', 'owner_user_id')">
+                            <input type="hidden" name="owner_user_id" id="owner_user_id" value="{{ f.owner_user_id }}">
+                            <span class="lbl {% if not f.owner_user_id %}empty{% endif %}" id="owner_user_id-label">{{ '已选' if f.owner_user_id else '全部' }}</span>
+                            <span class="ar">选 →</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</form>
+
+<div class="summary-strip">
+    <div class="stat"><span class="num">{{ summary.row_count }}</span> 命中条目</div>
+    <div class="stat"><span class="num">{{ summary.total_on_hand }}</span> 在仓合计</div>
+    <div class="stat"><span class="num">{{ summary.unique_skus }}</span> 命中物品</div>
+    <div class="stat"><span class="num">{{ summary.unique_locs }}</span> 命中库位</div>
+    {% if summary.low_count %}
+    <div class="stat danger"><span class="num">{{ summary.low_count }}</span> 低库存</div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>查询结果</h3><span class="meta">{{ summary.row_count }} 条命中</span></div>
+    <div class="body" style="padding:0;">
+        {% if rows %}
+        <table class="dense-table">
             <thead>
                 <tr>
-                    <th>SKU</th>
-                    <th>商品</th>
-                    <th>存储区</th>
-                    <th>在仓数</th>
-                    <th>已预占</th>
-                    <th>可用</th>
-                    <th>安全库存</th>
-                    <th>批次数</th>
+                    <th>物品</th>
+                    <th>编号</th>
+                    <th>大类</th>
+                    <th>所属方</th>
+                    <th>存放区域 / 位置</th>
+                    <th>使用部门</th>
+                    <th>责任人</th>
+                    <th>类型</th>
+                    <th class="text-right">在仓</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in rows %}
-                <tr {% if r.total_on_hand - r.total_reserved < r.safety_stock and r.safety_stock > 0 %}style="background:#FBE9D0;"{% endif %}>
-                    <td class="mono">{{ r.code }}</td>
-                    <td>{{ r.name }} {% if r.spec %}<span style="color:var(--color-text-soft);font-size:12px;">{{ r.spec }}</span>{% endif %}</td>
-                    <td><span class="badge badge-{{ r.storage_zone }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻'}[r.storage_zone] }}</span></td>
-                    <td class="mono"><strong>{{ r.total_on_hand }}</strong></td>
-                    <td class="mono" style="color:var(--color-text-soft);">{{ r.total_reserved }}</td>
-                    <td class="mono"><strong>{{ r.total_on_hand - r.total_reserved }}</strong> {{ r.unit }}</td>
-                    <td class="mono">{{ r.safety_stock }}</td>
-                    <td class="mono">{{ r.batch_count }}</td>
+                <tr>
+                    <td class="sku-name"><strong>{{ r.sku_name }}</strong>{% if r.sku_spec %} <span style="color:var(--ink-quiet); font-size:11px;">({{ r.sku_spec }})</span>{% endif %}</td>
+                    <td class="mono" style="font-size:11px;">{{ r.sku_code }}</td>
+                    <td>{% if r.category_major_name %}<span class="tag" style="background:var(--info-bg); color:var(--info);">{{ r.category_major_name }}</span>{% else %}—{% endif %}</td>
+                    <td>{{ r.owner_party_name or '—' }}</td>
+                    <td><span style="color:var(--accent-deep);">{{ r.storage_area }}</span> / {{ r.storage_position }}</td>
+                    <td>{{ r.use_dept_name or '—' }}</td>
+                    <td>{{ r.owner_user_name or '—' }}</td>
+                    <td>{{ r.wh_type_name or '—' }}</td>
+                    <td class="num-mono text-right" style="{% if r.safety_stock and r.on_hand < r.safety_stock %}color:var(--err);{% endif %}"><strong>{{ r.on_hand }}</strong></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {{ pager(pg) }}
+        {% else %}
+        <div style="padding:48px; text-align:center; color:var(--ink-quiet);">
+            没有匹配的库存记录。试试调整筛选条件 / 重置。
+        </div>
+        {% endif %}
     </div>
 </div>
-<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
-    橙色背景 = 可用量低于安全库存。"可用 = 在仓数 - 已预占"。
-</div>
+
+<script>
+let advancedOpen = true;
+function toggleAdvanced(btn) {
+    advancedOpen = !advancedOpen;
+    const adv = document.getElementById('advanced');
+    adv.style.display = advancedOpen ? 'grid' : 'none';
+    btn.textContent = advancedOpen ? '↑ 收起高级筛选 (12 项)' : '+ 高级筛选 (12 项)';
+}
+
+// picker 回填后同步 label
+document.addEventListener('change', e => {
+    if (e.target.type === 'hidden' && e.target.id) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) {
+            lbl.classList.toggle('empty', !e.target.value);
+            // picker.js 设了 value 后，label 文本由 picker.js 写过（来自 picker_label url 参数）
+            // 这里不重写文本，只切换 empty class
+        }
+        const picker = e.target.closest('.picker');
+        if (picker) picker.classList.toggle('active', !!e.target.value);
+    }
+});
+</script>
 
 {% endblock %}

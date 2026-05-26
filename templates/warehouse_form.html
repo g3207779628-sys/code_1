@@ -1,23 +1,42 @@
 {% extends "base.html" %}
-{% block title %}{% if warehouse %}编辑{% else %}新增{% endif %}仓库{% endblock %}
+{% block title %}{% if warehouse %}编辑{% else %}新建{% endif %}仓库{% endblock %}
+{% block crumb %}<span class="sep">/</span><a href="{{ url_for('warehouse_list') }}">仓库</a><span class="sep">/</span><span class="current">{% if warehouse %}编辑{% else %}新建{% endif %}</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">{% if warehouse %}编辑仓库：{{ warehouse.name }}{% else %}新增仓库{% endif %}</div>
-    <div class="card-body">
-        <form method="post">
-            <div class="form-row">
-                <label>仓库名称 <span style="color:var(--color-out);">*</span></label>
-                <input type="text" name="name" required value="{{ warehouse.name if warehouse else '' }}">
-            </div>
-            <div class="form-row">
-                <label>地址</label>
-                <input type="text" name="address" value="{{ warehouse.address if warehouse else '' }}">
-            </div>
-            <button class="btn" type="submit">保存</button>
-            <a class="btn btn-secondary" href="{{ url_for('warehouse_list') }}">取消</a>
-        </form>
+<form method="post" id="warehouse-form">
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">{% if warehouse %}编辑仓库：{{ warehouse.name }}{% else %}新建仓库{% endif %}</div>
+            <div class="page-sub">仓库只填名称和地址；分配部门 / 使用部门 / 类型 / 责任人在每个库位上单独设置</div>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('warehouse_list') }}">取消返回</a>
     </div>
-</div>
+
+    <div class="form-card">
+        <div class="head"><span class="accent-bar"></span><h3>基本信息</h3><span class="meta">必填 1 项</span></div>
+        <div class="body">
+            <div class="form-grid">
+                <div class="form-row span2">
+                    <label>仓库名称 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="text" name="name" required value="{{ warehouse.name if warehouse else '' }}">
+                </div>
+                <div class="form-row span2">
+                    <label>地址</label>
+                    <input type="text" name="address" value="{{ warehouse.address if warehouse else '' }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sticky-actions">
+        <div class="left"></div>
+        <div class="right">
+            <a class="btn btn-secondary" href="{{ url_for('warehouse_list') }}">取消</a>
+            <button class="btn btn-primary" type="submit">{% if warehouse %}保存修改{% else %}创建仓库{% endif %}</button>
+        </div>
+    </div>
+
+</form>
 
 {% endblock %}

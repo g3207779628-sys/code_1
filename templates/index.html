@@ -1,102 +1,93 @@
 {% extends "base.html" %}
-{% block title %}工作台{% endblock %}
-{% block crumb %}<span class="sep">/</span><span class="current">工作台</span>{% endblock %}
+{% block title %}首页{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">首页</span>{% endblock %}
 {% block content %}
 
 <div class="page-header" style="padding:0;margin-bottom:24px;">
-    <h1>工作台</h1>
-    <div class="subtitle">{{ session.display_name }} · {{ session.role }} · 今天是 2026-05-17</div>
+    <h1>首页</h1>
+    <div class="subtitle">{{ session.display_name }} · {{ session.role }}</div>
 </div>
 
 <div class="stat-grid" style="margin-bottom:24px;">
     <div class="stat-card">
         <div class="num">{{ stats.sku }}</div>
-        <div class="label">商品种数</div>
-    </div>
-    <div class="stat-card">
-        <div class="num">{{ stats.batch }}</div>
-        <div class="label">批次数</div>
+        <div class="label">物品种数</div>
     </div>
     <div class="stat-card">
         <div class="num">{{ stats.total_on_hand }}</div>
         <div class="label">在仓总数</div>
     </div>
     <div class="stat-card">
-        <div class="num">{{ stats.total_reserved }}</div>
-        <div class="label">已预占</div>
-    </div>
-    <div class="stat-card">
         <div class="num">{{ stats.pending_pick }}</div>
-        <div class="label">待拣货任务</div>
+        <div class="label">待出库任务</div>
     </div>
     <div class="stat-card">
-        <div class="num">{{ stats.expiry_warn }}</div>
-        <div class="label">临期批次（30 天内）</div>
+        <div class="num">{{ stats.low_stock_count }}</div>
+        <div class="label">低库存物品</div>
     </div>
     <div class="stat-card">
         <div class="num">{{ stats.pending_damage }}</div>
         <div class="label">待审报损</div>
     </div>
     <div class="stat-card">
-        <div class="num">{{ stats.open_return }}</div>
-        <div class="label">处理中退货</div>
+        <div class="num">{{ stats.draft_inbound }}</div>
+        <div class="label">待审入库单</div>
     </div>
 </div>
 
 <div class="entry-grid">
-    <a class="entry-card" href="{{ url_for('sales_new') }}">
-        <h3>新建销售订单</h3>
-        <p>客户下单后建单，系统自动 FIFO 派批次</p>
+    {% if 'pick' in menus %}
+    <a class="entry-card" href="{{ url_for('outbound_new') }}">
+        <h3>新建出库单</h3>
+        <p>选物品 + 数量，自动 FIFO 派批次</p>
     </a>
     <a class="entry-card" href="{{ url_for('pick_list') }}">
-        <h3>拣货任务</h3>
-        <p>按系统指定批次和库位拣货</p>
+        <h3>出库任务</h3>
+        <p>按系统指定批次和库位出库</p>
     </a>
+    {% endif %}
+    {% if 'inbound' in menus %}
     <a class="entry-card" href="{{ url_for('inbound_new') }}">
         <h3>新建入库单</h3>
         <p>收到供应商来货时录入</p>
     </a>
-    <a class="entry-card" href="{{ url_for('expiry_alert') }}">
-        <h3>临期预警</h3>
-        <p>查看 30 天内到期批次</p>
+    {% endif %}
+    {% if 'forecast' in menus %}
+    <a class="entry-card" href="{{ url_for('forecast_view') }}">
+        <h3>库存预测</h3>
+        <p>列出当前低于安全库存的物品</p>
     </a>
+    {% endif %}
+    {% if 'damage' in menus %}
     <a class="entry-card" href="{{ url_for('damage_new') }}">
         <h3>提交报损</h3>
         <p>破损 / 过期 / 丢失走主管审批</p>
     </a>
+    {% endif %}
+    {% if 'stocktake' in menus %}
     <a class="entry-card" href="{{ url_for('stocktake_list') }}">
         <h3>盘点</h3>
         <p>账实核对，差异自动调账</p>
     </a>
+    {% endif %}
+    {% if 'inventory' in menus %}
     <a class="entry-card" href="{{ url_for('inventory_list') }}">
         <h3>库存查询</h3>
-        <p>按 SKU 或按批次查看</p>
+        <p>按物品 / 按存储区查看</p>
     </a>
+    {% endif %}
+    {% if 'log' in menus %}
     <a class="entry-card" href="{{ url_for('stock_log_view') }}">
         <h3>库存流水</h3>
         <p>所有库存变动的审计日志</p>
     </a>
+    {% endif %}
+    {% if 'report' in menus %}
     <a class="entry-card" href="{{ url_for('dashboard') }}">
-        <h3>经营 Dashboard</h3>
-        <p>销售、库存、退货六图实时</p>
+        <h3>经营报表</h3>
+        <p>实时分布、趋势、活跃物品</p>
     </a>
-</div>
-
-<div class="card" style="margin-top:24px;">
-    <div class="card-header">阶段进度</div>
-    <div class="card-body">
-        <ul class="phase-list">
-            <li><span class="done">✓</span>阶段 0：项目初始化 + Git</li>
-            <li><span class="done">✓</span>阶段 1：主数据 + 登录</li>
-            <li><span class="done">✓</span>阶段 2：入库链 + 批次管理</li>
-            <li><span class="done">✓</span>阶段 3：销售链 + FIFO 拣货</li>
-            <li><span class="done">✓</span>阶段 4：报损 + 临期预警 + 盘点</li>
-            <li><span class="done">✓</span>阶段 5：退换货 + 质检</li>
-            <li><span class="done">✓</span>阶段 6：报表 + AI 智能查询</li>
-            <li class="current"><span class="now">▸</span>UI 改造：Stripe 风视觉（当前）</li>
-            <li><span class="todo">○</span>下一步：11 角色定制首页（可选）</li>
-        </ul>
-    </div>
+    {% endif %}
 </div>
 
 {% endblock %}

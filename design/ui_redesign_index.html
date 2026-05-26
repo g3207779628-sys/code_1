@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>UI 重做方案对比 · 金山仓储</title>
+<link rel="stylesheet" href="ui_cream_shared.css">
+<style>
+.page { max-width: 1280px; margin: 0 auto; padding: 0 32px 60px; }
+
+.hero {
+    background: radial-gradient(circle at 50% 30%, #FFF7EE 0%, #FBFAF7 70%);
+    padding: 64px 40px 56px;
+    text-align: center;
+    margin: 0 -32px 32px;
+    border-bottom: 1px solid var(--line);
+}
+.hero .super {
+    font-size: 84px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 12px;
+    line-height: 1;
+    margin-bottom: 14px;
+}
+.hero .super .stroke {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--accent);
+}
+.hero h1 {
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+.hero .sub {
+    color: var(--ink-quiet);
+    font-size: 14px;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+.hero .meta-row {
+    margin-top: 22px;
+    display: flex; justify-content: center; gap: 36px;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--ink-faded);
+    letter-spacing: 1px;
+}
+.hero .meta-row strong { color: var(--accent); font-size: 13px; }
+
+.must-have {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    padding: 18px 24px;
+    border-radius: var(--r-md);
+    margin-bottom: 32px;
+}
+.must-have h3 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.must-have ul { padding-left: 20px; font-size: 13px; line-height: 1.9; color: var(--ink-soft); }
+.must-have ul li strong { color: var(--ink); }
+
+.section-mark {
+    font-family: monospace;
+    font-size: 11px; color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+.section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 18px;
+}
+
+.plan-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+}
+.plan-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    transition: all 0.2s;
+    display: flex; flex-direction: column;
+}
+.plan-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(217,119,55,0.1);
+}
+.plan-preview {
+    height: 220px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+}
+/* A 预览 */
+.plan-a-preview { background: radial-gradient(circle at 50% 40%, #FFF7EE 0%, #FBFAF7 70%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.plan-a-preview .super { font-size: 38px; font-weight: 800; letter-spacing: 6px; line-height: 1; }
+.plan-a-preview .super .fill { color: var(--accent); }
+.plan-a-preview .super .stroke { color: transparent; -webkit-text-stroke: 1.5px var(--accent); }
+.plan-a-preview .sub { font-size: 11px; font-weight: 300; letter-spacing: 4px; color: var(--ink-quiet); margin-top: 8px; }
+
+/* B 预览 */
+.plan-b-preview { background: radial-gradient(circle at 50% 30%, #FFE9D2 0%, #FBFAF7 70%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.plan-b-preview .tag-mini { background: var(--accent); color: #FFF; padding: 3px 10px; border-radius: 99px; font-size: 9px; letter-spacing: 2px; margin-bottom: 8px; }
+.plan-b-preview .super { font-size: 38px; font-weight: 800; color: var(--accent); letter-spacing: 6px; line-height: 1; }
+.plan-b-preview .sub { font-size: 11px; font-weight: 600; letter-spacing: 4px; color: var(--ink); margin-top: 8px; }
+.plan-b-preview .btn-mini { margin-top: 12px; background: var(--accent); color: #FFF; padding: 5px 14px; border-radius: 3px; font-size: 10px; }
+
+/* C 预览 */
+.plan-c-preview { background: var(--bg-warm); display: grid; grid-template-columns: 1.2fr 1fr; }
+.plan-c-preview .left { background: linear-gradient(135deg, #FFF3E8 0%, #FBFAF7 100%); padding: 20px 16px; display: flex; flex-direction: column; justify-content: center; }
+.plan-c-preview .left .mark { font-family: monospace; font-size: 8px; color: var(--accent); letter-spacing: 1px; }
+.plan-c-preview .left .super { font-size: 32px; font-weight: 800; color: var(--accent); letter-spacing: 4px; line-height: 1; margin-top: 4px; }
+.plan-c-preview .left .super .stroke { color: transparent; -webkit-text-stroke: 1.5px var(--accent); }
+.plan-c-preview .right { padding: 12px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-card); }
+.plan-c-preview .right .mini-stat { border: 1px solid var(--line); padding: 6px 8px; border-radius: 3px; font-size: 9px; }
+.plan-c-preview .right .mini-stat .n { font-family: monospace; font-size: 16px; font-weight: 700; color: var(--accent); }
+
+.plan-meta { padding: 20px 22px; flex: 1; display: flex; flex-direction: column; }
+.plan-meta h3 {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+}
+.plan-meta h3 .num {
+    width: 24px; height: 24px;
+    background: var(--accent); color: #FFF;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+}
+.plan-meta .feature {
+    font-size: 13px; color: var(--ink-quiet);
+    line-height: 1.7;
+    margin: 8px 0 14px;
+    flex: 1;
+}
+.plan-meta .tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 14px;
+}
+.plan-meta .pros, .plan-meta .cons {
+    font-size: 12px; line-height: 1.7;
+    padding: 10px 14px;
+    border-radius: var(--r-sm);
+    margin-bottom: 8px;
+}
+.plan-meta .pros { background: var(--ok-bg); color: var(--ok); border-left: 3px solid var(--ok); }
+.plan-meta .cons { background: var(--warn-bg); color: var(--warn); border-left: 3px solid var(--warn); }
+.plan-meta strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+
+.plan-pages {
+    border-top: 1px solid var(--line);
+    background: var(--bg-warm);
+    padding: 12px 18px;
+}
+.plan-pages h4 { font-size: 11px; color: var(--ink-quiet); letter-spacing: 1px; margin-bottom: 8px; }
+.plan-pages-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.plan-pages-list a {
+    display: block;
+    padding: 6px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--ink);
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.plan-pages-list a:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-deep);
+}
+
+.compare-table {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    margin-top: 32px;
+    overflow: hidden;
+}
+.compare-table .card-head { padding: 16px 22px; border-bottom: 1px solid var(--line); }
+.compare-table table { width: 100%; border-collapse: collapse; }
+.compare-table th, .compare-table td { padding: 12px 16px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
+.compare-table th { background: var(--bg-row-hover); font-weight: 600; color: var(--ink-quiet); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.compare-table tbody tr:last-child td { border: none; }
+.compare-table .check { color: var(--accent); font-weight: 700; }
+.compare-table .nope { color: var(--ink-faded); }
+
+.tip {
+    margin-top: 32px;
+    padding: 18px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+}
+.tip h3 { font-size: 15px; margin-bottom: 10px; font-weight: 700; }
+.tip ul { padding-left: 22px; font-size: 13px; line-height: 2; color: var(--ink-soft); }
+.tip ul li strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>金山仓储 · UI 重做</strong> · 暖米白 + 橙色点缀 · 3 套方案对比</div>
+
+<div class="page">
+
+    <!-- Hero 区 -->
+    <div class="hero">
+        <div class="super">
+            <span>UI</span> <span class="stroke">REDESIGN</span>
+        </div>
+        <h1>暖米白 + 橙色点缀</h1>
+        <div class="sub">从 Stripe 深墨蓝整体换到「白色为主、橙色为辅」的新风格 · 所有人登录后先看到欢迎页 · 整套 UI 重做</div>
+        <div class="meta-row">
+            <div><strong>3</strong> 套差异化方案</div>
+            <div><strong>12</strong> 个代表页面</div>
+            <div><strong>14</strong> 个 CSS 变量</div>
+            <div><strong>v6.1 → v7</strong> 版本升级</div>
+        </div>
+    </div>
+
+    <!-- 必带特性 -->
+    <div class="must-have">
+        <h3>⚐ 3 套方案共同遵守的硬规则</h3>
+        <ul>
+            <li><strong>暖米白底</strong>：主背景 <code>#FBFAF7</code>，不用纯白</li>
+            <li><strong>橙色辅助</strong>：accent <code>#D97737</code>，仅用于强调（active / 主按钮 / 关键数字 / 链接）</li>
+            <li><strong>白色侧栏</strong>：不用深色 sidebar（取代旧 Stripe 风的深墨蓝）</li>
+            <li><strong>输入框浅米灰</strong>：<code>#EFE9DF</code> + 1px <code>#DCD5C8</code> 边框（不用纯白）</li>
+            <li><strong>所有人登录后先到欢迎页</strong>：hero 大字 + 用户信息卡 + "进入工作台"按钮</li>
+        </ul>
+    </div>
+
+    <!-- 三套方案 -->
+    <div class="section">
+        <div class="section-mark">// THREE VARIANTS</div>
+        <h2>3 套方案</h2>
+
+        <div class="plan-grid">
+
+            <!-- 方案 A -->
+            <div class="plan-card">
+                <div class="plan-preview plan-a-preview">
+                    <div class="super"><span class="fill">WEL</span><span class="stroke">COME</span></div>
+                    <div class="sub">金山仓储</div>
+                </div>
+                <div class="plan-meta">
+                    <h3><span class="num">A</span> 纯净极简</h3>
+                    <div class="feature">橙色仅用于关键强调（active 态、主按钮、KPI 关键数字、链接）。90% 视觉是暖米白 + 深棕黑，留白多、字体疏朗、字距大。</div>
+                    <div class="tags">
+                        <span class="tag tag-default">老板向</span>
+                        <span class="tag tag-default">报表 / 驾驶舱</span>
+                        <span class="tag tag-default">极简</span>
+                    </div>
+                    <div class="pros"><strong>优点</strong>视觉最干净 · 文字呼吸感强 · 接近 Apple/Notion 暖白纸感</div>
+                    <div class="cons"><strong>缺点</strong>数据密度低 · 不适合高频操作页</div>
+                </div>
+                <div class="plan-pages">
+                    <h4>4 个代表页面</h4>
+                    <div class="plan-pages-list">
+                        <a href="ui_a_welcome.html">→ 登录欢迎页</a>
+                        <a href="ui_a_dashboard.html">→ 工作台</a>
+                        <a href="ui_a_inventory.html">→ 库存查询</a>
+                        <a href="ui_a_inbound_form.html">→ 入库表单</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 方案 B -->
+            <div class="plan-card">
+                <div class="plan-preview plan-b-preview">
+                    <div class="tag-mini">KINGSOFT</div>
+                    <div class="super">WELCOME</div>
+                    <div class="sub">金山仓储</div>
+                    <div class="btn-mini">进入工作台 →</div>
+                </div>
+                <div class="plan-meta">
+                    <h3><span class="num">B</span> 橙色显眼</h3>
+                    <div class="feature">橙色用得更慷慨：active 边线粗 4px、KPI 大橙色数字、tag 橙色描边、主按钮纯橙色。视觉密度更高、active 元素一眼看清。</div>
+                    <div class="tags">
+                        <span class="tag tag-accent">操作员向</span>
+                        <span class="tag tag-accent">出入库高频</span>
+                        <span class="tag tag-accent">醒目</span>
+                    </div>
+                    <div class="pros"><strong>优点</strong>active 状态强 · 快速识别 · 任务感强</div>
+                    <div class="cons"><strong>缺点</strong>橙色比例高 · 长时间看略累</div>
+                </div>
+                <div class="plan-pages">
+                    <h4>4 个代表页面</h4>
+                    <div class="plan-pages-list">
+                        <a href="ui_b_welcome.html">→ 登录欢迎页</a>
+                        <a href="ui_b_dashboard.html">→ 工作台</a>
+                        <a href="ui_b_inventory.html">→ 库存查询</a>
+                        <a href="ui_b_inbound_form.html">→ 入库表单</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 方案 C -->
+            <div class="plan-card">
+                <div class="plan-preview plan-c-preview">
+                    <div class="left">
+                        <div class="mark">// V6.1</div>
+                        <div class="super"><span>WEL</span><span class="stroke">COME</span></div>
+                    </div>
+                    <div class="right">
+                        <div class="mini-stat">在仓 <span class="n">2847</span></div>
+                        <div class="mini-stat">待审 <span class="n">8</span></div>
+                        <div class="mini-stat">低 <span class="n" style="color:var(--err);">3</span></div>
+                    </div>
+                </div>
+                <div class="plan-meta">
+                    <h3><span class="num">C</span> 暖米工业 hybrid</h3>
+                    <div class="feature">保留旧工业风的紧凑数据密度（mono 字体的数字 / 紧凑 badge），但底色和点缀色换暖米 + 橙色。表格密度高、卡片小、信息量大。</div>
+                    <div class="tags">
+                        <span class="tag tag-default">数据型</span>
+                        <span class="tag tag-default">流水 / 盘点</span>
+                        <span class="tag tag-default">紧凑</span>
+                    </div>
+                    <div class="pros"><strong>优点</strong>数据密度最高 · 一屏看更多 · 兼容旧使用习惯</div>
+                    <div class="cons"><strong>缺点</strong>视觉不如 A/B 干净 · 字号小可能不适合年长用户</div>
+                </div>
+                <div class="plan-pages">
+                    <h4>4 个代表页面</h4>
+                    <div class="plan-pages-list">
+                        <a href="ui_c_welcome.html">→ 登录欢迎页</a>
+                        <a href="ui_c_dashboard.html">→ 工作台</a>
+                        <a href="ui_c_inventory.html">→ 库存查询</a>
+                        <a href="ui_c_stock_log.html">→ 库存流水</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 视觉规范入口 -->
+    <div class="tip">
+        <h3>🎨 视觉规范页（所有方案共用）</h3>
+        <p style="color: var(--ink-quiet); font-size: 13px; margin-bottom: 14px;">完整色板 14 个 CSS 变量 + 字体规则 + 组件用法 + 禁忌清单</p>
+        <a href="ui_color_palette.html" class="btn btn-primary">查看视觉规范 →</a>
+    </div>
+
+    <!-- 横向对比表 -->
+    <div class="compare-table">
+        <div class="card-head"><h3 style="font-size: 15px; font-weight: 700;">3 套方案横向对比</h3></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>对比项</th>
+                    <th>方案 A 纯净</th>
+                    <th>方案 B 显眼</th>
+                    <th>方案 C hybrid</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>视觉密度</td><td>低（疏朗）</td><td>中</td><td class="check">高（紧凑）</td></tr>
+                <tr><td>橙色使用比例</td><td>≈ 10%</td><td class="check">≈ 25%</td><td>≈ 15%</td></tr>
+                <tr><td>留白</td><td class="check">最多</td><td>多</td><td>少</td></tr>
+                <tr><td>字号</td><td>大</td><td>大</td><td>中等偏小</td></tr>
+                <tr><td>mono 字体</td><td class="nope">否</td><td class="nope">否</td><td class="check">是（数字/流水）</td></tr>
+                <tr><td>适合的高频用户</td><td>老板 / 经理</td><td>操作员</td><td>库管 / 财务</td></tr>
+                <tr><td>移动端体验</td><td class="check">优</td><td class="check">优</td><td>良</td></tr>
+                <tr><td>开发工作量</td><td>中</td><td>中</td><td>大（需 mono 字体支持）</td></tr>
+                <tr><td>"看起来高端"</td><td class="check">最强</td><td>强</td><td>中</td></tr>
+                <tr><td>"看起来好用"</td><td>中</td><td class="check">强</td><td class="check">最强</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="tip">
+        <h3>📋 选型建议</h3>
+        <ul>
+            <li>如果公司日常**操作量大**（每天 10+ 张单据）→ 选 <strong>方案 B</strong>（橙色显眼，active 醒目）</li>
+            <li>如果给老板/管理层**主要看报表**和总览 → 选 <strong>方案 A</strong>（纯净，关键信息一眼看到）</li>
+            <li>如果**数据维度多、信息密度高**（多仓 + 多 SKU + 流水频繁）→ 选 <strong>方案 C</strong>（hybrid，密度最高）</li>
+            <li>**折中推荐**：<strong>方案 B + C 混合</strong> — 工作台/欢迎页用 B 显眼风格，库存流水/盘点页用 C 密度风格</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 40px; text-align: center; color: var(--ink-faded); font-size: 11px; letter-spacing: 1px;">
+        金山仓储 · UI 重做 v7 · 2026-05-21 · 选定后将进入开发阶段
+    </div>
+
+</div>
+
+</body>
+</html>

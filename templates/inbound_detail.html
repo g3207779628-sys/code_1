@@ -8,13 +8,14 @@
         <span>
             {% if order.status == 'draft' %}<span class="badge badge-normal">草稿</span>
             {% elif order.status == 'approved' %}<span class="badge badge-in">已审核</span>
+            {% elif order.status == 'cancelled' %}<span class="badge">已撤销</span>
             {% else %}<span class="badge badge-out">已驳回</span>{% endif %}
         </span>
     </div>
     <div class="card-body">
         <table style="margin-bottom:24px;">
             <tbody>
-                <tr><th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">供应商</th><td>{{ order.supplier_name or '-' }}</td>
+                <tr><th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">入库员工</th><td>{{ order.operator_name or '-' }}</td>
                     <th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">创建人</th><td>{{ order.creator_name }}</td></tr>
                 <tr><th style="background:var(--color-bg-alt);color:var(--color-text);">创建时间</th><td class="mono">{{ order.created_at }}</td>
                     <th style="background:var(--color-bg-alt);color:var(--color-text);">审核人</th><td>{{ order.approver_name or '-' }}</td></tr>
@@ -25,22 +26,31 @@
 
         <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px;">入库明细</h3>
         <table>
-            <thead><tr><th>SKU</th><th>批次号</th><th>生产日期</th><th>效期</th><th>入库位</th><th>数量</th><th>单价</th><th>小计</th></tr></thead>
+            <thead><tr><th>物品</th><th>批次号</th><th>入库位</th><th>数量</th></tr></thead>
             <tbody>
                 {% for it in items %}
                 <tr>
                     <td><span class="mono">{{ it.sku_code }}</span> · {{ it.sku_name }} {% if it.sku_spec %}({{ it.sku_spec }}){% endif %}</td>
                     <td class="mono">{{ it.batch_no }}</td>
-                    <td class="mono">{{ it.production_date }}</td>
-                    <td class="mono">{{ it.expiry_date }}</td>
                     <td class="mono">{{ it.location_code }}</td>
                     <td class="mono">{{ it.quantity }}</td>
-                    <td class="mono">¥{{ '%.2f'|format(it.unit_price) }}</td>
-                    <td class="mono">¥{{ '%.2f'|format(it.quantity * it.unit_price) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        {% set atts = order.attachments | attachments_list %}
+        {% if atts %}
+        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px; margin-top:24px;">附件（{{ atts|length }} 个）</h3>
+        <ul style="list-style:none; padding:0;">
+            {% for path in atts %}
+            <li style="margin-bottom:6px;">
+                <a href="{{ url_for('download_attachment', filepath=path) }}" target="_blank">{{ path.split('/')[-1] }}</a>
+                <span class="text-tertiary" style="font-size:11px; margin-left:8px;">{{ path }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
 
         {% if order.status == 'draft' and session.role in ['admin', 'manager'] %}
         <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
@@ -49,6 +59,9 @@
             </form>
             <form method="post" action="{{ url_for('inbound_reject', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('确认驳回该入库单？');">
                 <button class="btn btn-danger" type="submit">驳回</button>
+            </form>
+            <form method="post" action="{{ url_for('inbound_cancel', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('撤销该入库单（草稿）？');">
+                <button class="btn btn-danger" type="submit">撤销</button>
             </form>
             <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">返回列表</a>
         </div>

@@ -2,6 +2,7 @@
 {% block title %}申领表{% endblock %}
 {% block crumb %}<span class="sep">/</span><span class="current">出库管理</span><span class="sep">/</span><span class="current">申领表</span>{% endblock %}
 {% block content %}
+{% from "_pager.html" import pager %}
 {% set st_map = {'submitted':'待处理','handled':'已处理','cancelled':'已取消'} %}
 {% set st_cls = {'submitted':'badge-warn','handled':'badge-ok','cancelled':'badge-mute'} %}
 
@@ -42,7 +43,7 @@
   <div class="v13-page-head">
     <div>
       <div class="page-title">申领表</div>
-      <div class="page-sub">务工人员扫码免登录提交的领用申请单 · 共 {{ total_all }} 张 · 当前筛出 {{ orders|length }} 张</div>
+      <div class="page-sub">务工人员扫码免登录提交的领用申请单 · 共 {{ total_all }} 张 · 当前筛出 {{ pg.total }} 张</div>
     </div>
   </div>
 
@@ -140,6 +141,7 @@
       {% endfor %}
     </tbody>
   </table>
+  {{ pager(pg) }}
   {% else %}
   <div class="empty">没有符合条件的领用申请单。<br><span class="sub-muted">务工人员通过扫码门户提交后，会出现在这里。</span></div>
   {% endif %}

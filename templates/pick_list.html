@@ -2,17 +2,47 @@
 {% block title %}出库单列表{% endblock %}
 {% block crumb %}<span class="sep">/</span><span class="current">出库管理</span><span class="sep">/</span><span class="current">出库单列表</span>{% endblock %}
 {% block content %}
+{% from "_pager.html" import pager %}
 
 <div class="v13-page-head">
     <div>
         <div class="page-title">出库单列表</div>
-        <div class="page-sub">共 {{ orders|length }} 张 · 待出库优先 · <span style="color:var(--accent-deep);">申领</span>标签表示由申领转出库</div>
+        <div class="page-sub">共 {{ pg.total }} 张 · 待出库优先 · <span style="color:var(--accent-deep);">申领</span>标签表示由申领转出库</div>
     </div>
     <a class="btn btn-primary" href="{{ url_for('outbound_new') }}">+ 新建出库单</a>
 </div>
 
+<form class="list-filter" method="get" action="{{ url_for('pick_list') }}"
+      style="background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+  <div style="display:flex;flex-direction:column;gap:5px;min-width:200px;flex:1;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">单号 / 收件方 / 物品</label>
+    <input type="text" name="q" value="{{ f.q }}" placeholder="关键字" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">状态</label>
+    <select name="status" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+      <option value="">全部</option>
+      <option value="pending" {% if f.status=='pending' %}selected{% endif %}>待出库</option>
+      <option value="completed" {% if f.status=='completed' %}selected{% endif %}>已完成</option>
+      <option value="cancelled" {% if f.status=='cancelled' %}selected{% endif %}>已取消</option>
+    </select>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">创建时间 从</label>
+    <input type="date" name="date_from" value="{{ f.date_from }}" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">到</label>
+    <input type="date" name="date_to" value="{{ f.date_to }}" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button type="submit" class="btn btn-primary">筛选</button>
+    <a class="btn btn-secondary" href="{{ url_for('pick_list') }}">重置</a>
+  </div>
+</form>
+
 <div class="form-card">
-    <div class="head"><span class="accent-bar"></span><h3>出库单列表</h3><span class="meta">{{ orders|length }} 张</span></div>
+    <div class="head"><span class="accent-bar"></span><h3>出库单列表</h3><span class="meta">{{ pg.total }} 张</span></div>
     <div class="body" style="padding:0;">
         {% if orders %}
         <table class="dense-table">
@@ -62,9 +92,10 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div style="padding:0 12px 8px;">{{ pager(pg) }}</div>
         {% else %}
         <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
-            还没有出库单。点击右上「+ 新建出库单」开始。
+            {% if f.q or f.status or f.date_from or f.date_to %}没有符合筛选条件的出库单。<a href="{{ url_for('pick_list') }}">重置</a>{% else %}还没有出库单。点击右上「+ 新建出库单」开始。{% endif %}
         </div>
         {% endif %}
     </div>

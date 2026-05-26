@@ -5,56 +5,33 @@
 
 <div style="margin-bottom:24px;">
     <h1>出货协调员工作台</h1>
-    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 待出货 {{ to_ship|length }} 包 · 今日单量按渠道分布如下</div>
+    <div class="text-secondary" style="font-size:14px;margin-top:4px;">{{ session.display_name }} · 待出货 {{ to_ship|length }} 包</div>
 </div>
 
 <div class="stat-grid" style="margin-bottom:24px;">
     <div class="stat-card"><div class="num">{{ to_ship|length }}</div><div class="label">待出货包裹</div></div>
-    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日销售单</div></div>
-    <div class="stat-card"><div class="num">{{ channel_dist|length }}</div><div class="label">活跃渠道数</div></div>
-    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">仍在拣货</div></div>
+    <div class="stat-card"><div class="num">{{ stats.today_sales_orders }}</div><div class="label">今日出库单</div></div>
+    <div class="stat-card"><div class="num">{{ stats.pending_pick }}</div><div class="label">仍在出库</div></div>
+    <div class="stat-card"><div class="num">{{ stats.total_on_hand }}</div><div class="label">总在仓</div></div>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
-    <div class="card">
-        <div class="card-header">待出货包裹（已打包）</div>
-        <div class="card-body" style="padding:0;">
-            <table>
-                <thead><tr><th>出库单</th><th>收件人</th><th>地址</th><th>渠道</th><th>完成时间</th></tr></thead>
-                <tbody>
-                    {% for s in to_ship %}
-                    <tr>
-                        <td class="mono"><a href="{{ url_for('pick_detail', order_no=s.order_no) }}">{{ s.order_no }}</a></td>
-                        <td>{{ s.receiver_name or '-' }}</td>
-                        <td class="text-secondary" style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.receiver_addr or '-' }}</td>
-                        <td><span class="tag">{{ {'manual':'手工','tmall':'天猫','jd':'京东','douyin':'抖音','applet':'小程序'}.get(s.channel, s.channel) }}</span></td>
-                        <td class="mono text-secondary" style="font-size:12px;">{{ s.completed_at }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="5" class="empty">无待出货</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">今日渠道分布</div>
-        <div class="card-body" style="padding:0;">
-            <table>
-                <thead><tr><th>渠道</th><th class="text-right">完成数</th></tr></thead>
-                <tbody>
-                    {% for c in channel_dist %}
-                    <tr>
-                        <td><span class="tag">{{ {'manual':'手工','tmall':'天猫','jd':'京东','douyin':'抖音','applet':'小程序'}.get(c.channel, c.channel) }}</span></td>
-                        <td class="mono text-right fw-bold">{{ c.cnt }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="2" class="empty">今日还没完成单</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="card">
+    <div class="card-header">待出货包裹（已打包）</div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead><tr><th>出库单</th><th>收件方</th><th>完成时间</th></tr></thead>
+            <tbody>
+                {% for s in to_ship %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('pick_detail', order_no=s.order_no) }}">{{ s.order_no }}</a></td>
+                    <td>{{ s.receiver_desc or '-' }}</td>
+                    <td class="mono text-secondary" style="font-size:12px;">{{ s.completed_at }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="empty">无待出货</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 

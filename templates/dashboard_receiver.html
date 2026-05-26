@@ -19,12 +19,12 @@
     <div class="card-header">待验收入库单 <a href="{{ url_for('inbound_new') }}">+ 新建入库</a></div>
     <div class="card-body" style="padding:0;">
         <table>
-            <thead><tr><th>单号</th><th>供应商</th><th class="text-right">总件数</th><th>创建时间</th><th></th></tr></thead>
+            <thead><tr><th>单号</th><th>入库员工</th><th class="text-right">总件数</th><th>创建时间</th><th></th></tr></thead>
             <tbody>
                 {% for o in pending_inbound %}
                 <tr>
                     <td class="mono"><a href="{{ url_for('inbound_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
-                    <td>{{ o.supplier or '-' }}</td>
+                    <td>{{ o.operator or '-' }}</td>
                     <td class="mono text-right fw-bold">{{ o.qty }}</td>
                     <td class="mono text-secondary" style="font-size:12px;">{{ o.created_at }}</td>
                     <td><a class="btn btn-sm btn-primary" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">验收</a></td>
@@ -41,7 +41,7 @@
     <div class="card-header">近期入库流水 <a href="{{ url_for('stock_log_view') }}">完整流水 →</a></div>
     <div class="card-body" style="padding:0;">
         <table>
-            <thead><tr><th>时间</th><th>SKU</th><th>批次</th><th>库位</th><th class="text-right">数量</th></tr></thead>
+            <thead><tr><th>时间</th><th>物品</th><th>批次</th><th>库位</th><th class="text-right">数量</th></tr></thead>
             <tbody>
                 {% for r in recent_log %}
                 <tr>

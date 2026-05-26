@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v14 方案 B · 字段内嵌（推荐）· 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { font-size: 13px; background: var(--bg-soft); padding: 32px 40px; }
+.page { max-width: 1280px; margin: 0 auto; }
+.head { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px 26px; margin-bottom: 18px; }
+.head .tag { display: inline-block; font-size: 10px; letter-spacing: 2px; padding: 2px 8px; background: var(--ok-bg); color: var(--ok); border-radius: 2px; font-weight: 600; margin-bottom: 6px; }
+.head h1 { font-size: 22px; margin-bottom: 6px; }
+.head .sub { color: var(--ink-quiet); font-size: 13px; }
+
+.demo-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.demo-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.demo-card .head { background: var(--bg-soft); padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--ink-quiet); text-transform: uppercase; margin-bottom: 0; }
+.demo-card .body { padding: 14px; }
+.demo-card .menu-item { padding: 6px 10px; font-size: 12px; color: var(--ink-soft); border-left: 3px solid transparent; }
+.demo-card .menu-item.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+.demo-card .menu-item.gray { color: var(--ink-faded); text-decoration: line-through; }
+.demo-card table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.demo-card table th { background: var(--bg-soft); padding: 6px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-quiet); text-align: left; border-bottom: 1px solid var(--line); }
+.demo-card table td { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); font-size: 12px; }
+
+.form-demo { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px 22px; margin-bottom: 18px; }
+.form-demo h3 { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+.form-grid .row label { display: block; font-size: 11px; color: var(--ink-quiet); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.form-grid .row input { width: 100%; padding: 7px 10px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; box-sizing: border-box; }
+.form-grid .row input.filled { background: var(--accent-soft); border-color: var(--accent); }
+.form-grid .row .hint { font-size: 10px; color: var(--ok); margin-top: 4px; font-weight: 600; }
+
+.code-block { background: var(--bg-input); padding: 14px 18px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; color: var(--ink-soft); overflow-x: auto; }
+.code-block .kw { color: var(--accent-deep); font-weight: 700; }
+.code-block .added { background: rgba(22, 163, 74, 0.15); padding: 1px 4px; border-radius: 2px; }
+
+.back { display: inline-block; padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; text-decoration: none; color: var(--ink); font-size: 12px; margin-bottom: 18px; }
+.back:hover { border-color: var(--accent); color: var(--accent); }
+
+.pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+.pros-cons > div { padding: 14px 18px; border-radius: 6px; font-size: 12px; line-height: 1.7; }
+.pros { background: var(--ok-bg); border-left: 3px solid var(--ok); }
+.cons { background: var(--warn-bg); border-left: 3px solid var(--warn); }
+.pros strong { color: var(--ok); font-weight: 700; }
+.cons strong { color: var(--warn); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<a class="back" href="ui_v14_loc_index.html">← 返回 3 方案对比</a>
+
+<div class="head">
+    <span class="tag">B · 中方案 · 推荐</span>
+    <h1>字段内嵌：库位表加 building / floor 两列</h1>
+    <div class="sub">不增菜单、不加新表，<code style="background:var(--bg-soft); padding:1px 6px; border-radius:3px;">location</code> 表加 <code style="background:var(--bg-soft); padding:1px 6px; border-radius:3px;">building</code> + <code style="background:var(--bg-soft); padding:1px 6px; border-radius:3px;">floor</code> 两个文本字段。建库位 1 次填齐。</div>
+</div>
+
+<div class="form-demo">
+    <h3>新建库位表单（一次填齐 4 个字段）</h3>
+    <div class="form-grid">
+        <div class="row">
+            <label>所属仓库 *</label>
+            <input value="金山主仓" class="filled" readonly>
+        </div>
+        <div class="row">
+            <label>楼栋号 ← 新字段</label>
+            <input value="1 号楼" class="filled">
+            <div class="hint">建议命名：1号楼 / A栋 / 主楼</div>
+        </div>
+        <div class="row">
+            <label>楼层 ← 新字段</label>
+            <input value="2 层" class="filled">
+            <div class="hint">建议命名：1 层 / 2 层 / 地下 1 层</div>
+        </div>
+        <div class="row">
+            <label>库位代码 *</label>
+            <input value="A-01" class="filled">
+            <div class="hint">在同一楼栋楼层内唯一即可</div>
+        </div>
+    </div>
+</div>
+
+<div class="demo-row">
+    <div class="demo-card">
+        <div class="head">仓库数据维护菜单（不增项）</div>
+        <div class="body">
+            <div class="menu-item">仓库</div>
+            <div class="menu-item">仓库分配部门</div>
+            <div class="menu-item">仓库使用部门</div>
+            <div class="menu-item">仓库类型</div>
+            <div class="menu-item">责任人</div>
+            <div class="menu-item gray">楼栋号 ← 不需要独立菜单</div>
+            <div class="menu-item gray">楼层 ← 不需要独立菜单</div>
+            <div class="menu-item active">库位（含 楼栋+楼层 字段）</div>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <div class="head">库位列表（按楼栋分组）</div>
+        <div class="body">
+            <table>
+                <thead><tr><th>楼栋</th><th>楼层</th><th>库位</th><th class="text-right">在仓</th></tr></thead>
+                <tbody>
+                    <tr><td rowspan="2" style="background:var(--accent-soft); color:var(--accent-deep); font-weight:600;">1 号楼</td><td>1 层</td><td>A-01</td><td style="text-align:right;">128</td></tr>
+                    <tr><td>2 层</td><td>A-02</td><td style="text-align:right;">86</td></tr>
+                    <tr><td rowspan="2" style="background:var(--accent-soft); color:var(--accent-deep); font-weight:600;">2 号楼</td><td>1 层</td><td>B-01</td><td style="text-align:right;">15</td></tr>
+                    <tr><td>1 层</td><td>B-02</td><td style="text-align:right;">22</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <div class="head">库存查询 · 按楼栋聚合（GROUP BY）</div>
+        <div class="body">
+            <table>
+                <thead><tr><th>楼栋</th><th class="text-right">含楼层</th><th class="text-right">含库位</th><th class="text-right">总在仓</th></tr></thead>
+                <tbody>
+                    <tr><td style="color:var(--accent-deep); font-weight:600;">1 号楼</td><td style="text-align:right;">2</td><td style="text-align:right;">2</td><td style="text-align:right; color:var(--accent);">214</td></tr>
+                    <tr><td style="color:var(--accent-deep); font-weight:600;">2 号楼</td><td style="text-align:right;">1</td><td style="text-align:right;">2</td><td style="text-align:right; color:var(--accent);">37</td></tr>
+                </tbody>
+            </table>
+            <div style="font-size:11px; color:var(--ink-quiet); margin-top:8px;">查询效果与 A 方案一致，仅 SQL 是 GROUP BY l.building 而非 JOIN building 表</div>
+        </div>
+    </div>
+</div>
+
+<div class="head">
+    <h1 style="font-size: 16px;">数据库 schema</h1>
+    <div class="code-block">
+<span class="kw">CREATE TABLE</span> location (
+    id INTEGER PRIMARY KEY,
+    warehouse_id INTEGER <span class="kw">REFERENCES</span> warehouse(id),
+    <span class="added">building TEXT,        </span><span style="color:var(--ink-faded);">-- 新加，可为空</span>
+    <span class="added">floor TEXT,           </span><span style="color:var(--ink-faded);">-- 新加，可为空</span>
+    code TEXT NOT NULL,
+    zone_type TEXT
+);
+
+<span style="color:var(--ink-faded);">-- 查询 "1 号楼总在仓"：</span>
+<span class="kw">SELECT</span> SUM(inv.on_hand) <span class="kw">FROM</span> inventory inv
+  <span class="kw">JOIN</span> location l <span class="kw">ON</span> l.id=inv.location_id
+<span class="kw">WHERE</span> l.building=<span style="color:var(--ok);">'1 号楼'</span>;
+
+<span style="color:var(--ink-faded);">-- 升级到 A 方案（如果将来真有 5 栋楼）：</span>
+<span style="color:var(--ink-faded);">-- 1) 从 location.building 抽出 distinct 值建 building 表</span>
+<span style="color:var(--ink-faded);">-- 2) 加 building_id FK + 数据迁移 + drop building 字段</span>
+    </div>
+</div>
+
+<div class="pros-cons">
+    <div class="pros">
+        <strong>★ 优点</strong><br>
+        · 菜单零增项，认知负担最低（20 人团队尤其重要）<br>
+        · 建库位 1 次填齐 4 个字段，效率最高<br>
+        · 按楼栋查询 SQL <code>GROUP BY l.building</code> 一行搞定<br>
+        · 将来真有需求可平滑升级 A 方案（数据迁移友好）<br>
+        · 实装工作量极小：location 表 2 个 ADD COLUMN + 模板加 2 个 input
+    </div>
+    <div class="cons">
+        <strong>! 注意</strong><br>
+        · 楼栋名是自由文本，可能出现 "1栋 / 1号楼 / 1-栋" 不一致（治理靠提示语）<br>
+        · 楼栋本身没法挂额外属性（如"管理员"、"地址"）—— 真需要时再升级 A 方案<br>
+        · 改楼栋名需要 UPDATE 所有库位，不像 A 方案改 1 处
+    </div>
+</div>
+
+</div>
+
+</body>
+</html>

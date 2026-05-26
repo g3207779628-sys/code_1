@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}岗位管理{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>岗位管理（共 {{ positions|length }} 项）</span>
+        <span>
+            <button class="btn btn-primary btn-sm" type="button" onclick="document.getElementById('new-modal').classList.add('open')">+ 新建岗位</button>
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('user_admin') }}">‹ 返回用户列表</a>
+        </span>
+    </div>
+    <div class="card-body">
+        <input type="text" id="pos-search" placeholder="搜索岗位名或代码..." style="width:300px; margin-bottom:12px;" oninput="filterPosRows(this.value)">
+
+        <div class="text-tertiary" style="font-size:12px; margin-bottom:12px;">
+            岗位 = <strong>纯标签</strong>，不再决定默认菜单权限（v3 起）。一个用户可关联多个岗位。
+            岗位被任何用户使用时不能删除——先去用户列表把对应用户的岗位取消勾选。
+        </div>
+
+        <table id="pos-table">
+            <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>代码</th>
+                    <th style="width:140px;">使用情况</th>
+                    <th style="width:80px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in positions %}
+                <tr data-text="{{ p.label }} {{ p.code }}">
+                    <td><strong>{{ p.label }}</strong></td>
+                    <td style="font-size:12px; color:var(--ink-quiet);" class="mono">{{ p.code }}</td>
+                    <td style="font-size:12px;">
+                        {% if p.in_use %}
+                        被 <strong>{{ p.in_use }}</strong> 位用户使用
+                        {% else %}
+                        <span class="text-tertiary">未被使用</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="post" style="display:inline;" onsubmit="return confirm('删除岗位「{{ p.label }}」？');">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="code" value="{{ p.code }}">
+                            <button class="btn btn-sm btn-danger" type="submit" {% if p.in_use %}disabled title="该岗位仍被 {{ p.in_use }} 位用户使用"{% endif %}>删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="empty">还没有岗位。点击右上"+ 新建岗位"开始。</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 新建 modal（复刻 picker 风格） -->
+<div id="new-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>新建岗位</h3>
+        <div class="form-row">
+            <label>岗位名称 *</label>
+            <input type="text" id="new-label" placeholder="如 质检员、库存控制员">
+        </div>
+        <div class="form-row">
+            <label>岗位代码<span style="font-weight:400; color:var(--ink-quiet); font-size:11px;">（留空自动生成）</span></label>
+            <input type="text" id="new-code" placeholder="如 qc，留空自动生成">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('new-modal').classList.remove('open')">取消</button>
+            <button class="btn btn-primary btn-sm" type="button" onclick="submitNewPos()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterPosRows(q) {
+    q = (q || '').toLowerCase().trim();
+    document.querySelectorAll('#pos-table tbody tr').forEach(tr => {
+        const text = (tr.dataset.text || '').toLowerCase();
+        tr.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+}
+
+function submitNewPos() {
+    const label = document.getElementById('new-label').value.trim();
+    const code = document.getElementById('new-code').value.trim();
+    if (!label) { alert('岗位名称必填'); return; }
+    const fd = new FormData();
+    fd.append('action', 'create');
+    fd.append('label', label);
+    fd.append('code', code);
+    fetch('{{ url_for("position_admin") }}', {method:'POST', body:fd})
+        .then(() => window.location.reload());
+}
+</script>
+
+{% endblock %}

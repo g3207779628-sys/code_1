@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>方案 A · 库存查询 · 金山仓储</title>
+<link rel="stylesheet" href="ui_red_shared.css">
+<style>
+.content { padding: 40px 48px; }
+.page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--ink-quiet); margin-bottom: 24px; }
+
+.toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+}
+.tabs { display: flex; gap: 4px; }
+.tab {
+    padding: 8px 18px;
+    font-size: 13px;
+    color: var(--ink-quiet);
+    cursor: pointer;
+    border-radius: var(--r-md);
+    border: 1px solid transparent;
+    transition: all 0.15s;
+}
+.tab:hover { color: var(--ink); }
+.tab.active {
+    background: var(--bg-accent-soft);
+    color: var(--accent);
+    border-color: #F8C2B5;
+    font-weight: 600;
+}
+
+.search-wrap { position: relative; }
+.search-wrap input { width: 320px; padding-right: 80px; }
+.search-wrap .ideas {
+    position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-quiet);
+    font-size: 13px;
+    display: flex; align-items: center; gap: 6px;
+}
+.search-wrap .ideas .star { color: var(--accent); font-size: 16px; }
+
+.table td .name { font-weight: 600; color: var(--ink); }
+.table td .code { font-size: 11px; color: var(--ink-faded); margin-left: 6px; }
+.table td .qty { font-weight: 700; color: var(--ink); font-size: 15px; }
+.table td .qty.low { color: var(--err); }
+.table td .qty .unit { color: var(--ink-quiet); font-size: 12px; margin-left: 2px; font-weight: 400; }
+.table .ditto { color: var(--ink-quiet); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>方案 A · 纯净极简</strong> · 库存查询</div>
+
+<div class="layout">
+    <aside class="sider">
+        <div class="sider-brand"><span class="mark">金</span>金山仓储</div>
+        <ul class="menu">
+            <li class="menu-group">日常使用</li>
+            <li><a href="#">工作台 <span class="arrow">›</span></a></li>
+            <li><a href="#">待审批中心 <span class="arrow">›</span></a></li>
+            <li class="menu-group">日常操作</li>
+            <li><a href="#">入库 <span class="arrow">›</span></a></li>
+            <li><a href="#">出库 <span class="arrow">›</span></a></li>
+            <li><a href="#">调拨 <span class="arrow">›</span></a></li>
+            <li><a href="#">报损 <span class="arrow">›</span></a></li>
+            <li><a href="#">盘点 <span class="arrow">›</span></a></li>
+            <li class="menu-group">查询分析</li>
+            <li><a href="#" class="active">库存查询 <span class="arrow">›</span></a></li>
+            <li><a href="#">库存流水 <span class="arrow">›</span></a></li>
+            <li><a href="#">经营报表 <span class="arrow">›</span></a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <div class="crumb"><span class="prev">查询分析</span><span class="sep">/</span><span class="now">库存查询</span></div>
+            <div class="header-actions">
+                <span class="user-name">王经理</span>
+                <span class="quiet">改密</span>
+                <span class="quiet">退出</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="page-title">库存查询</div>
+            <div class="page-sub">共 5 个商品 · 12 个批次 · 9 个库位</div>
+
+            <div class="toolbar">
+                <div class="tabs">
+                    <span class="tab active">按商品</span>
+                    <span class="tab">按仓库</span>
+                    <span class="tab">按存储区</span>
+                    <span class="tab">按库位</span>
+                </div>
+                <div class="search-wrap">
+                    <input type="search" placeholder="搜索商品名 / 规格...">
+                    <span class="ideas">Ideas <span class="star">✺</span></span>
+                </div>
+            </div>
+
+            <div class="card">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>商品</th>
+                            <th>规格</th>
+                            <th>在仓</th>
+                            <th>安全库存</th>
+                            <th>分布于</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="name">茅台</span><span class="code">MT-FW-500</span></td>
+                            <td>53° 飞天 500ml</td>
+                            <td><span class="qty">82 <span class="unit">瓶</span></span></td>
+                            <td>6</td>
+                            <td><span class="ditto">2 仓 · 2 区 · 3 库位</span></td>
+                            <td><a href="#" class="text-accent">查看分布</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="name">五粮液</span><span class="code">WLY-PJ-500</span></td>
+                            <td>52° 普五 500ml</td>
+                            <td><span class="qty">54 <span class="unit">瓶</span></span></td>
+                            <td>6</td>
+                            <td><span class="ditto">1 仓 · 1 区 · 2 库位</span></td>
+                            <td><a href="#" class="text-accent">查看分布</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="name">A4 复印纸</span><span class="code">A4-COPY</span></td>
+                            <td>70g 500 张/包</td>
+                            <td><span class="qty">15 <span class="unit">包</span></span></td>
+                            <td>20</td>
+                            <td><span class="ditto">2 仓 · 1 区 · 3 库位</span></td>
+                            <td><a href="#" class="text-accent">查看分布</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="name">签字笔</span><span class="code">PEN-SIGN</span></td>
+                            <td>黑色 0.5mm 12 支/盒</td>
+                            <td><span class="qty low">22 <span class="unit">盒</span></span></td>
+                            <td>30</td>
+                            <td><span class="ditto">1 仓 · 1 区 · 2 库位</span></td>
+                            <td><a href="#" class="text-accent">查看分布</a></td>
+                        </tr>
+                        <tr>
+                            <td><span class="name">龙井茶</span><span class="code">TEA-LJ</span></td>
+                            <td>明前 250g/罐</td>
+                            <td><span class="qty low">6 <span class="unit">罐</span></span></td>
+                            <td>8</td>
+                            <td><span class="ditto">2 仓 · 1 区 · 2 库位</span></td>
+                            <td><a href="#" class="text-accent">查看分布</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-quiet" style="font-size: 12px; margin-top: 14px; text-align: right;">
+                红字 = 在仓数低于安全库存
+            </div>
+
+            <div style="margin-top: 32px; text-align: center;">
+                <a href="ui_red_a_dashboard.html" class="btn btn-sm">‹ 上一页 工作台</a>
+                <a href="ui_red_a_inbound_form.html" class="btn btn-sm">下一页 入库表单 →</a>
+                <a href="ui_redesign_index.html" class="btn btn-sm">返回方案对比</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

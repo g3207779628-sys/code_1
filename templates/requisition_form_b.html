@@ -1,0 +1,520 @@
+{# 设计理念：分步引导型领用申请单 —— 把表单拆成「基本信息 / 领用明细 / 补充说明」三段并配步骤条，留白宽松、字段配说明文案、即时校验提示，面向偶尔领用的普通员工和新人，降低出错门槛。
+   注意：所属部门数据源为 wh_use_dept 仓库使用部门，非人员部门，待与现有项目对齐。 #}
+{% extends "base.html" %}
+{% block title %}领用申请单（原型）{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">领用申请单（原型·分步引导）</span>{% endblock %}
+{% block content %}
+
+<style>
+/* 本方案专属样式：尽量复用现有 CSS 变量，不硬编码颜色/间距 */
+.req-b .v13-page-head { margin-bottom: 16px; }
+
+/* inline typeahead 输入即筛下拉 */
+.req-b .typeahead { position: relative; }
+.req-b .typeahead .ta-input { width: 100%; }
+.req-b .typeahead .ta-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+    z-index: 30; max-height: 244px; overflow-y: auto;
+    background: var(--bg-card); border: 1px solid var(--line-input);
+    border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    display: none;
+}
+.req-b .typeahead.open .ta-menu { display: block; }
+.req-b .ta-item {
+    padding: 9px 12px; font-size: 13px; color: var(--ink);
+    cursor: pointer; border-bottom: 1px solid var(--line-soft);
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+}
+.req-b .ta-item:last-child { border-bottom: none; }
+.req-b .ta-item.active, .req-b .ta-item:hover { background: var(--bg-accent-soft); }
+.req-b .ta-item .ta-sub { color: var(--ink-quiet); font-size: 11px; font-family: var(--font-mono); flex-shrink: 0; }
+.req-b .ta-item .ta-main { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.req-b .ta-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-faded); }
+
+/* 字段说明文案 —— 分步引导的关键 */
+.req-b .field-help { display: block; margin-top: 5px; font-size: 11px; color: var(--ink-quiet); line-height: 1.45; }
+.req-b .field-err { display: none; margin-top: 5px; font-size: 11px; color: var(--err); font-weight: 500; }
+.req-b .form-row.has-error .field-err { display: block; }
+.req-b .form-row.has-error input,
+.req-b .form-row.has-error select,
+.req-b .form-row.has-error .ta-input { border-color: var(--err); }
+
+.req-b .sample-tag {
+    display: inline-block; margin-left: 6px; padding: 1px 7px;
+    font-size: 10px; font-weight: 600; border-radius: 999px;
+    color: var(--accent-deep); background: var(--accent-soft); border: 1px solid var(--accent-fade);
+    vertical-align: middle;
+}
+
+/* 分步卡片：默认展示全部，但视觉上用步骤序号引导 */
+.req-b .form-card .head .step-no {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: #FFF; font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.req-b .form-card .head h3 { margin: 0; }
+.req-b .form-card .body { padding: 26px 24px; }
+.req-b .form-grid { gap: 22px 28px; }
+
+.req-b .ro-cell {
+    background: var(--bg-soft); font-size: 12px; color: var(--ink-soft);
+}
+.req-b .ro-cell.mono { font-family: var(--font-mono); }
+.req-b .onhand-cell { text-align: right; color: var(--accent-deep); font-family: var(--font-mono); }
+.req-b .qty-input { text-align: right; }
+.req-b .qty-input.over { border-color: var(--err); color: var(--err); }
+
+.req-b .line-help {
+    margin: 10px 2px 0; font-size: 11px; color: var(--ink-quiet); line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .req-b .form-grid { grid-template-columns: 1fr; }
+    .req-b .line-table th:nth-child(4),
+    .req-b .line-table td:nth-child(4) { display: none; } /* 窄屏隐藏规格列 */
+}
+</style>
+
+<form method="post" id="req-form" class="req-b" novalidate>
+
+    <div class="v13-page-head">
+        <div>
+            <div class="page-title">领用申请单</div>
+            <div class="page-sub">展示型原型 · 三步填写，跟着步骤走即可 · 暂不落库</div>
+        </div>
+    </div>
+
+    <nav class="step-bar" aria-label="填写步骤">
+        <div class="step active" id="step-ind-1"><span class="n">1</span><span>基本信息</span></div>
+        <div class="step-sep"></div>
+        <div class="step" id="step-ind-2"><span class="n">2</span><span>领用明细</span></div>
+        <div class="step-sep"></div>
+        <div class="step" id="step-ind-3"><span class="n">3</span><span>补充说明</span></div>
+    </nav>
+
+    <!-- 第一步：基本信息 -->
+    <section class="form-card" aria-labelledby="card1-title">
+        <div class="head">
+            <span class="step-no" aria-hidden="true">1</span>
+            <h3 id="card1-title">基本信息</h3>
+            <span class="meta">填写谁来领、从哪个部门和库位领、什么时候领</span>
+        </div>
+        <div class="body">
+            <div class="form-grid">
+
+                <div class="form-row" id="row-applicant">
+                    <label for="applicant">申请人 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="text" id="applicant" name="applicant" placeholder="请输入申请人姓名"
+                           aria-label="申请人姓名" autocomplete="off">
+                    <span class="field-help">直接手动填写姓名即可，无需从名单选择。</span>
+                    <span class="field-err">请填写申请人姓名</span>
+                </div>
+
+                <div class="form-row" id="row-dept">
+                    <label for="dept-input">所属部门 <span class="req" style="color:var(--accent);">*</span>
+                        {% if dept_is_sample %}<span class="sample-tag" title="占位示例数据，待与现有项目对齐">示例数据</span>{% endif %}
+                    </label>
+                    <div class="typeahead" data-source="depts" data-target="dept_id">
+                        <input type="text" class="ta-input" id="dept-input" placeholder="输入部门名称搜索…"
+                               aria-label="所属部门搜索" aria-autocomplete="list" aria-expanded="false"
+                               role="combobox" autocomplete="off">
+                        <input type="hidden" name="dept_id" id="dept_id">
+                        <div class="ta-menu" role="listbox" aria-label="部门候选"></div>
+                    </div>
+                    <span class="field-help">数据源为「使用部门(wh_use_dept)」，是物资领用所属部门，并非人员所在部门。</span>
+                    <span class="field-err">请选择所属部门</span>
+                </div>
+
+                <div class="form-row" id="row-loc">
+                    <label for="loc-input">领用库位 <span class="req" style="color:var(--accent);">*</span></label>
+                    <div class="typeahead" data-source="locations" data-target="location_id">
+                        <input type="text" class="ta-input" id="loc-input" placeholder="输入库位编码搜索…"
+                               aria-label="领用库位搜索" aria-autocomplete="list" aria-expanded="false"
+                               role="combobox" autocomplete="off">
+                        <input type="hidden" name="location_id" id="location_id">
+                        <div class="ta-menu" role="listbox" aria-label="库位候选"></div>
+                    </div>
+                    <span class="field-help">从哪个库位出货。输入编码即可，括号内为所属仓库。</span>
+                    <span class="field-err">请选择领用库位</span>
+                </div>
+
+                <div class="form-row" id="row-date">
+                    <label for="apply-date">申请日期 <span class="req" style="color:var(--accent);">*</span></label>
+                    <input type="date" id="apply-date" name="apply_date" value="{{ today }}"
+                           aria-label="申请日期">
+                    <span class="field-help">默认今天（{{ today }}），如需补单可改为过往日期。</span>
+                    <span class="field-err">请选择申请日期</span>
+                </div>
+
+                <div class="form-row span2" id="row-cat">
+                    <label for="category">领用类别 <span class="req" style="color:var(--accent);">*</span>
+                        {% if cat_is_sample %}<span class="sample-tag" title="占位示例数据，待与现有项目对齐">示例数据</span>{% endif %}
+                    </label>
+                    <select id="category" name="category_id" aria-label="领用类别">
+                        <option value="">— 请选择领用类别 —</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-help">领用类别等于物品大类，先选类别有助于在下一步快速找到物品。</span>
+                    <span class="field-err">请选择领用类别</span>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 第二步：领用明细 -->
+    <section class="form-card" aria-labelledby="card2-title">
+        <div class="head">
+            <span class="step-no" aria-hidden="true">2</span>
+            <h3 id="card2-title">领用明细</h3>
+            <span class="meta" id="meta-detail">已添加 0 行 · 选物品后自动填编码 / 单位 / 规格 / 现库存</span>
+        </div>
+        <div class="body">
+            <table class="line-table" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">申请物品 *</th>
+                        <th style="width: 14%;">编码</th>
+                        <th style="width: 10%;">单位</th>
+                        <th style="width: 16%;">规格</th>
+                        <th style="width: 12%;">现库存</th>
+                        <th style="width: 13%;">数量 *</th>
+                        <th style="width: 5%;" aria-label="删除"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+            </table>
+            <button type="button" class="add-line" id="add-row-btn" aria-label="添加一行领用明细">+ 再加一行物品</button>
+            <p class="line-help">每行先在「申请物品」框里输入编码或名称搜索并选中，编码 / 单位 / 规格 / 现库存会自动带出；再填本行数量。数量超过现库存会用红色提醒，但仍可提交（最终以审批为准）。</p>
+        </div>
+    </section>
+
+    <!-- 第三步：补充说明 -->
+    <section class="form-card" aria-labelledby="card3-title">
+        <div class="head">
+            <span class="step-no" aria-hidden="true">3</span>
+            <h3 id="card3-title">补充说明</h3>
+            <span class="meta">可选</span>
+        </div>
+        <div class="body">
+            <div class="form-row" style="margin-bottom:0;">
+                <label for="note">申领说明</label>
+                <textarea id="note" name="note" rows="4"
+                          placeholder="例如：用于 X 项目现场施工，预计本周内领取…" aria-label="申领说明"></textarea>
+                <span class="field-help">说清楚用途和领取时间，便于库管和审批人快速确认，减少退回返工。</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="sticky-actions">
+        <div class="left">
+            <div>明细 <span class="num" id="stat-rows">0</span> 行</div>
+            <div>合计 <span class="num" id="stat-total">0</span> 件</div>
+        </div>
+        <div class="right">
+            <button class="btn btn-secondary" type="button" id="reset-btn" aria-label="重置表单">重置</button>
+            <button class="btn btn-primary" type="submit" aria-label="提交领用申请">提交申请 →</button>
+        </div>
+    </div>
+
+</form>
+
+<script>
+(function () {
+    // ===== 数据源（后端 jinja 注入，前端本地过滤）=====
+    const SKUS = {{ skus | tojson }};
+    const DEPTS = {{ depts | tojson }};
+    const LOCATIONS = {{ locations | tojson }};
+    const CATEGORIES = {{ categories | tojson }};
+
+    const skuById = {};
+    SKUS.forEach(s => { skuById[String(s.id)] = s; });
+
+    // ===== 通用 inline typeahead 装配 =====
+    // 配置：不同数据源的「展示主文本 / 副文本 / 搜索匹配 / 选中后写回输入框」逻辑
+    const SOURCES = {
+        depts: {
+            data: DEPTS,
+            match: (it, q) => (it.name || '').toLowerCase().includes(q),
+            main: it => it.name || '',
+            sub: () => '',
+            display: it => it.name || ''
+        },
+        locations: {
+            data: LOCATIONS,
+            match: (it, q) => ((it.code || '') + ' ' + (it.warehouse_name || '')).toLowerCase().includes(q),
+            main: it => it.code || '',
+            sub: it => it.warehouse_name || '',
+            display: it => it.code + (it.warehouse_name ? '（' + it.warehouse_name + '）' : '')
+        },
+        skus: {
+            data: SKUS,
+            match: (it, q) => ((it.code || '') + ' ' + (it.name || '')).toLowerCase().includes(q),
+            main: it => it.name || '',
+            sub: it => it.code || '',
+            display: it => (it.code ? it.code + ' ' : '') + (it.name || '')
+        }
+    };
+
+    function attachTypeahead(root, onSelect) {
+        const cfg = SOURCES[root.dataset.source];
+        const input = root.querySelector('.ta-input');
+        const hidden = root.dataset.target ? root.querySelector('input[name="' + root.dataset.target + '"]') : null;
+        const menu = root.querySelector('.ta-menu');
+        let items = [];
+        let activeIdx = -1;
+
+        function close() {
+            root.classList.remove('open');
+            input.setAttribute('aria-expanded', 'false');
+            activeIdx = -1;
+        }
+        function open() {
+            root.classList.add('open');
+            input.setAttribute('aria-expanded', 'true');
+        }
+        function render(q) {
+            const ql = q.trim().toLowerCase();
+            items = cfg.data.filter(it => cfg.match(it, ql)).slice(0, 50);
+            menu.innerHTML = '';
+            activeIdx = -1;
+            if (!items.length) {
+                menu.innerHTML = '<div class="ta-empty">无匹配项</div>';
+                open();
+                return;
+            }
+            items.forEach((it, i) => {
+                const row = document.createElement('div');
+                row.className = 'ta-item';
+                row.setAttribute('role', 'option');
+                row.dataset.idx = i;
+                const sub = cfg.sub(it);
+                row.innerHTML = '<span class="ta-main">' + escapeHtml(cfg.main(it)) + '</span>' +
+                                (sub ? '<span class="ta-sub">' + escapeHtml(sub) + '</span>' : '');
+                row.addEventListener('mousedown', e => { e.preventDefault(); pick(i); });
+                menu.appendChild(row);
+            });
+            open();
+        }
+        function pick(i) {
+            const it = items[i];
+            if (!it) return;
+            input.value = cfg.display(it);
+            if (hidden) hidden.value = it.id;
+            close();
+            // 清除该行/字段的错误态
+            const fr = root.closest('.form-row');
+            if (fr) fr.classList.remove('has-error');
+            if (typeof onSelect === 'function') onSelect(it);
+        }
+        function highlight(n) {
+            const opts = menu.querySelectorAll('.ta-item');
+            opts.forEach(o => o.classList.remove('active'));
+            if (n >= 0 && opts[n]) {
+                opts[n].classList.add('active');
+                opts[n].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        input.addEventListener('input', () => {
+            if (hidden) hidden.value = ''; // 改动输入即视为未确认选择
+            render(input.value);
+        });
+        input.addEventListener('focus', () => { render(input.value); });
+        input.addEventListener('keydown', e => {
+            if (!root.classList.contains('open')) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlight(activeIdx); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlight(activeIdx); }
+            else if (e.key === 'Enter') { if (activeIdx >= 0) { e.preventDefault(); pick(activeIdx); } }
+            else if (e.key === 'Escape') { close(); }
+        });
+        input.addEventListener('blur', () => { setTimeout(close, 120); });
+
+        return {
+            getId: () => (hidden ? hidden.value : ''),
+            getText: () => input.value,
+            clear: () => { input.value = ''; if (hidden) hidden.value = ''; }
+        };
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ===== 装配基本信息区的 dept / location =====
+    document.querySelectorAll('.form-card .typeahead').forEach(el => attachTypeahead(el));
+
+    // ===== 第二步：明细行 =====
+    let rowCounter = 0;
+    const tbody = document.getElementById('items-body');
+
+    function addRow() {
+        rowCounter += 1;
+        const idx = rowCounter;
+        const tr = document.createElement('tr');
+        tr.className = 'item-row';
+        tr.innerHTML =
+            '<td>' +
+              '<div class="typeahead" data-source="skus" data-target="sku_id_' + idx + '">' +
+                '<input type="text" class="ta-input" placeholder="编码或名称搜索…" aria-label="申请物品搜索" ' +
+                       'role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off">' +
+                '<input type="hidden" name="sku_id_' + idx + '" id="sku_id_' + idx + '">' +
+                '<div class="ta-menu" role="listbox" aria-label="物品候选"></div>' +
+              '</div>' +
+            '</td>' +
+            '<td><input type="text" class="ro-cell mono" id="sku-' + idx + '-code" readonly tabindex="-1" aria-label="物品编码"></td>' +
+            '<td><input type="text" class="ro-cell" id="sku-' + idx + '-unit" readonly tabindex="-1" aria-label="单位"></td>' +
+            '<td><input type="text" class="ro-cell" id="sku-' + idx + '-spec" readonly tabindex="-1" aria-label="规格"></td>' +
+            '<td><input type="text" class="ro-cell mono onhand-cell" id="sku-' + idx + '-onhand" readonly tabindex="-1" aria-label="现库存"></td>' +
+            '<td><input type="number" class="qty-input" name="quantity_' + idx + '" min="1" step="1" data-onhand="" aria-label="领用数量"></td>' +
+            '<td style="text-align:center;"><button type="button" class="del" aria-label="删除本行">×</button></td>';
+        tbody.appendChild(tr);
+
+        const taRoot = tr.querySelector('.typeahead');
+        attachTypeahead(taRoot, it => fillSku(idx, it));
+
+        const qty = tr.querySelector('.qty-input');
+        qty.addEventListener('input', () => { checkQty(qty); recalc(); });
+
+        tr.querySelector('.del').addEventListener('click', () => removeRow(tr));
+        recalc();
+        return tr;
+    }
+
+    async function fillSku(idx, it) {
+        // 优先用本地注入数据；缺字段时回退到 /api/sku-info
+        let info = it;
+        const need = (info.on_hand === undefined || info.unit === undefined);
+        if (need) {
+            try {
+                const r = await fetch('/api/sku-info?id=' + encodeURIComponent(it.id));
+                if (r.ok) info = await r.json();
+            } catch (e) { /* 离线/原型环境忽略 */ }
+        }
+        const set = (sfx, v) => { const el = document.getElementById('sku-' + idx + '-' + sfx); if (el) el.value = (v === undefined || v === null) ? '' : v; };
+        set('code', info.code);
+        set('unit', info.unit);
+        set('spec', info.spec);
+        set('onhand', info.on_hand);
+        const qty = document.querySelector('input[name="quantity_' + idx + '"]');
+        if (qty) { qty.dataset.onhand = (info.on_hand === undefined || info.on_hand === null) ? '' : info.on_hand; checkQty(qty); }
+    }
+
+    function checkQty(qty) {
+        const oh = qty.dataset.onhand;
+        const v = parseInt(qty.value, 10) || 0;
+        qty.classList.toggle('over', oh !== '' && v > parseInt(oh, 10));
+    }
+
+    function removeRow(tr) {
+        if (tbody.querySelectorAll('.item-row').length <= 1) {
+            window.showToast('warn', '至少保留 1 行明细');
+            return;
+        }
+        tr.remove();
+        recalc();
+    }
+
+    function recalc() {
+        const rows = tbody.querySelectorAll('.item-row');
+        document.getElementById('stat-rows').textContent = rows.length;
+        document.getElementById('meta-detail').textContent =
+            '已添加 ' + rows.length + ' 行 · 选物品后自动填编码 / 单位 / 规格 / 现库存';
+        let total = 0;
+        tbody.querySelectorAll('.qty-input').forEach(i => { total += parseInt(i.value, 10) || 0; });
+        document.getElementById('stat-total').textContent = total;
+    }
+
+    document.getElementById('add-row-btn').addEventListener('click', addRow);
+
+    // ===== 步骤条高亮：根据滚动位置点亮对应步骤 =====
+    const cards = document.querySelectorAll('.req-b .form-card');
+    const indicators = [
+        document.getElementById('step-ind-1'),
+        document.getElementById('step-ind-2'),
+        document.getElementById('step-ind-3')
+    ];
+    function syncStep() {
+        let cur = 0;
+        cards.forEach((c, i) => { if (c.getBoundingClientRect().top < window.innerHeight * 0.4) cur = i; });
+        indicators.forEach((ind, i) => { if (ind) ind.classList.toggle('active', i === cur); });
+    }
+    window.addEventListener('scroll', syncStep, { passive: true });
+
+    // ===== 重置 =====
+    document.getElementById('reset-btn').addEventListener('click', () => {
+        document.getElementById('req-form').reset();
+        document.querySelectorAll('.req-b .typeahead input[type="hidden"]').forEach(h => h.value = '');
+        document.querySelectorAll('.req-b .has-error').forEach(r => r.classList.remove('has-error'));
+        tbody.innerHTML = '';
+        rowCounter = 0;
+        document.getElementById('apply-date').value = {{ today | tojson }};
+        addRow();
+        window.showToast('success', '已重置表单');
+    });
+
+    // ===== 提交（原型：不落库）=====
+    document.getElementById('req-form').addEventListener('submit', e => {
+        e.preventDefault();
+
+        // 即时校验关键必填项
+        let ok = true;
+        const setErr = (rowId, bad) => {
+            const r = document.getElementById(rowId);
+            if (r) r.classList.toggle('has-error', bad);
+            if (bad) ok = false;
+        };
+        setErr('row-applicant', !document.getElementById('applicant').value.trim());
+        setErr('row-dept', !document.getElementById('dept_id').value);
+        setErr('row-loc', !document.getElementById('location_id').value);
+        setErr('row-date', !document.getElementById('apply-date').value);
+        setErr('row-cat', !document.getElementById('category').value);
+
+        // 收集明细
+        const lines = [];
+        tbody.querySelectorAll('.item-row').forEach(tr => {
+            const skuHidden = tr.querySelector('input[type="hidden"][name^="sku_id_"]');
+            const qty = tr.querySelector('.qty-input');
+            const skuId = skuHidden ? skuHidden.value : '';
+            const quantity = qty ? (parseInt(qty.value, 10) || 0) : 0;
+            if (skuId && quantity > 0) {
+                const s = skuById[String(skuId)] || {};
+                lines.push({ sku_id: skuId, code: s.code, name: s.name, unit: s.unit, quantity: quantity });
+            }
+        });
+
+        if (!ok) {
+            window.showToast('error', '请先补全标红的必填项');
+            const firstErr = document.querySelector('.req-b .has-error');
+            if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        if (!lines.length) {
+            window.showToast('error', '请至少添加一行有效的领用物品和数量');
+            return;
+        }
+
+        const payload = {
+            applicant: document.getElementById('applicant').value.trim(),
+            dept_id: document.getElementById('dept_id').value,
+            dept_text: document.getElementById('dept-input').value,
+            location_id: document.getElementById('location_id').value,
+            location_text: document.getElementById('loc-input').value,
+            apply_date: document.getElementById('apply-date').value,
+            category_id: document.getElementById('category').value,
+            note: document.getElementById('note').value.trim(),
+            lines: lines
+        };
+        console.log('[领用申请单 原型] 收集到的提交数据：', payload);
+        window.showToast('success', '这是 UI 原型，提交落库将在下一步接入');
+    });
+
+    // 初始化：一行明细 + 步骤同步
+    addRow();
+    syncStep();
+})();
+</script>
+
+{% endblock %}

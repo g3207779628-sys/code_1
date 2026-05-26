@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v13 设计方案对比 · 新建单据表单 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { background: var(--bg-soft); font-size: 13px; padding: 32px 40px; color: var(--ink); }
+.page { max-width: 1280px; margin: 0 auto; }
+.head-card {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); padding: 26px 32px; margin-bottom: 22px;
+}
+.head-card .pre {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--accent-deep); letter-spacing: 5px; margin-bottom: 8px;
+}
+.head-card h1 {
+    font-size: 26px; font-weight: 800;
+    letter-spacing: 4px; margin-bottom: 12px;
+}
+.head-card h1 .accent { color: var(--accent-deep); }
+.head-card .lead {
+    font-size: 13px; color: var(--ink-quiet);
+    line-height: 1.8; max-width: 880px;
+}
+.head-card .lead strong { color: var(--ink); font-weight: 600; }
+.head-card code {
+    background: var(--bg-soft); padding: 1px 6px;
+    border-radius: 3px; font-size: 12px;
+    color: var(--accent-deep);
+}
+
+.cards {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 18px; margin-bottom: 22px;
+}
+.scheme-card {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: all 0.15s;
+}
+.scheme-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(255,69,0,0.1);
+}
+.scheme-card .thumb {
+    height: 180px;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 18px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+.scheme-card .thumb-title {
+    font-size: 9px; font-weight: 700; letter-spacing: 1px;
+    color: var(--ink-quiet);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+/* P1 缩略：步骤条 + 多卡 */
+.thumb-p1 .step-mini {
+    display: flex; align-items: center; gap: 4px;
+    margin-bottom: 8px;
+}
+.thumb-p1 .step-mini .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    font-size: 7px; color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+}
+.thumb-p1 .step-mini .dot.active { background: var(--accent); color: #FFF; }
+.thumb-p1 .step-mini .line { flex: 1; height: 2px; background: var(--line); }
+.thumb-p1 .card-mini {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 4px; padding: 5px 8px; margin-bottom: 4px;
+    border-left: 3px solid var(--accent);
+    font-size: 10px; color: var(--ink-soft);
+}
+/* P2 缩略：单卡紧凑 */
+.thumb-p2 .single-card {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 4px; padding: 8px;
+    height: 100%;
+}
+.thumb-p2 .single-card .row {
+    display: flex; gap: 4px; margin-bottom: 4px;
+}
+.thumb-p2 .single-card .label {
+    width: 38%; font-size: 9px; color: var(--ink-quiet);
+}
+.thumb-p2 .single-card .val {
+    flex: 1; height: 12px; background: var(--bg-input);
+    border-radius: 2px;
+}
+/* P3 缩略：左右双栏 */
+.thumb-p3 .split {
+    display: grid; grid-template-columns: 2fr 1fr;
+    gap: 6px; height: 100%;
+}
+.thumb-p3 .split .left, .thumb-p3 .split .right {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 4px; padding: 6px;
+}
+.thumb-p3 .split .right { border-left: 3px solid var(--accent); }
+.thumb-p3 .row {
+    height: 8px; background: var(--bg-input); border-radius: 2px;
+    margin-bottom: 4px;
+}
+
+.scheme-card .body {
+    padding: 16px 20px 18px;
+    display: flex; flex-direction: column;
+    flex: 1;
+}
+.scheme-card .tag {
+    display: inline-block;
+    font-size: 10px; letter-spacing: 2px;
+    padding: 2px 8px; background: var(--accent-soft);
+    color: var(--accent-deep); border-radius: 2px;
+    margin-bottom: 8px; font-weight: 600;
+    align-self: flex-start;
+}
+.scheme-card h3 {
+    font-size: 15px; font-weight: 700;
+    letter-spacing: 1px; margin-bottom: 6px;
+}
+.scheme-card .desc {
+    font-size: 12px; color: var(--ink-quiet);
+    line-height: 1.7; margin-bottom: 12px;
+    min-height: 58px;
+}
+.scheme-card .forms {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-soft);
+    margin-top: auto;
+}
+.scheme-card .forms a {
+    display: flex; align-items: center; justify-content: center;
+    padding: 6px 8px; border-radius: 3px;
+    font-size: 11px; font-weight: 500;
+    color: var(--ink-soft); background: var(--bg-input);
+    text-decoration: none; transition: all 0.15s;
+    border: 1px solid var(--line);
+}
+.scheme-card .forms a:hover {
+    background: var(--accent);
+    color: #FFF; border-color: var(--accent);
+}
+
+.compare {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); padding: 22px 26px;
+    margin-bottom: 22px;
+}
+.compare h2 {
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 4px; color: var(--ink-quiet);
+    margin-bottom: 14px; text-transform: uppercase;
+}
+table.tbl {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+}
+table.tbl th, table.tbl td {
+    padding: 9px 12px; text-align: left;
+    border-bottom: 1px solid var(--line-soft);
+}
+table.tbl th {
+    background: var(--bg-input);
+    color: var(--ink-soft); font-weight: 600;
+    font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase;
+}
+table.tbl td.center { text-align: center; }
+table.tbl td.score {
+    font-family: var(--font-mono);
+    color: var(--accent-deep); letter-spacing: 1px;
+}
+table.tbl tr.best { background: var(--accent-soft); }
+table.tbl tr.best td { font-weight: 600; }
+
+.rec {
+    background: var(--ok-bg);
+    border-left: 3px solid var(--ok);
+    padding: 14px 20px; margin-top: 16px;
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+.rec .pre {
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--ok); font-weight: 700; margin-bottom: 6px;
+}
+.rec .text { font-size: 13px; line-height: 1.7; }
+.rec .text strong { color: var(--accent-deep); }
+
+.foot {
+    margin-top: 28px; text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--ink-faded);
+}
+.foot a { color: var(--ink-quiet); text-decoration: none; }
+.foot a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="head-card">
+        <div class="pre">// V13 · NEW DOCUMENT FORMS · 2026-05</div>
+        <h1><span class="accent">v13</span> 新建单据表单 · 设计方案对比</h1>
+        <div class="lead">
+            <strong>背景</strong>：现在系统的「新建入库单/出库单/调拨单/盘点单」用的是 v6 picker 路由 + 简陋表单，字段散乱、没有步骤提示、明细行难定位。用户要求参照
+            <code>ui_white_b_inbound.html</code> 的设计（步骤条 + 多卡分组 + sticky 底部）重做这 4 个表单页。
+            <strong>本次产出 3 个候选方案</strong>，每个方案都包含 4 个表单（入库 / 出库 / 调拨 / 盘点），点击下方任一链接查看 mockup。
+            <strong>注</strong>：盘点单是新流程，目前系统是单按钮"新建"快速 SQL 插入，本次改成跳转独立页面让用户填盘点主题/范围/备注，对齐其他 3 类。
+        </div>
+    </div>
+
+    <div class="cards">
+
+        <!-- 方案 P1 完整向导 -->
+        <div class="scheme-card">
+            <div class="thumb thumb-p1">
+                <div class="thumb-title">P1 · 步骤条 + 多卡分组</div>
+                <div class="step-mini">
+                    <div class="dot active">1</div><div class="line"></div>
+                    <div class="dot">2</div><div class="line"></div>
+                    <div class="dot">3</div><div class="line"></div>
+                    <div class="dot">4</div>
+                </div>
+                <div class="card-mini">▌ 基本信息（日期/供应商/仓库）</div>
+                <div class="card-mini">▌ 明细行（商品/库位/数量）</div>
+                <div class="card-mini">▌ 附件（拖拽上传）</div>
+                <div class="card-mini" style="border-color:var(--accent); color:var(--accent); font-weight:600;">▌ 提交审批 →</div>
+            </div>
+            <div class="body">
+                <span class="tag">P1 · 完整向导</span>
+                <h3>步骤条 + 多卡分组 + sticky 底</h3>
+                <div class="desc">
+                    完全沿用 <code>ui_white_b_inbound.html</code> 的设计：顶部 4 步骤条、3-4 张 form-card 分组、底部 sticky 操作栏。最严谨，最适合首次接触系统的新员工。工作量大但视觉冲击力强。
+                </div>
+                <div class="forms">
+                    <a href="ui_v13_p1_inbound.html">入库 →</a>
+                    <a href="ui_v13_p1_outbound.html">出库 →</a>
+                    <a href="ui_v13_p1_transfer.html">调拨 →</a>
+                    <a href="ui_v13_p1_stocktake.html">盘点 →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案 P2 紧凑单卡 -->
+        <div class="scheme-card">
+            <div class="thumb thumb-p2">
+                <div class="thumb-title">P2 · 单卡紧凑工业</div>
+                <div class="single-card">
+                    <div class="row"><div class="label">日期</div><div class="val"></div></div>
+                    <div class="row"><div class="label">供应商</div><div class="val"></div></div>
+                    <div class="row"><div class="label">仓库</div><div class="val"></div></div>
+                    <div class="row"><div class="label">明细</div><div class="val" style="height:24px;"></div></div>
+                    <div class="row"><div class="label">附件</div><div class="val"></div></div>
+                    <div class="row"><div class="label">备注</div><div class="val"></div></div>
+                </div>
+            </div>
+            <div class="body">
+                <span class="tag">P2 · 紧凑工业</span>
+                <h3>单 dense-card · 字段顺序流</h3>
+                <div class="desc">
+                    所有字段 + 明细 + 附件挤在一张 dense-card 内，垂直流，无步骤条。13px 紧凑字号、表头 10px uppercase、line-table 行高 32px。最高信息密度，老员工录单效率最高。
+                </div>
+                <div class="forms">
+                    <a href="ui_v13_p2_inbound.html">入库 →</a>
+                    <a href="ui_v13_p2_outbound.html">出库 →</a>
+                    <a href="ui_v13_p2_transfer.html">调拨 →</a>
+                    <a href="ui_v13_p2_stocktake.html">盘点 →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案 P3 左右双栏 -->
+        <div class="scheme-card">
+            <div class="thumb thumb-p3">
+                <div class="thumb-title">P3 · 左右双栏 · 明细优先</div>
+                <div class="split">
+                    <div class="left">
+                        <div class="row"></div>
+                        <div class="row" style="height:24px;"></div>
+                        <div class="row"></div>
+                        <div class="row"></div>
+                    </div>
+                    <div class="right">
+                        <div class="row" style="height:6px;"></div>
+                        <div class="row" style="height:6px;"></div>
+                        <div class="row" style="height:6px;"></div>
+                        <div class="row" style="height:6px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="body">
+                <span class="tag">P3 · 左右双栏</span>
+                <h3>明细占左 2/3 · 属性栏粘右侧</h3>
+                <div class="desc">
+                    左 2/3 是大幅明细 line-table（更多行可见）+ 上传区。右 1/3 是 sticky 属性面板（日期/供应商/仓库/备注），滚动时始终可见。最适合多商品频繁切换的批量录入。
+                </div>
+                <div class="forms">
+                    <a href="ui_v13_p3_inbound.html">入库 →</a>
+                    <a href="ui_v13_p3_outbound.html">出库 →</a>
+                    <a href="ui_v13_p3_transfer.html">调拨 →</a>
+                    <a href="ui_v13_p3_stocktake.html">盘点 →</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="compare">
+        <h2>// 4 维度对比</h2>
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>维度</th>
+                    <th class="center">P1 完整向导</th>
+                    <th class="center">P2 紧凑工业</th>
+                    <th class="center">P3 左右双栏</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>新员工学习曲线</td>
+                    <td class="center score">★★★★★</td>
+                    <td class="center score">★★</td>
+                    <td class="center score">★★★</td>
+                </tr>
+                <tr class="best">
+                    <td>老员工录单效率</td>
+                    <td class="center score">★★★</td>
+                    <td class="center score">★★★★★</td>
+                    <td class="center score">★★★★</td>
+                </tr>
+                <tr>
+                    <td>多商品行场景</td>
+                    <td class="center score">★★★</td>
+                    <td class="center score">★★★</td>
+                    <td class="center score">★★★★★</td>
+                </tr>
+                <tr>
+                    <td>实装工作量</td>
+                    <td class="center score">★★★★（最大）</td>
+                    <td class="center score">★★（最小）</td>
+                    <td class="center score">★★★</td>
+                </tr>
+                <tr>
+                    <td>视觉冲击力 / 仪式感</td>
+                    <td class="center score">★★★★★</td>
+                    <td class="center score">★★</td>
+                    <td class="center score">★★★</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="rec">
+            <div class="pre">// RECOMMENDED</div>
+            <div class="text">
+                推荐 <strong>P1 完整向导</strong>。理由：① 用户明确说"参照 ui_white_b_inbound.html"，P1 是 B 风格的完整继承；② 4 步骤条让新员工看一眼就知道流程到哪一步，符合"给非技术部门日常使用"的定位；③ 多卡分组让基本信息 / 明细 / 附件视觉上清晰隔离，比扁平 P2 友好。<br>
+                <strong>如果团队都是熟手</strong>录入量大 → 选 P2；<strong>如果常有 10+ 行明细</strong> → 选 P3。
+            </div>
+        </div>
+    </div>
+
+    <div class="foot">
+        KINGSOFT-WMS · V13 NEW DOC FORMS · BUILD 20260521 · <a href="ui_v9_index.html">← v9 欢迎页方案</a>
+    </div>
+
+</div>
+
+</body>
+</html>

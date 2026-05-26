@@ -11,16 +11,14 @@
 <div class="stat-grid" style="margin-bottom:24px;">
     <div class="stat-card"><div class="num">{{ low_stock|length }}</div><div class="label">待补货 SKU</div></div>
     <div class="stat-card"><div class="num">{{ recent_inbound|length }}</div><div class="label">近期采购单</div></div>
-    <div class="stat-card"><div class="num">{{ suppliers|length }}</div><div class="label">合作供应商</div></div>
     <div class="stat-card"><div class="num">{{ stats.draft_inbound }}</div><div class="label">草稿入库单</div></div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-    <div class="card">
-        <div class="card-header">待补货 SKU <a href="{{ url_for('inbound_new') }}">+ 新建采购单</a></div>
+<div class="card">
+    <div class="card-header">待补货 SKU <a href="{{ url_for('inbound_new') }}">+ 新建采购单</a></div>
         <div class="card-body" style="padding:0;">
             <table>
-                <thead><tr><th>SKU</th><th>商品</th><th class="text-right">当前</th><th class="text-right">建采</th></tr></thead>
+                <thead><tr><th>物品</th><th>名称</th><th class="text-right">当前</th><th class="text-right">建采</th></tr></thead>
                 <tbody>
                     {% for l in low_stock %}
                     <tr>
@@ -37,43 +35,21 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">供应商质量评分</div>
-        <div class="card-body" style="padding:0;">
-            <table>
-                <thead><tr><th>供应商</th><th>联系人</th><th class="text-right">评分</th></tr></thead>
-                <tbody>
-                    {% for s in suppliers %}
-                    <tr>
-                        <td>{{ s.name }}</td>
-                        <td class="text-secondary">{{ s.contact or '-' }}</td>
-                        <td class="mono text-right fw-bold">{{ s.quality_score }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="3" class="empty">暂无供应商</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 <div class="card">
     <div class="card-header">近期采购单 <a href="{{ url_for('inbound_list') }}">全部 →</a></div>
     <div class="card-body" style="padding:0;">
         <table>
-            <thead><tr><th>单号</th><th>供应商</th><th>状态</th><th class="text-right">金额</th><th>时间</th></tr></thead>
+            <thead><tr><th>单号</th><th>入库员工</th><th>状态</th><th>时间</th></tr></thead>
             <tbody>
                 {% for r in recent_inbound %}
                 <tr>
                     <td class="mono"><a href="{{ url_for('inbound_detail', order_no=r.order_no) }}">{{ r.order_no }}</a></td>
-                    <td>{{ r.supplier or '-' }}</td>
+                    <td>{{ r.operator or '-' }}</td>
                     <td><span class="tag">{{ {'draft':'草稿','approved':'已审核','rejected':'已驳回'}.get(r.status, r.status) }}</span></td>
-                    <td class="mono text-right">¥{{ '%.2f'|format(r.amount or 0) }}</td>
                     <td class="mono text-secondary" style="font-size:12px;">{{ r.created_at }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="empty">暂无采购单</td></tr>
+                <tr><td colspan="4" class="empty">暂无采购单</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v9 方案 B · 已登录通用首页 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { background: var(--bg-soft); font-size: 13px; color: var(--ink); }
+.layout { display: flex; min-height: 100vh; }
+
+/* Sider */
+.sider {
+    width: 200px; background: var(--bg-card);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; flex-shrink: 0;
+}
+.sider .brand {
+    padding: 0 22px; height: 56px;
+    display: flex; align-items: center;
+    font-size: 15px; font-weight: 700; letter-spacing: 3px;
+    border-bottom: 1px solid var(--line-soft);
+}
+.sider .brand .accent { color: var(--accent-deep); }
+.sider .nav { flex: 1; padding: 12px 0; }
+.sider .nav-item {
+    display: flex; justify-content: space-between;
+    padding: 9px 18px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.15s;
+}
+.sider .nav-item:hover { background: var(--bg-input); }
+.sider .nav-item.active {
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    border-left-color: var(--accent);
+    font-weight: 600;
+}
+.sider .nav-item .arrow {
+    font-family: var(--font-mono);
+    color: var(--ink-faded); font-size: 12px;
+}
+.sider .foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--line-soft);
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--ink-faded);
+    letter-spacing: 2px;
+}
+
+.main {
+    flex: 1; display: flex; flex-direction: column;
+    background:
+        radial-gradient(circle at 30% 30%, var(--accent-soft) 0%, var(--bg-base) 55%),
+        radial-gradient(circle at 75% 75%, var(--bg-soft) 0%, var(--bg-base) 55%);
+}
+.main .head {
+    height: 52px; padding: 0 28px;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-card);
+}
+.main .head .crumb {
+    font-size: 12px; color: var(--ink-quiet);
+    letter-spacing: 1px;
+}
+.main .head .crumb .now { color: var(--ink-soft); font-weight: 500; }
+.main .head .user { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.main .head .user .avatar {
+    width: 28px; height: 28px;
+    background: var(--accent-soft); color: var(--accent-deep);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px;
+}
+.main .head .user .name { color: var(--ink); font-weight: 500; }
+.main .head .user .role { color: var(--ink-quiet); font-size: 11px; }
+.main .head .user a {
+    margin-left: 10px;
+    font-size: 11px;
+    color: var(--ink-quiet); text-decoration: none;
+}
+.main .head .user a:hover { color: var(--accent); }
+
+.content {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px;
+}
+
+.v9-hero {
+    display: flex; flex-direction: column; align-items: center;
+    margin-bottom: 36px;
+}
+.v9-hero-pre {
+    font-family: var(--font-mono);
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 8px;
+    color: var(--accent-deep);
+    margin-bottom: 14px;
+}
+.v9-hero-main {
+    font-size: 110px; font-weight: 800;
+    letter-spacing: 14px;
+    line-height: 1;
+    margin-bottom: 14px;
+}
+.v9-hero-main .fill { color: var(--accent-deep); }
+.v9-hero-main .stroke {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--accent-deep);
+}
+.v9-hero-sub {
+    font-size: 22px; font-weight: 300;
+    letter-spacing: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+}
+.v9-hero-meta {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--ink-faded);
+    letter-spacing: 4px;
+}
+
+/* 用户欢迎卡 */
+.user-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 18px 26px;
+    display: flex; align-items: center; gap: 18px;
+    min-width: 520px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 26px;
+}
+.user-card .ava {
+    width: 44px; height: 44px;
+    background: var(--accent-soft); color: var(--accent-deep);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700;
+}
+.user-card .info { flex: 1; }
+.user-card .info .greet {
+    font-size: 12px; color: var(--ink-quiet);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+.user-card .info .name {
+    font-size: 16px; font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+}
+.user-card .info .sub {
+    font-size: 11px; color: var(--ink-quiet);
+}
+.user-card .enter {
+    background: var(--accent);
+    color: #FFF;
+    border-radius: var(--r-sm);
+    padding: 9px 18px;
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 2px;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+.user-card .enter:hover { background: var(--accent-deep); }
+
+/* 4 个快捷入口 */
+.shortcut-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    max-width: 720px;
+    width: 100%;
+}
+.shortcut {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 16px 14px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--ink);
+    transition: all 0.15s;
+    display: block;
+}
+.shortcut:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-1px);
+}
+.shortcut .icon {
+    width: 32px; height: 32px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    border-radius: var(--r-sm);
+    margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    font-family: var(--font-mono);
+}
+.shortcut .label {
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 1px;
+}
+.shortcut .hint {
+    font-size: 10px;
+    color: var(--ink-quiet);
+    margin-top: 2px;
+    letter-spacing: 1px;
+}
+
+.demo-tag {
+    position: fixed; top: 12px; right: 12px;
+    background: var(--accent-deep); color: #FFF;
+    font-family: var(--font-mono);
+    font-size: 10px; letter-spacing: 2px;
+    padding: 4px 10px; border-radius: 2px;
+    z-index: 999;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-tag">MOCKUP · B · /welcome (LOGGED IN)</div>
+
+<div class="layout">
+
+    <aside class="sider">
+        <div class="brand">金山<span class="accent">仓储</span></div>
+        <div class="nav">
+            <div class="nav-item active">日常使用 <span class="arrow">▸</span></div>
+            <div class="nav-item">日常操作 <span class="arrow">▸</span></div>
+            <div class="nav-item">查询分析 <span class="arrow">▸</span></div>
+            <div class="nav-item">数据维护 <span class="arrow">▸</span></div>
+            <div class="nav-item">系统 <span class="arrow">▸</span></div>
+        </div>
+        <div class="foot">KINGSOFT-WMS V9</div>
+    </aside>
+
+    <main class="main">
+        <div class="head">
+            <div class="crumb">/ <span class="now">首页</span></div>
+            <div class="user">
+                <div class="avatar">张</div>
+                <span class="name">张三</span>
+                <span class="role">· 仓库管理员</span>
+                <a href="#">退出</a>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="v9-hero">
+                <div class="v9-hero-pre">KINGSOFT WAREHOUSE</div>
+                <div class="v9-hero-main">
+                    <span class="fill">WEL</span><span class="stroke">COME</span>
+                </div>
+                <div class="v9-hero-sub">金山仓库管理</div>
+            </div>
+
+            <div class="user-card">
+                <div class="ava">张</div>
+                <div class="info">
+                    <div class="greet">早上好</div>
+                    <div class="name">张三</div>
+                    <div class="sub">仓库管理员 · 加入于 2024-08-15 · 最近登录 5 分钟前</div>
+                </div>
+                <a href="ui_white_c_dashboard.html" class="enter">进入工作台 →</a>
+            </div>
+
+            <div class="shortcut-row">
+                <a class="shortcut" href="ui_white_c_inbound_form.html">
+                    <div class="icon">+</div>
+                    <div class="label">新建入库</div>
+                    <div class="hint">today 0 单</div>
+                </a>
+                <a class="shortcut" href="#">
+                    <div class="icon">→</div>
+                    <div class="label">新建出库</div>
+                    <div class="hint">today 2 单</div>
+                </a>
+                <a class="shortcut" href="ui_white_c_inventory.html">
+                    <div class="icon">≡</div>
+                    <div class="label">库存查询</div>
+                    <div class="hint">9 库位</div>
+                </a>
+                <a class="shortcut" href="ui_white_c_stock_log.html">
+                    <div class="icon">~</div>
+                    <div class="label">库存流水</div>
+                    <div class="hint">today 14 条</div>
+                </a>
+            </div>
+        </div>
+    </main>
+
+</div>
+
+</body>
+</html>

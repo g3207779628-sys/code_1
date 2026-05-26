@@ -19,7 +19,7 @@
     <div class="card-header">待审报损单 · {{ pending_damage|length }} <a href="{{ url_for('damage_list') }}">全部审批 →</a></div>
     <div class="card-body" style="padding:0;">
         <table>
-            <thead><tr><th>SKU</th><th>批次</th><th>库位</th><th>原因</th><th class="text-right">数量</th><th>申请人</th><th></th></tr></thead>
+            <thead><tr><th>物品</th><th>批次</th><th>库位</th><th>原因</th><th class="text-right">数量</th><th>申请人</th><th></th></tr></thead>
             <tbody>
                 {% for d in pending_damage %}
                 <tr>
@@ -43,7 +43,7 @@
     <div class="card-header">库存预警（低于安全库存） <a href="{{ url_for('inventory_list') }}">库存详情 →</a></div>
     <div class="card-body" style="padding:0;">
         <table>
-            <thead><tr><th>SKU</th><th>商品</th><th class="text-right">当前</th><th class="text-right">安全</th><th class="text-right">缺口</th></tr></thead>
+            <thead><tr><th>物品</th><th>物品</th><th class="text-right">当前</th><th class="text-right">安全</th><th class="text-right">缺口</th></tr></thead>
             <tbody>
                 {% for l in low_stock %}
                 <tr>

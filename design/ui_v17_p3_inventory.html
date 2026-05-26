@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v17 P3 · 库存查询 · Tab 分组 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { font-size: 13px; background: var(--bg-soft); padding: 24px 32px; }
+.page { max-width: 1280px; margin: 0 auto; }
+.back { display: inline-block; padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; text-decoration: none; color: var(--ink); font-size: 12px; margin-bottom: 14px; }
+.back:hover { border-color: var(--accent); color: var(--accent); }
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
+.page-head .page-title { font-size: 20px; font-weight: 700; }
+.page-head .page-sub { font-size: 12px; color: var(--ink-quiet); margin-left: 8px; }
+.tag-demo { display: inline-block; font-size: 10px; letter-spacing: 2px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent-deep); border-radius: 2px; font-weight: 600; margin-bottom: 6px; }
+
+.filter-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; margin-bottom: 14px; }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); background: var(--bg-soft); }
+.tab {
+    padding: 11px 22px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink-quiet);
+    border-right: 1px solid var(--line);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+}
+.tab:hover { color: var(--accent); }
+.tab.active {
+    background: var(--bg-card);
+    color: var(--accent-deep);
+    border-bottom-color: var(--accent);
+    font-weight: 700;
+}
+.tab .count {
+    margin-left: 4px;
+    background: var(--accent);
+    color: #FFF;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.filter-body { padding: 16px 18px; }
+.filter-grid { display: grid; gap: 12px; align-items: end; }
+.tab-pos .filter-grid { grid-template-columns: 1fr 1fr 1fr 1fr 90px; }
+.tab-dept .filter-grid { grid-template-columns: 1fr 1fr 1fr 90px; }
+.tab-status .filter-grid { grid-template-columns: 1fr 1fr 1fr 90px; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; color: var(--ink-quiet); }
+.field input, .field .picker { padding: 7px 10px; font-size: 12px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; height: 34px; box-sizing: border-box; }
+.field .picker { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.field .picker.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); }
+.field .picker .ar { color: var(--accent); font-size: 10px; }
+.btn-apply { background: var(--accent); color: #FFF; border: 1px solid var(--accent); border-radius: 4px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; height: 34px; }
+.toggle-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; height: 34px; }
+.toggle-mini { width: 28px; height: 16px; background: var(--accent); border-radius: 16px; position: relative; }
+.toggle-mini::after { content: ''; position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; background: #FFF; border-radius: 50%; }
+
+.tab-hidden { display: none; }
+
+.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.filter-chip { background: var(--accent-soft); color: var(--accent-deep); padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.filter-chip .x { cursor: pointer; opacity: 0.6; }
+.filter-chip.from-tab { background: var(--info-bg); color: var(--info); }
+
+.summary-strip { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 18px; display: flex; gap: 28px; margin-bottom: 14px; }
+.summary-strip .stat { font-size: 11px; color: var(--ink-quiet); }
+.summary-strip .stat .num { font-size: 16px; font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; display: block; margin-top: 2px; }
+.summary-strip .stat.danger .num { color: var(--err); }
+
+.table-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.table-card table { width: 100%; border-collapse: collapse; }
+.table-card th { background: var(--bg-soft); padding: 10px 12px; font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--ink); text-align: left; border-bottom: 1px solid var(--line); }
+.table-card td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
+.tag-success { background: var(--ok-bg); color: var(--ok); padding: 1px 6px; border-radius: 2px; font-size: 11px; }
+.tag-warn { background: var(--warn-bg); color: var(--warn); padding: 1px 6px; border-radius: 2px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="page">
+<a class="back" href="ui_v17_query_index.html">← 返回 3 方案对比</a>
+
+<div class="page-head">
+    <div>
+        <span class="tag-demo">P3 · 库存查询</span>
+        <div class="page-title">库存查询</div>
+        <span class="page-sub">3 个 Tab 按维度切换筛选 · 共 36 行库存</span>
+    </div>
+</div>
+
+<div class="filter-card">
+    <div class="tabs">
+        <div class="tab active" onclick="showTab(this, 'pos')">📍 位置筛选 <span class="count">2</span></div>
+        <div class="tab" onclick="showTab(this, 'dept')">👥 部门归属 <span class="count">1</span></div>
+        <div class="tab" onclick="showTab(this, 'status')">⚙ 状态与类型</div>
+    </div>
+
+    <div class="filter-body tab-pos">
+        <div class="filter-grid">
+            <div class="field">
+                <label>仓库</label>
+                <div class="picker active"><span>金山主仓</span><span class="ar">换 →</span></div>
+            </div>
+            <div class="field">
+                <label>楼栋号</label>
+                <input type="text" placeholder="如 1 号楼" value="1 号楼">
+            </div>
+            <div class="field">
+                <label>楼层</label>
+                <input type="text" placeholder="如 2 层">
+            </div>
+            <div class="field">
+                <label>库位</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+            <button class="btn-apply">应用</button>
+        </div>
+    </div>
+
+    <div class="filter-body tab-dept tab-hidden">
+        <div class="filter-grid">
+            <div class="field">
+                <label>使用部门</label>
+                <div class="picker active"><span>市场部</span><span class="ar">换 →</span></div>
+            </div>
+            <div class="field">
+                <label>分配部门</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+            <div class="field">
+                <label>责任人</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+            <button class="btn-apply">应用</button>
+        </div>
+    </div>
+
+    <div class="filter-body tab-status tab-hidden">
+        <div class="filter-grid">
+            <div class="field">
+                <label>类型</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+            <div class="field">
+                <label>存储类型</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+            <div class="toggle-row">
+                <span class="toggle-mini"></span>
+                <span>仅看已分配</span>
+            </div>
+            <button class="btn-apply">应用</button>
+        </div>
+    </div>
+</div>
+
+<div class="active-filters">
+    <span class="filter-chip from-tab">📍 仓库: 金山主仓 <span class="x">×</span></span>
+    <span class="filter-chip from-tab">📍 楼栋: 1 号楼 <span class="x">×</span></span>
+    <span class="filter-chip">👥 使用部门: 市场部 <span class="x">×</span></span>
+</div>
+
+<div class="summary-strip">
+    <div class="stat"><span class="num">15</span> 命中库存行</div>
+    <div class="stat"><span class="num">1,234</span> 在仓总数</div>
+    <div class="stat danger"><span class="num">3</span> 低库存</div>
+    <div class="stat"><span class="num">8</span> 命中库位</div>
+</div>
+
+<div class="table-card">
+    <table>
+        <thead>
+            <tr>
+                <th>物品</th>
+                <th>楼栋·楼层·库位</th>
+                <th>使用部门</th>
+                <th>责任人</th>
+                <th>类型</th>
+                <th class="text-right">在仓</th>
+                <th>状态</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>茅台</strong></td>
+                <td><span style="color:var(--accent-deep);">1 号楼</span> · 2 层 · A-01</td>
+                <td>市场部</td>
+                <td>张经理</td>
+                <td>综合仓</td>
+                <td style="text-align:right;"><strong>128</strong></td>
+                <td><span class="tag-success">已分配</span></td>
+            </tr>
+            <tr>
+                <td><strong>五粮液</strong></td>
+                <td><span style="color:var(--accent-deep);">1 号楼</span> · 2 层 · A-02</td>
+                <td>市场部</td>
+                <td>张经理</td>
+                <td>综合仓</td>
+                <td style="text-align:right;"><strong>86</strong></td>
+                <td><span class="tag-success">已分配</span></td>
+            </tr>
+            <tr>
+                <td><strong>A4 复印纸</strong></td>
+                <td><span style="color:var(--accent-deep);">1 号楼</span> · 1 层 · B-01</td>
+                <td>市场部</td>
+                <td>王经理</td>
+                <td>办公仓</td>
+                <td style="text-align:right; color:var(--err);"><strong>15</strong></td>
+                <td><span class="tag-warn">低库存</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function showTab(tabEl, key) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tabEl.classList.add('active');
+    document.querySelectorAll('.filter-body').forEach(b => b.classList.add('tab-hidden'));
+    document.querySelector('.tab-' + key).classList.remove('tab-hidden');
+}
+</script>
+
+</div>
+</body>
+</html>

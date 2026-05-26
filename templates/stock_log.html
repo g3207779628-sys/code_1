@@ -1,56 +1,244 @@
 {% extends "base.html" %}
 {% block title %}库存流水{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">库存流水</span>{% endblock %}
 {% block content %}
+{% from "_pager.html" import pager %}
 
-<div class="card">
-    <div class="card-header">
-        <span>库存流水（最近 200 条）</span>
+<style>
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; color: var(--ink-quiet); }
+.field input, .field .picker, .field select {
+    padding: 7px 10px; font-size: 12px; background: var(--bg-input);
+    border: 1px solid var(--line-input); border-radius: 4px;
+    height: 34px; box-sizing: border-box; width: 100%;
+}
+.field .picker { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.field .picker.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); }
+.field .picker .ar { color: var(--accent); font-size: 10px; margin-left: 8px; flex-shrink: 0; }
+.field .picker .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.field .picker .lbl.empty { color: var(--ink-faded); }
+.btn-apply { background: var(--accent); color: #FFF; border: 1px solid var(--accent); border-radius: 4px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; height: 34px; }
+
+.filter-row1 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
+.more-toggle { margin-top: 12px; padding: 8px 14px; background: var(--accent-soft); border: 1px dashed var(--accent); border-radius: 4px; color: var(--accent-deep); font-size: 12px; cursor: pointer; text-align: center; font-weight: 600; }
+.advanced-grid { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.tab-link {
+    padding: 10px 18px; font-size: 14px; cursor: pointer; color: var(--ink-quiet);
+    border-bottom: 2px solid transparent; text-decoration: none;
+}
+.tab-link.active { color: var(--accent-deep); border-bottom-color: var(--accent); font-weight: 700; }
+.tab-link .count { margin-left: 4px; font-size: 10px; padding: 1px 6px; background: var(--bg-input); color: var(--ink-quiet); border-radius: 10px; }
+.tab-link.active .count { background: var(--accent); color: #FFF; }
+
+.summary-strip { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 18px; display: flex; gap: 28px; margin-bottom: 14px; flex-wrap: wrap; }
+.summary-strip .stat { font-size: 11px; color: var(--ink-quiet); }
+.summary-strip .stat .num { font-size: 16px; font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; display: block; margin-top: 2px; }
+</style>
+
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">库存流水</div>
+        <div class="page-sub">共 {{ total_count }} 条 · 显示前 500 条</div>
     </div>
-    <div class="card-body" style="padding:0;">
+</div>
+
+<div class="tabs">
+    <a class="tab-link {% if not f.event_type %}active{% endif %}" href="?">全部 <span class="count">{{ total_count }}</span></a>
+    <a class="tab-link {% if f.event_type == 'inbound' %}active{% endif %}" href="?event_type=inbound">入库 <span class="count">{{ tab_counts.get('inbound', 0) }}</span></a>
+    <a class="tab-link {% if f.event_type == 'outbound' %}active{% endif %}" href="?event_type=outbound">出库 <span class="count">{{ tab_counts.get('outbound', 0) }}</span></a>
+    <a class="tab-link {% if f.event_type == 'transfer' %}active{% endif %}" href="?event_type=transfer">调拨 <span class="count">{{ tab_counts.get('transfer', 0) }}</span></a>
+    <a class="tab-link {% if f.event_type == 'damage' %}active{% endif %}" href="?event_type=damage">报损 <span class="count">{{ tab_counts.get('damage', 0) }}</span></a>
+    <a class="tab-link {% if f.event_type == 'adjust' %}active{% endif %}" href="?event_type=adjust">盘点 <span class="count">{{ tab_counts.get('adjust', 0) }}</span></a>
+</div>
+
+<form method="get" action="{{ url_for('stock_log_view') }}" id="query-form">
+<input type="hidden" name="event_type" value="{{ f.event_type }}">
+
+<div class="form-card" style="margin-bottom:14px;">
+    <div class="head"><span class="accent-bar"></span><h3>筛选条件</h3><span class="meta">常用 5 + 高级 8</span></div>
+    <div class="body">
+        <div class="filter-row1">
+            <div class="field">
+                <label>搜索（单号 / 备注）</label>
+                <input type="text" name="q" value="{{ f.q }}">
+            </div>
+            <div class="field">
+                <label>物品</label>
+                <div class="picker {% if f.sku_id %}active{% endif %}" onclick="openPicker('sku', 'sku_id')">
+                    <input type="hidden" name="sku_id" id="sku_id" value="{{ f.sku_id }}">
+                    <span class="lbl {% if not f.sku_id %}empty{% endif %}" id="sku_id-label">{{ '已选' if f.sku_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>仓库</label>
+                <div class="picker {% if f.warehouse_id %}active{% endif %}" onclick="openPicker('warehouse', 'warehouse_id')">
+                    <input type="hidden" name="warehouse_id" id="warehouse_id" value="{{ f.warehouse_id }}">
+                    <span class="lbl {% if not f.warehouse_id %}empty{% endif %}" id="warehouse_id-label">{{ '已选' if f.warehouse_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>起始日期</label>
+                <input type="date" name="date_from" value="{{ f.date_from }}">
+            </div>
+            <div class="field">
+                <label>终止日期</label>
+                <input type="date" name="date_to" value="{{ f.date_to }}">
+            </div>
+            <button class="btn-apply" type="submit">应用</button>
+            <a class="btn btn-secondary" href="{{ url_for('stock_log_view') }}" style="height:34px;">重置</a>
+        </div>
+
+        <div class="more-toggle" onclick="toggleAdvanced(this)">↑ 收起高级筛选 (8 项)</div>
+
+        <div class="advanced-grid" id="advanced">
+            <div class="field">
+                <label>物品编号</label>
+                <input type="text" name="sku_code" value="{{ f.sku_code }}" placeholder="SP000001">
+            </div>
+            <div class="field">
+                <label>存放区域</label>
+                <input type="text" name="storage_area" value="{{ f.storage_area }}" placeholder="区域关键字">
+            </div>
+            <div class="field">
+                <label>存放位置</label>
+                <input type="text" name="storage_position" value="{{ f.storage_position }}" placeholder="位置关键字">
+            </div>
+            <div class="field">
+                <label>库位</label>
+                <div class="picker {% if f.location_id %}active{% endif %}" onclick="openPicker('location', 'location_id')">
+                    <input type="hidden" name="location_id" id="location_id" value="{{ f.location_id }}">
+                    <span class="lbl {% if not f.location_id %}empty{% endif %}" id="location_id-label">{{ '已选' if f.location_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>操作人</label>
+                <div class="picker {% if f.operator_id %}active{% endif %}" onclick="openPicker('wh-owner', 'operator_id')">
+                    <input type="hidden" name="operator_id" id="operator_id" value="{{ f.operator_id }}">
+                    <span class="lbl {% if not f.operator_id %}empty{% endif %}" id="operator_id-label">{{ '已选' if f.operator_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>责任人</label>
+                <div class="picker {% if f.owner_user_id %}active{% endif %}" onclick="openPicker('wh-owner', 'owner_user_id')">
+                    <input type="hidden" name="owner_user_id" id="owner_user_id" value="{{ f.owner_user_id }}">
+                    <span class="lbl {% if not f.owner_user_id %}empty{% endif %}" id="owner_user_id-label">{{ '已选' if f.owner_user_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>分配部门</label>
+                <div class="picker {% if f.alloc_dept_id %}active{% endif %}" onclick="openPicker('wh-alloc-dept', 'alloc_dept_id')">
+                    <input type="hidden" name="alloc_dept_id" id="alloc_dept_id" value="{{ f.alloc_dept_id }}">
+                    <span class="lbl {% if not f.alloc_dept_id %}empty{% endif %}" id="alloc_dept_id-label">{{ '已选' if f.alloc_dept_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+            <div class="field">
+                <label>使用部门</label>
+                <div class="picker {% if f.use_dept_id %}active{% endif %}" onclick="openPicker('wh-use-dept', 'use_dept_id')">
+                    <input type="hidden" name="use_dept_id" id="use_dept_id" value="{{ f.use_dept_id }}">
+                    <span class="lbl {% if not f.use_dept_id %}empty{% endif %}" id="use_dept_id-label">{{ '已选' if f.use_dept_id else '全部' }}</span>
+                    <span class="ar">选 →</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</form>
+
+<div class="summary-strip">
+    <div class="stat"><span class="num">{{ rows|length }}</span> 命中流水</div>
+    <div class="stat"><span class="num">{{ rows|selectattr('delta','gt',0)|list|length }}</span> 入库 / 退入</div>
+    <div class="stat"><span class="num">{{ rows|selectattr('delta','lt',0)|list|length }}</span> 出库 / 报损</div>
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>流水明细</h3><span class="meta">{{ rows|length }} 条</span></div>
+    <div class="body" style="padding:0;">
         {% if rows %}
-        <table>
+        <table class="dense-table">
             <thead>
                 <tr>
                     <th>时间</th>
+                    <th>单号</th>
                     <th>类型</th>
-                    <th>SKU</th>
-                    <th>批次</th>
-                    <th>库位</th>
-                    <th>变动</th>
-                    <th>来源单据</th>
+                    <th>物品</th>
+                    <th>编号</th>
+                    <th>仓库 · 存放区域/位置</th>
+                    <th class="text-right">变动</th>
                     <th>操作人</th>
+                    <th>责任人</th>
+                    <th>使用部门</th>
+                    <th>备注</th>
+                    <th>附件</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in rows %}
                 <tr>
-                    <td class="mono" style="font-size:12px;">{{ r.occurred_at }}</td>
+                    <td class="mono" style="font-size:11px;">{{ (r.occurred_at or '')[:16] }}</td>
+                    <td class="mono" style="font-size:11px;">{{ r.source_doc or '—' }}</td>
                     <td>
-                        {% if r.event_type == 'inbound' %}<span class="badge badge-in">入库</span>
-                        {% elif r.event_type == 'outbound' %}<span class="badge badge-out">出库</span>
-                        {% elif r.event_type == 'damage' %}<span class="badge badge-out">报损</span>
-                        {% elif r.event_type == 'transfer' %}<span class="badge badge-normal">调拨</span>
-                        {% elif r.event_type == 'adjust' %}<span class="badge badge-normal">盘点调整</span>
-                        {% elif r.event_type == 'return_in' %}<span class="badge badge-in">退货入</span>
-                        {% endif %}
+                        {% if r.event_type == 'inbound' %}<span class="tag tag-success">入库</span>
+                        {% elif r.event_type == 'outbound' %}<span class="tag tag-warn">出库</span>
+                        {% elif r.event_type == 'transfer' %}<span class="tag tag-info">调拨</span>
+                        {% elif r.event_type == 'damage' %}<span class="tag tag-error">报损</span>
+                        {% elif r.event_type == 'adjust' %}<span class="tag">盘点</span>
+                        {% else %}<span class="tag">{{ r.event_type }}</span>{% endif %}
                     </td>
-                    <td class="mono">{{ r.sku_code }}</td>
-                    <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
-                    <td class="mono">{{ r.location_code }}</td>
-                    <td class="mono"><strong style="color:{% if r.delta > 0 %}var(--color-in){% else %}var(--color-out){% endif %};">{% if r.delta > 0 %}+{% endif %}{{ r.delta }}</strong></td>
-                    <td class="mono" style="font-size:12px;">{{ r.source_doc or '-' }}</td>
-                    <td>{{ r.operator_name or '系统' }}</td>
+                    <td class="sku-name"><strong>{{ r.sku_name }}</strong></td>
+                    <td class="mono" style="font-size:11px;">{{ r.sku_code }}</td>
+                    <td>
+                        {{ r.warehouse_name or '—' }}
+                        {% if r.location_code %} · <span style="color:var(--accent-deep);">{{ r.location_code }}</span>{% endif %}
+                    </td>
+                    <td class="num-mono text-right" style="color:{% if r.delta > 0 %}var(--ok){% else %}var(--err){% endif %};"><strong>{{ '+' if r.delta > 0 }}{{ r.delta }}</strong></td>
+                    <td>{{ r.operator_name or '—' }}</td>
+                    <td>{{ r.owner_user_name or '—' }}</td>
+                    <td>{{ r.use_dept_name or '—' }}</td>
+                    <td style="font-size:11px; color:var(--ink-quiet); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.note or '—' }}</td>
+                    <td>
+                        {% set att = attachments_by_doc.get(r.source_doc) %}
+                        {% if att %}
+                            {% for path in att|attachments_list %}
+                            <a href="{{ url_for('download_attachment', filepath=path) }}" target="_blank" title="{{ path.split('/')[-1] }}" style="font-size:14px; color:var(--accent); margin-right:4px;">📎</a>
+                            {% endfor %}
+                        {% else %}—{% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {{ pager(pg) }}
         {% else %}
-        <div class="empty">还没有库存流水。审核第一张入库单后这里会出现记录。</div>
+        <div style="padding:32px; text-align:center; color:var(--ink-quiet);">无匹配流水。</div>
         {% endif %}
     </div>
 </div>
-<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
-    流水表是"事件日志"——所有库存变化都先在这里登记，再更新到库存快照。出错时来这里追溯。
-</div>
+
+<script>
+let advancedOpen = true;
+function toggleAdvanced(btn) {
+    advancedOpen = !advancedOpen;
+    document.getElementById('advanced').style.display = advancedOpen ? 'grid' : 'none';
+    btn.textContent = advancedOpen ? '↑ 收起高级筛选 (8 项)' : '+ 高级筛选 (8 项)';
+}
+
+document.addEventListener('change', e => {
+    if (e.target.type === 'hidden' && e.target.id) {
+        const lbl = document.getElementById(e.target.id + '-label');
+        if (lbl) lbl.classList.toggle('empty', !e.target.value);
+        const picker = e.target.closest('.picker');
+        if (picker) picker.classList.toggle('active', !!e.target.value);
+    }
+});
+</script>
 
 {% endblock %}

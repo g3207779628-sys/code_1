@@ -11,7 +11,7 @@
         {% if rows %}
         <table>
             <thead>
-                <tr><th>#</th><th>状态</th><th>SKU</th><th>批次</th><th>库位</th><th>数量</th><th>原因</th><th>说明</th><th>申请人</th><th>申请时间</th><th>操作</th></tr>
+                <tr><th>#</th><th>状态</th><th>物品名称</th><th>批次</th><th>库位</th><th>数量</th><th>原因</th><th>说明</th><th>附件</th><th>申请人</th><th>申请时间</th><th>操作</th></tr>
             </thead>
             <tbody>
                 {% for r in rows %}
@@ -22,12 +22,20 @@
                         {% elif r.status == 'approved' %}<span class="badge badge-out">已核销</span>
                         {% else %}<span class="badge badge-normal">已驳回</span>{% endif %}
                     </td>
-                    <td class="mono">{{ r.sku_code }}</td>
+                    <td><strong>{{ r.sku_name }}</strong> <span class="text-tertiary mono" style="font-size:11px;">{{ r.sku_code }}</span></td>
                     <td class="mono" style="font-size:12px;">{{ r.batch_no }}</td>
                     <td class="mono">{{ r.location_code }}</td>
                     <td class="mono"><strong style="color:var(--color-out);">{{ r.quantity }}</strong></td>
                     <td><span class="badge badge-normal">{{ reason_label[r.reason_type] }}</span></td>
-                    <td style="max-width:200px; font-size:12px;">{{ r.reason_note or '-' }}{% if r.photo_note %}<br><span style="color:var(--color-text-soft);">附：{{ r.photo_note }}</span>{% endif %}</td>
+                    <td style="max-width:200px; font-size:12px;">{{ r.reason_note or '-' }}</td>
+                    <td style="font-size:12px;">
+                        {% set atts = r.attachments | attachments_list %}
+                        {% if atts %}
+                            {% for path in atts %}
+                            <a href="{{ url_for('download_attachment', filepath=path) }}" target="_blank" title="{{ path }}">{{ path.split('/')[-1][:12] }}{% if path.split('/')[-1]|length > 12 %}…{% endif %}</a>{% if not loop.last %}<br>{% endif %}
+                            {% endfor %}
+                        {% else %}-{% endif %}
+                    </td>
                     <td>{{ r.applicant_name }}</td>
                     <td class="mono" style="font-size:12px;">{{ r.created_at }}</td>
                     <td>

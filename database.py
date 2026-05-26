@@ -447,15 +447,16 @@ SEED_USERS = [
 
 SEED_WAREHOUSE = ("主仓", "杭州市西湖区文三路 100 号")
 
+# (存放区域, 存放位置)
 SEED_LOCATIONS = [
-    ("A-01-01", "cold"),
-    ("A-01-02", "cold"),
-    ("A-02-01", "cold"),
-    ("B-01-01", "freeze"),
-    ("B-01-02", "freeze"),
-    ("C-01-01", "normal"),
-    ("ISO-01", "isolation"),
-    ("DG-01", "downgrade"),
+    ("A区", "01-01"),
+    ("A区", "01-02"),
+    ("A区", "02-01"),
+    ("B区", "01-01"),
+    ("B区", "01-02"),
+    ("C区", "01-01"),
+    ("隔离区", "ISO-01"),
+    ("降级区", "DG-01"),
 ]
 
 SEED_SKUS = [
@@ -1038,13 +1039,15 @@ def _migrate(conn):
     )
 
     # 19. v15 方案 B: location 表加 building / floor 文本字段（楼栋 / 楼层，不独立建表）
+    #     v25 起 location 改用 存放区域/位置；仅当还存在旧 code 列（即未经 v25）才补这两列，避免 v25 后重跑又加回来。
     loc_cols_v15 = [r["name"] for r in conn.execute("PRAGMA table_info(location)").fetchall()]
-    for col_name, col_def in [
-        ("building", "TEXT"),
-        ("floor",    "TEXT"),
-    ]:
-        if col_name not in loc_cols_v15:
-            conn.execute(f"ALTER TABLE location ADD COLUMN {col_name} {col_def}")
+    if "code" in loc_cols_v15:
+        for col_name, col_def in [
+            ("building", "TEXT"),
+            ("floor",    "TEXT"),
+        ]:
+            if col_name not in loc_cols_v15:
+                conn.execute(f"ALTER TABLE location ADD COLUMN {col_name} {col_def}")
 
     # 20. v16: location 加 4 个 FK（分配部门 / 使用部门 / 类型 / 责任人），从 warehouse 搬过来
     loc_cols_v16 = [r["name"] for r in conn.execute("PRAGMA table_info(location)").fetchall()]
@@ -1139,13 +1142,15 @@ def _migrate(conn):
             conn.execute("PRAGMA legacy_alter_table = OFF")
 
     # 18. v14 方案 B: location 表加 building / floor 文本字段（楼栋 / 楼层，不独立建表）
+    #     同 v15：仅未经 v25（还有 code 列）时才补，避免 v25 后重跑把列加回来。
     loc_cols_v14 = [r["name"] for r in conn.execute("PRAGMA table_info(location)").fetchall()]
-    for col_name, col_def in [
-        ("building", "TEXT"),
-        ("floor",    "TEXT"),
-    ]:
-        if col_name not in loc_cols_v14:
-            conn.execute(f"ALTER TABLE location ADD COLUMN {col_name} {col_def}")
+    if "code" in loc_cols_v14:
+        for col_name, col_def in [
+            ("building", "TEXT"),
+            ("floor",    "TEXT"),
+        ]:
+            if col_name not in loc_cols_v14:
+                conn.execute(f"ALTER TABLE location ADD COLUMN {col_name} {col_def}")
 
     # 24. v21: 砸 supplier — batch / inbound_order 删 supplier_id 字段 + DROP TABLE supplier
     batch_cols_v21 = [r["name"] for r in conn.execute("PRAGMA table_info(batch)").fetchall()]
@@ -1208,14 +1213,16 @@ def _migrate(conn):
         conn.execute("ALTER TABLE sku ADD COLUMN image_path TEXT")
 
     # 25. v21: 清洗 location.building / floor 历史脏数据（曾被写入 "1号楼" / "1层" 这种带后缀的字符串）
-    conn.execute(
-        "UPDATE location SET building = TRIM(REPLACE(REPLACE(REPLACE(building, '号楼',''), '号 楼',''), ' ','')) "
-        "WHERE building IS NOT NULL AND (building LIKE '%号楼%' OR building LIKE '%号 楼%' OR building LIKE '% %')"
-    )
-    conn.execute(
-        "UPDATE location SET floor = TRIM(REPLACE(REPLACE(floor, '层',''), ' ','')) "
-        "WHERE floor IS NOT NULL AND (floor LIKE '%层%' OR floor LIKE '% %')"
-    )
+    #     仅当 building 列仍存在（未经 v25）时执行，避免 v25 删列后重跑报 no such column。
+    if "building" in [r["name"] for r in conn.execute("PRAGMA table_info(location)").fetchall()]:
+        conn.execute(
+            "UPDATE location SET building = TRIM(REPLACE(REPLACE(REPLACE(building, '号楼',''), '号 楼',''), ' ','')) "
+            "WHERE building IS NOT NULL AND (building LIKE '%号楼%' OR building LIKE '%号 楼%' OR building LIKE '% %')"
+        )
+        conn.execute(
+            "UPDATE location SET floor = TRIM(REPLACE(REPLACE(floor, '层',''), ' ','')) "
+            "WHERE floor IS NOT NULL AND (floor LIKE '%层%' OR floor LIKE '% %')"
+        )
 
     # 28. v23: 责任人改为独立主数据表 wh_owner（不再复用 user）。
     #     - location 加新外键 resp_owner_id（保留旧 owner_user_id 列不动）
@@ -1246,6 +1253,43 @@ def _migrate(conn):
     if "requisition_no" not in ob_cols_v24:
         conn.execute("ALTER TABLE outbound_order ADD COLUMN requisition_no TEXT REFERENCES requisition_order(order_no)")
 
+    # 30. v25: location 废弃 code/building/floor → 改为 存放区域(storage_area)/存放位置(storage_position)。
+    #     重建表保 id（所有外键引用 location.id，安全）；老行最小回填：区域='默认区'，位置=原 code。
+    loc_cols_v25 = [r["name"] for r in conn.execute("PRAGMA table_info(location)").fetchall()]
+    if "code" in loc_cols_v25:
+        conn.commit()
+        conn.execute("PRAGMA legacy_alter_table = ON")
+        conn.execute("PRAGMA foreign_keys = OFF")
+        try:
+            conn.execute("ALTER TABLE location RENAME TO location_old_v25")
+            conn.execute("""CREATE TABLE location (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                warehouse_id INTEGER NOT NULL REFERENCES warehouse(id),
+                storage_area TEXT NOT NULL DEFAULT '默认区',
+                storage_position TEXT NOT NULL DEFAULT '',
+                alloc_dept_id INTEGER REFERENCES wh_alloc_dept(id),
+                use_dept_id INTEGER REFERENCES wh_use_dept(id),
+                wh_type_id INTEGER REFERENCES wh_type(id),
+                owner_user_id INTEGER REFERENCES user(id),
+                resp_owner_id INTEGER REFERENCES wh_owner(id),
+                note TEXT,
+                attachments TEXT,
+                UNIQUE(warehouse_id, storage_area, storage_position)
+            )""")
+            conn.execute("""INSERT INTO location (
+                id, warehouse_id, storage_area, storage_position,
+                alloc_dept_id, use_dept_id, wh_type_id, owner_user_id, resp_owner_id, note, attachments
+            ) SELECT
+                id, warehouse_id, '默认区',
+                COALESCE(NULLIF(TRIM(code), ''), '位置-' || id),
+                alloc_dept_id, use_dept_id, wh_type_id, owner_user_id, resp_owner_id, note, attachments
+              FROM location_old_v25""")
+            conn.execute("DROP TABLE location_old_v25")
+            conn.commit()
+        finally:
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute("PRAGMA legacy_alter_table = OFF")
+
     # 砸 supplier 表（最后做，确保 FK 引用已清）+ 清菜单权限残留
     if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='supplier'").fetchone():
         conn.execute("DROP TABLE supplier")
@@ -1274,10 +1318,10 @@ def _seed_warehouse_and_locations(conn):
     name, addr = SEED_WAREHOUSE
     conn.execute("INSERT OR IGNORE INTO warehouse (name, address) VALUES (?, ?)", (name, addr))
     wh = conn.execute("SELECT id FROM warehouse WHERE name = ?", (name,)).fetchone()
-    for code, zone in SEED_LOCATIONS:
+    for area, position in SEED_LOCATIONS:
         conn.execute(
-            "INSERT OR IGNORE INTO location (warehouse_id, code, zone_type) VALUES (?, ?, ?)",
-            (wh["id"], code, zone),
+            "INSERT OR IGNORE INTO location (warehouse_id, storage_area, storage_position) VALUES (?, ?, ?)",
+            (wh["id"], area, position),
         )
 
 

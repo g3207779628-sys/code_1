@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>预设角色 - 方案 3（主从布局）- 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.page { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+.toolbar {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.toolbar h2 { font-size: 16px; font-weight: 600; }
+
+.master-detail {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    min-height: 540px;
+}
+
+.master {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+}
+.master-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ant-divider);
+    background: #FAFAFA;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.master-head .title { font-size: 13px; font-weight: 600; }
+.master-search {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ant-divider);
+}
+.master-search input {
+    width: 100%; padding: 5px 10px;
+    border: 1px solid var(--ant-divider);
+    border-radius: 4px; font-size: 12px;
+}
+.master-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.master-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+}
+.master-item:hover { background: var(--ant-bg-hover); }
+.master-item.active {
+    background: var(--ant-primary-light);
+    border-left-color: var(--ant-primary);
+}
+.master-item .name { font-size: 13px; font-weight: 500; }
+.master-item .meta {
+    font-size: 11px; color: var(--ant-text-tertiary);
+    margin-top: 2px;
+    display: flex; justify-content: space-between;
+}
+.master-item.active .meta { color: var(--ant-primary); }
+
+.detail {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+}
+.detail-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--ant-divider);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.detail-head h3 { font-size: 16px; font-weight: 600; }
+.detail-head .meta {
+    font-size: 12px; color: var(--ant-text-secondary);
+    margin-top: 2px;
+}
+.detail-body { flex: 1; padding: 20px; }
+.detail-stat {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.stat-mini {
+    padding: 12px 14px;
+    background: #FAFAFA;
+    border-radius: 6px;
+    border-left: 3px solid var(--ant-primary);
+}
+.stat-mini .label { font-size: 11px; color: var(--ant-text-tertiary); }
+.stat-mini .value {
+    font-size: 22px; font-weight: 600;
+    font-family: var(--font-num);
+    color: var(--ant-text);
+}
+.group-block {
+    margin-bottom: 14px;
+    padding: 12px;
+    background: #FAFCFF;
+    border-radius: 6px;
+    border-left: 3px solid var(--ant-primary);
+}
+.group-block .group-name {
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+}
+.group-block .group-name .count {
+    background: var(--ant-success);
+    color: #FFF;
+    padding: 0 6px; border-radius: 8px;
+    font-size: 11px; font-family: var(--font-num);
+}
+.perm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.perm-chips .chip {
+    font-size: 12px; padding: 3px 10px;
+    background: var(--ant-success-bg);
+    color: var(--ant-success);
+    border: 1px solid #B7EB8F;
+    border-radius: 12px;
+}
+.detail-foot {
+    padding: 14px 20px;
+    background: #FAFAFA;
+    border-top: 1px solid var(--ant-divider);
+    display: flex; justify-content: flex-end; gap: 8px;
+}
+.btn-ghost {
+    padding: 5px 14px;
+    border: 1px solid var(--ant-divider);
+    background: #FFF;
+    border-radius: 3px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--ant-text);
+}
+.btn-ghost:hover { color: var(--ant-primary); border-color: var(--ant-primary); }
+.btn-ghost.danger { color: var(--ant-error); border-color: #FFCCC7; }
+.btn-ghost.primary {
+    background: var(--ant-primary); color: #FFF; border-color: var(--ant-primary);
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+    <strong>方案 3：主从布局（Master-Detail）</strong> ｜ 左侧预设列表 + 右侧选中预设的完整预览 · 切换快速 · 详细信息一屏可见
+</div>
+
+<div class="page">
+    <a href="role_preset_index.html" class="btn btn-sm" style="margin-bottom: 16px;">‹ 返回方案列表</a>
+
+    <div class="toolbar">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <h2>预设角色管理</h2>
+            <span class="text-secondary" style="font-size:12px;">共 <strong>4</strong> 个预设</span>
+        </div>
+        <a class="btn btn-primary btn-sm" href="role_preset_new.html">＋ 新建预设</a>
+    </div>
+
+    <div class="master-detail">
+
+        <!-- 左侧主列表 -->
+        <div class="master">
+            <div class="master-head">
+                <span class="title">预设列表</span>
+                <span class="text-tertiary" style="font-size:11px;">4 项</span>
+            </div>
+            <div class="master-search">
+                <input placeholder="搜索预设...">
+            </div>
+            <div class="master-list">
+                <div class="master-item active">
+                    <div class="name">仓库经理</div>
+                    <div class="meta"><span>查看所有 + 审批权</span><span>14 项</span></div>
+                </div>
+                <div class="master-item">
+                    <div class="name">采购员</div>
+                    <div class="meta"><span>入库 + 商品 + 供应商</span><span>5 项</span></div>
+                </div>
+                <div class="master-item">
+                    <div class="name">出库员</div>
+                    <div class="meta"><span>仅出库 + 库存查询</span><span>3 项</span></div>
+                </div>
+                <div class="master-item">
+                    <div class="name">普通员工</div>
+                    <div class="meta"><span>仅工作台</span><span>1 项</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧详情 -->
+        <div class="detail">
+            <div class="detail-head">
+                <div>
+                    <h3>仓库经理</h3>
+                    <div class="meta">代码 <code>warehouse_manager</code> · 查看所有 + 审批权</div>
+                </div>
+            </div>
+            <div class="detail-body">
+                <div class="detail-stat">
+                    <div class="stat-mini"><div class="label">总权限数</div><div class="value">14</div></div>
+                    <div class="stat-mini" style="border-left-color: var(--ant-success);"><div class="label">使用此预设的用户</div><div class="value" style="color: var(--ant-success);">2</div></div>
+                    <div class="stat-mini" style="border-left-color: var(--ant-warning);"><div class="label">最近修改</div><div class="value" style="font-size:13px; padding-top:6px;">2026-05-12</div></div>
+                </div>
+
+                <div class="group-block">
+                    <div class="group-name">日常使用 <span class="count">2</span></div>
+                    <div class="perm-chips"><span class="chip">工作台</span><span class="chip">待审批中心</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">日常操作 <span class="count">5</span></div>
+                    <div class="perm-chips"><span class="chip">入库</span><span class="chip">出库</span><span class="chip">调拨</span><span class="chip">报损</span><span class="chip">盘点</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">查询分析 <span class="count">4</span></div>
+                    <div class="perm-chips"><span class="chip">库存查询</span><span class="chip">库存流水</span><span class="chip">经营报表</span><span class="chip">库存预测</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">数据维护 <span class="count">2</span></div>
+                    <div class="perm-chips"><span class="chip">商品</span><span class="chip">供应商</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">系统 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">通知渠道</span></div>
+                </div>
+            </div>
+            <div class="detail-foot">
+                <button class="btn-ghost danger">删除</button>
+                <button class="btn-ghost">复制为新预设</button>
+                <a class="btn-ghost primary" href="role_preset_edit.html">编辑此预设</a>
+            </div>
+        </div>
+
+    </div>
+
+    <div style="margin-top: 24px; padding: 16px 20px; background: #FFF; border-radius: 6px; font-size:12px; color: var(--ant-text-secondary);">
+        <strong>方案 3 特点</strong>：左侧列表快速切换、右侧详情完整预览（含统计数据 + 中文权限分组）。<strong>切换预设无需跳页</strong>。适合预设数较多（≥ 5）且经常需要在不同预设间比较的场景。点编辑跳新页面，操作回来后右侧自动刷新。
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.master-item').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.master-item').forEach(x => x.classList.remove('active'));
+        item.classList.add('active');
+    });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v13 · P3 · 新建入库单 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+.content { padding: 22px 30px; background: var(--bg-soft); }
+.layout { background: var(--bg-soft); }
+.sider { width: 200px; }
+.menu li > a { padding: 7px 18px; font-size: 13px; }
+.menu li > a.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); }
+.header { height: 52px; }
+.page-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.page-head .page-title { font-size: 20px; font-weight: 700; }
+.page-head .page-sub { font-size: 12px; color: var(--ink-quiet); margin-left: 10px; }
+.split-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.panel { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.panel .head { padding: 12px 18px; background: var(--bg-soft); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; }
+.panel .head .meta { color: var(--ink-quiet); font-size: 11px; font-weight: 400; }
+.panel .body { padding: 16px 18px; }
+.right-panel { position: sticky; top: 16px; align-self: start; }
+.right-panel .head { border-left: 4px solid var(--accent); }
+.line-table { width: 100%; border-collapse: collapse; }
+.line-table th, .line-table td { padding: 9px 12px; font-size: 13px; text-align: left; }
+.line-table th { background: var(--bg-soft); color: var(--ink-quiet); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.line-table td { border-bottom: 1px solid var(--line-soft); }
+.line-table tr:last-child td { border-bottom: none; }
+.line-table input { padding: 6px 10px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; }
+.line-table .picker { padding: 6px 10px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.line-table .picker:hover { border-color: var(--accent); }
+.line-table .picker .ar { color: var(--accent); font-size: 10px; }
+.line-table .del { color: var(--ink-faded); cursor: pointer; font-size: 16px; }
+.line-table .del:hover { color: var(--err); }
+.line-table tfoot td { background: var(--bg-soft); border-top: 1px solid var(--line); font-weight: 700; }
+.add-line { margin: 12px 18px; color: var(--accent); font-size: 13px; cursor: pointer; padding: 10px; border: 1px dashed var(--accent-fade); border-radius: var(--r-md); text-align: center; background: var(--accent-soft); font-weight: 600; }
+.upload-zone { margin: 12px 18px; padding: 18px; border: 2px dashed var(--accent-fade); border-radius: var(--r-md); text-align: center; color: var(--ink-quiet); font-size: 13px; cursor: pointer; background: var(--accent-soft); }
+.upload-zone .big { font-size: 20px; color: var(--accent); font-weight: 700; }
+.attr-row { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.attr-row:last-of-type { border-bottom: none; }
+.attr-row label { display: block; font-size: 11px; color: var(--ink-quiet); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 5px; }
+.attr-row .req { color: var(--accent); }
+.attr-row input, .attr-row select, .attr-row textarea { width: 100%; padding: 7px 10px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; }
+.attr-row .picker { padding: 7px 10px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.attr-row .picker:hover { border-color: var(--accent); }
+.attr-row .picker .ar { color: var(--accent); font-size: 11px; font-weight: 600; }
+.summary-block { background: var(--bg-soft); border-top: 1px solid var(--line); padding: 12px 18px; font-size: 12px; color: var(--ink-quiet); }
+.summary-block .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.summary-block .row strong { color: var(--accent); font-family: var(--font-mono); font-size: 14px; }
+.actions-stack { padding: 12px 18px; display: flex; flex-direction: column; gap: 8px; }
+.actions-stack .btn { width: 100%; justify-content: center; }
+.demo-tag { position: fixed; top: 12px; right: 12px; background: var(--accent-deep); color: #FFF; font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; padding: 4px 10px; border-radius: 2px; z-index: 999; }
+</style>
+</head>
+<body>
+<div class="demo-tag">MOCKUP · v13 P3 · INBOUND</div>
+
+<div class="layout">
+    <aside class="sider">
+        <div class="sider-brand">金山仓储</div>
+        <ul class="menu">
+            <li class="menu-group">日常使用</li>
+            <li><a href="#">工作台</a></li>
+            <li class="menu-group">日常操作</li>
+            <li><a href="#" class="active">入库</a></li>
+            <li><a href="#">出库</a></li>
+            <li><a href="#">调拨</a></li>
+            <li><a href="#">盘点</a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <div class="crumb"><span class="prev">入库</span><span class="sep">/</span><span class="now">新建</span></div>
+            <div class="header-actions"><span class="user-name">张经理</span><span class="quiet">退出</span></div>
+        </header>
+
+        <div class="content">
+            <div class="page-head">
+                <div><span class="page-title">新建入库单</span><span class="page-sub">RKD-20260521-004 · 左明细 + 右属性</span></div>
+                <a href="ui_v13_index.html" class="btn btn-sm">取消</a>
+            </div>
+
+            <div class="split-layout">
+                <!-- 左 2/3：明细 + 附件 -->
+                <div>
+                    <div class="panel" style="margin-bottom: 14px;">
+                        <div class="head">入库明细<span class="meta">已添加 3 行 · 共 52 件</span></div>
+                        <table class="line-table">
+                            <thead><tr><th style="width:26%;">商品</th><th style="width:20%;">入库库位</th><th style="width:12%;">数量</th><th style="width:10%;">单位</th><th style="width:24%;">批次号</th><th style="width:8%;"></th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><div class="picker">茅台<span class="ar">换</span></div></td>
+                                    <td><div class="picker">酒柜-A1<span class="ar">换</span></div></td>
+                                    <td><input type="number" value="20" style="text-align:right;"></td>
+                                    <td><input value="瓶" readonly></td>
+                                    <td><input placeholder="自动"></td>
+                                    <td style="text-align:center;"><span class="del">×</span></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="picker">五粮液<span class="ar">换</span></div></td>
+                                    <td><div class="picker">酒柜-A2<span class="ar">换</span></div></td>
+                                    <td><input type="number" value="12" style="text-align:right;"></td>
+                                    <td><input value="瓶" readonly></td>
+                                    <td><input placeholder="自动"></td>
+                                    <td style="text-align:center;"><span class="del">×</span></td>
+                                </tr>
+                                <tr>
+                                    <td><div class="picker">A4 复印纸<span class="ar">换</span></div></td>
+                                    <td><div class="picker">文具架-B1<span class="ar">换</span></div></td>
+                                    <td><input type="number" value="20" style="text-align:right;"></td>
+                                    <td><input value="包" readonly></td>
+                                    <td><input placeholder="自动"></td>
+                                    <td style="text-align:center;"><span class="del">×</span></td>
+                                </tr>
+                            </tbody>
+                            <tfoot><tr><td colspan="2" style="text-align:right;">合计</td><td style="text-align:right; color:var(--accent); font-size:15px;">52</td><td>件</td><td colspan="2"></td></tr></tfoot>
+                        </table>
+                        <div class="add-line">+ 添加一行明细</div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="head">附件<span class="meta">可选</span></div>
+                        <div class="upload-zone">
+                            <div class="big">+ 上传</div>
+                            <div style="margin-top: 6px;">采购合同 / 发票 / 验收单照片</div>
+                            <div style="font-size: 11px; color: var(--ink-faded); margin-top: 4px;">jpg / png / pdf · 单文件 ≤ 10MB · 最多 10 份</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右 1/3：基本信息 + 操作 -->
+                <div class="panel right-panel">
+                    <div class="head">基本信息<span class="meta">必填 3 项</span></div>
+                    <div class="body">
+                        <div class="attr-row"><label>入库日期 <span class="req">*</span></label><input type="date" value="2026-05-21"></div>
+                        <div class="attr-row"><label>供应商 <span class="req">*</span></label><div class="picker">贵州茅台经销商<span class="ar">更换 →</span></div></div>
+                        <div class="attr-row"><label>目标仓库 <span class="req">*</span></label><div class="picker">金山主仓<span class="ar">更换 →</span></div></div>
+                        <div class="attr-row"><label>关联采购单</label><input type="text" placeholder="PO-2026-xxxx"></div>
+                        <div class="attr-row"><label>备注</label><textarea rows="3" placeholder="本次入库的说明 / 注意事项"></textarea></div>
+                    </div>
+                    <div class="summary-block">
+                        <div class="row"><span>明细行数</span><strong>3</strong></div>
+                        <div class="row"><span>合计件数</span><strong>52</strong></div>
+                        <div class="row"><span>附件数</span><strong>0</strong></div>
+                    </div>
+                    <div class="actions-stack">
+                        <a href="#" class="btn btn-primary">提交审批 →</a>
+                        <a href="#" class="btn">存为草稿</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

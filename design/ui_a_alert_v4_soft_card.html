@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>方案 4 · 软卡片消息 · 金山仓储</title>
+<link rel="stylesheet" href="ui_cream_shared.css">
+<style>
+.page { max-width: 980px; margin: 0 auto; padding: 0 32px 48px; }
+.page-title { padding: 40px 0 6px; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+.page-sub { color: var(--ink-quiet); margin-bottom: 32px; }
+.section { margin-bottom: 36px; }
+.section h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.section h2::before { content: ""; width: 4px; height: 14px; background: var(--accent); border-radius: 2px; }
+
+/* ====== Soft 卡片消息（大块、内容多） ====== */
+.soft-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-left: 4px solid;
+    border-radius: var(--r-md);
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 16px;
+}
+.soft-card .ico-wrap {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #FFF;
+}
+.soft-card .body { flex: 1; }
+.soft-card .title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.soft-card .desc { font-size: 13px; color: var(--ink-soft); line-height: 1.65; }
+.soft-card .desc strong { color: var(--ink); }
+.soft-card .actions { margin-top: 12px; display: flex; gap: 8px; }
+.soft-card .close {
+    background: none; border: none;
+    color: var(--ink-faded); cursor: pointer;
+    font-size: 18px;
+    padding: 0 4px;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+.soft-card .close:hover { color: var(--ink); }
+
+.soft-success { border-left-color: var(--accent); background: linear-gradient(to right, var(--accent-soft) 0%, var(--bg-card) 200px); }
+.soft-success .ico-wrap { background: var(--accent); }
+
+.soft-error { border-left-color: var(--err); background: linear-gradient(to right, var(--err-bg) 0%, var(--bg-card) 200px); }
+.soft-error .ico-wrap { background: var(--err); }
+
+.soft-warn { border-left-color: var(--warn); background: linear-gradient(to right, var(--warn-bg) 0%, var(--bg-card) 200px); }
+.soft-warn .ico-wrap { background: var(--warn); }
+
+.soft-info { border-left-color: var(--ink-soft); background: linear-gradient(to right, var(--bg-row-hover) 0%, var(--bg-card) 200px); }
+.soft-info .ico-wrap { background: var(--ink-soft); }
+
+.scene-label {
+    font-size: 11px; color: var(--ink-quiet);
+    letter-spacing: 1px;
+    font-family: monospace;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 22px;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>方案 4 · 软卡片消息</strong> · 大色块卡片 + 图标 + 标题 + 描述 + 按钮 · 信息丰富 · 适合需要用户行动的提示</div>
+
+<div class="page">
+    <div class="page-title">方案 4：软卡片消息</div>
+    <div class="page-sub">显示在内容区顶部的卡片，左侧粗色边 + 渐变背景 + 大图标 + 标题 + 描述 + 可选行动按钮。适合：复杂提示、需用户决策的场景</div>
+
+    <!-- 成功 -->
+    <div class="section">
+        <h2>✅ 成功</h2>
+        <div class="section-card">
+            <div class="scene-label">// 场景 1：登录后欢迎（带统计 + 行动按钮）</div>
+            <div class="soft-card soft-success">
+                <div class="ico-wrap">✓</div>
+                <div class="body">
+                    <div class="title">欢迎回来，王经理</div>
+                    <div class="desc">
+                        上次登录 2026-05-20 17:18 · 你今天有 <strong>3 项</strong> 待审批入库单和 <strong>3 个</strong> 商品低于安全库存
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-primary btn-sm">查看待审批 →</button>
+                        <button class="btn btn-sm">稍后处理</button>
+                    </div>
+                </div>
+                <button class="close">×</button>
+            </div>
+
+            <div class="scene-label" style="margin-top:14px;">// 场景 2：操作成功</div>
+            <div class="soft-card soft-success">
+                <div class="ico-wrap">✓</div>
+                <div class="body">
+                    <div class="title">入库单 RKD-20260521-001 已创建</div>
+                    <div class="desc">单据保存为草稿，需要仓库经理审批后入账</div>
+                    <div class="actions">
+                        <button class="btn btn-primary btn-sm">通知审批人</button>
+                        <button class="btn btn-sm">继续录入</button>
+                    </div>
+                </div>
+                <button class="close">×</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误 -->
+    <div class="section">
+        <h2>❌ 错误</h2>
+        <div class="section-card">
+            <div class="scene-label">// 场景 1：密码错误（带帮助链接）</div>
+            <div class="soft-card soft-error">
+                <div class="ico-wrap">!</div>
+                <div class="body">
+                    <div class="title">用户名或密码错误</div>
+                    <div class="desc">请确认大小写后重试 · 连续输错 <strong>5</strong> 次将锁定 10 分钟</div>
+                    <div class="actions">
+                        <button class="btn btn-sm">联系管理员重置</button>
+                    </div>
+                </div>
+                <button class="close">×</button>
+            </div>
+
+            <div class="scene-label" style="margin-top:14px;">// 场景 2：删除阻塞</div>
+            <div class="soft-card soft-error">
+                <div class="ico-wrap">!</div>
+                <div class="body">
+                    <div class="title">无法删除该岗位</div>
+                    <div class="desc">该岗位仍被 <strong>3 位用户</strong> 使用：王经理、李秀丽、陈思思</div>
+                    <div class="actions">
+                        <button class="btn btn-sm">查看使用者 →</button>
+                    </div>
+                </div>
+                <button class="close">×</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 警告 -->
+    <div class="section">
+        <h2>⚠️ 警告</h2>
+        <div class="section-card">
+            <div class="scene-label">// 场景 1：低库存（带补货按钮）</div>
+            <div class="soft-card soft-warn">
+                <div class="ico-wrap">!</div>
+                <div class="body">
+                    <div class="title">3 个商品低于安全库存</div>
+                    <div class="desc">
+                        签字笔（22/30）· 龙井茶（6/8）· A4 复印纸（15/20）
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-primary btn-sm">立即采购</button>
+                        <button class="btn btn-sm">查看详情</button>
+                    </div>
+                </div>
+                <button class="close">×</button>
+            </div>
+
+            <div class="scene-label" style="margin-top:14px;">// 场景 2：首次登录强制改密</div>
+            <div class="soft-card soft-warn">
+                <div class="ico-wrap">!</div>
+                <div class="body">
+                    <div class="title">请先修改初始密码</div>
+                    <div class="desc">为了账号安全，首次登录请将初始密码修改为只有你知道的密码 · 未改密前无法访问其他页面</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 信息 -->
+    <div class="section">
+        <h2>ℹ️ 信息</h2>
+        <div class="section-card">
+            <div class="scene-label">// 场景 1：系统通知</div>
+            <div class="soft-card soft-info">
+                <div class="ico-wrap">i</div>
+                <div class="body">
+                    <div class="title">系统将于今晚 02:00 自动备份</div>
+                    <div class="desc">备份过程约 5 分钟，期间不影响正常使用 · 备份文件保存在 <code>backups/</code> 目录</div>
+                </div>
+                <button class="close">×</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; padding: 20px 0;">
+        <a href="ui_a_alert_v3_inline.html" class="btn btn-sm">‹ 方案 3</a>
+        <a href="ui_a_alert_index.html" class="btn btn-sm">返回方案对比</a>
+    </div>
+
+</div>
+
+</body>
+</html>

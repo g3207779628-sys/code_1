@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}数据导入{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">数据导入</span>{% endblock %}
+{% block content %}
+
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">数据导入</div>
+        <div class="page-sub">支持 .xlsx / .csv · DeepSeek AI 智能识别多表混合 · 仅 admin / manager 可见</div>
+    </div>
+    {% if stage != 'upload' %}
+    <a class="btn btn-secondary" href="{{ url_for('data_import') }}">← 重新上传</a>
+    {% endif %}
+</div>
+
+{% if stage == 'upload' %}
+<!-- ============ 第 1 步：上传文件 ============ -->
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>第 1 步 · 上传文件</h3><span class="meta">系统会自动判断每列归属</span></div>
+    <div class="body">
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-row">
+                <label>选择文件 <span class="req" style="color:var(--accent);">*</span></label>
+                <input type="file" name="file" required accept=".xlsx,.xlsm,.csv">
+                <div style="color:var(--ink-quiet); font-size:11px; margin-top:6px;">
+                    支持格式：xlsx / xlsm / csv · 第一行须为列头 · 多目标表混合的表会被 AI 拆解到对应 DB 表
+                </div>
+            </div>
+
+            <div style="margin-top:18px; padding:14px 18px; background:var(--bg-accent-soft); border-left:3px solid var(--accent); border-radius:4px; font-size:13px;">
+                <div style="font-weight:600; color:var(--accent-deep); margin-bottom:8px;">AI 智能识别能力</div>
+                <div style="color:var(--ink-soft); line-height:1.7;">
+                    <ul style="margin:0 0 0 18px; padding:0;">
+                        <li>识别中文/英文表头 → 自动 match 到 DB 字段（"单位"→<code>unit</code>，"存放区域"→<code>storage_area</code>）</li>
+                        <li>检测<strong>一张 Excel 混合多个 DB 表</strong>的情况（例如同时含商品 + 库位信息 → 自动拆分写入 sku 表 + location 表）</li>
+                        <li>分析样本数据辅助判断（"￥120" 大概率是价格列）</li>
+                        <li>对每列给出<strong>置信度 + 识别理由</strong>，下一步你可以手动调整</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="sticky-actions" style="margin-top:24px;">
+                <div class="left">
+                    <div>可写入：<strong>{{ targets.keys() | join(' / ') }}</strong></div>
+                </div>
+                <div class="right">
+                    <button class="btn btn-primary" type="submit">上传并智能分析 →</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% elif stage == 'preview' %}
+<!-- ============ 第 2 步：预览 + 字段映射调整 ============ -->
+
+<!-- LLM 分析摘要 -->
+{% if llm.available %}
+<div class="form-card" style="margin-bottom:14px;">
+    <div class="head">
+        <span class="accent-bar"></span>
+        <h3>AI 分析结果</h3>
+        <span class="meta">DeepSeek 已分析 {{ headers|length }} 列 · 共 {{ total_rows }} 行</span>
+    </div>
+    <div class="body">
+        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:280px; padding:12px 16px; background:var(--bg-accent-soft); border-left:3px solid var(--accent); border-radius:4px;">
+                <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">分析总结</div>
+                <div style="font-size:14px; color:var(--ink); font-weight:500;">{{ llm.summary or '已完成字段映射建议' }}</div>
+                {% if llm.multi_table_split %}
+                <div style="margin-top:8px; display:inline-block; padding:2px 8px; background:#fff; border:1px solid var(--accent); border-radius:3px; font-size:11px; color:var(--accent-deep); font-weight:500;">
+                    ⚠ 检测到多目标表混合，已自动分流
+                </div>
+                {% endif %}
+            </div>
+            {% if llm.warnings %}
+            <div style="flex:1; min-width:280px; padding:12px 16px; background:var(--warn-bg); border-left:3px solid var(--warn); border-radius:4px;">
+                <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">注意 / 警告</div>
+                <ul style="margin:0 0 0 16px; padding:0; font-size:12px; color:var(--ink-soft);">
+                    {% for w in llm.warnings %}<li>{{ w }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="form-card" style="margin-bottom:14px;">
+    <div class="head"><span class="accent-bar" style="background:var(--warn);"></span><h3>降级模式（机械识别）</h3><span class="meta">AI 不可用</span></div>
+    <div class="body">
+        <div style="color:var(--warn); font-size:13px;">仅依靠表头别名词典识别。准确率较低，请仔细核对下方每列的 DB 字段映射。</div>
+    </div>
+</div>
+{% endif %}
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>第 2 步 · 字段映射调整</h3><span class="meta">每列双层下拉：选目标表 → 选字段</span></div>
+    <div class="body">
+        <form method="post" action="{{ url_for('data_import_commit') }}" enctype="multipart/form-data" id="commit-form">
+
+            <div style="margin-bottom:14px; padding:10px 14px; background:var(--warn-bg); border-left:3px solid var(--warn); border-radius:4px; font-size:13px;">
+                <strong style="color:var(--warn);">⚠ 注意：</strong>
+                提交时需要<strong>重新选择同一个文件</strong>（避免大文件 session 风险）
+            </div>
+
+            <div class="form-row" style="margin-bottom:18px;">
+                <label>重新选择同一文件 <span class="req" style="color:var(--accent);">*</span></label>
+                <input type="file" name="file" required accept=".xlsx,.xlsm,.csv">
+            </div>
+
+            <!-- 字段映射 + 预览表（每列双层下拉）— 双向滑动 + 表头固定 -->
+            <div style="overflow:auto; max-height:60vh; border:1px solid var(--line); border-radius:6px; background:var(--bg-card); margin-top:18px;">
+            <table class="dense-table import-preview-table" style="margin:0; min-width:max-content;">
+                <thead>
+                    <tr>
+                        {% for col in llm.columns %}
+                        {% set h = col.header %}
+                        <th style="min-width:170px; vertical-align:top;">
+                            <div style="font-weight:600; color:var(--ink); margin-bottom:4px; font-size:13px;">{{ h }}</div>
+                            {% if col.confidence >= 0.7 %}
+                                <div style="font-size:10px; color:var(--ok); margin-bottom:6px;">✓ AI 高置信</div>
+                            {% elif col.confidence >= 0.4 %}
+                                <div style="font-size:10px; color:var(--warn); margin-bottom:6px;">~ AI 中等置信</div>
+                            {% else %}
+                                <div style="font-size:10px; color:var(--ink-quiet); margin-bottom:6px;">? 低置信 / 跳过</div>
+                            {% endif %}
+                            <select name="table__{{ h }}" class="tbl-sel" data-header="{{ h }}" style="font-size:12px; padding:4px 6px; margin-bottom:4px;">
+                                <option value="skip" {% if col.target_table == 'skip' or not col.target_table %}selected{% endif %}>— 跳过 —</option>
+                                {% for tk, t in targets.items() %}
+                                <option value="{{ tk }}" {% if col.target_table == tk %}selected{% endif %}>{{ t.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="field__{{ h }}" class="field-sel" data-header="{{ h }}" data-init-field="{{ col.field }}" style="font-size:12px; padding:4px 6px;">
+                                <option value="">— 字段 —</option>
+                            </select>
+                            {% if col.reason %}
+                            <div style="font-size:10px; color:var(--ink-quiet); margin-top:4px; line-height:1.3;">{{ col.reason }}</div>
+                            {% endif %}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in preview_rows %}
+                    <tr>
+                        {% for col in llm.columns %}
+                        <td style="font-size:12px; color:var(--ink-quiet); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ row.get(col.header) if row.get(col.header) is not none else '—' }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+
+            <div style="margin-top:10px; color:var(--ink-quiet); font-size:11px;">
+                上面只展示前 10 行。实际导入会处理完整 {{ total_rows }} 行（每行只在某目标表下有非空值时才被该表插入）。
+            </div>
+
+            <div class="sticky-actions" style="margin-top:24px;">
+                <div class="right">
+                    <a class="btn btn-secondary" href="{{ url_for('data_import') }}">取消</a>
+                    <button class="btn btn-primary" type="submit">确认并导入 ✓</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* 数据导入预览表：表头粘顶 + 内容横向滑动 */
+.import-preview-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg-soft);
+    border-bottom: 2px solid var(--line);
+}
+.import-preview-table td {
+    white-space: nowrap;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
+
+<script>
+// 每个目标表的可用字段
+const FIELD_OPTIONS = {{ field_options_by_table | tojson }};
+
+function rebuildFieldSelect(tblSel) {
+    const header = tblSel.dataset.header;
+    const tk = tblSel.value;
+    const fieldSel = document.querySelector(`select.field-sel[data-header="${CSS.escape(header)}"]`);
+    if (!fieldSel) return;
+    const initField = fieldSel.dataset.initField || '';
+    const prevValue = fieldSel.value || initField;
+    fieldSel.innerHTML = '<option value="">— 字段 —</option>';
+    if (tk === 'skip' || !tk) {
+        fieldSel.disabled = true;
+        return;
+    }
+    fieldSel.disabled = false;
+    const fields = FIELD_OPTIONS[tk] || [];
+    fields.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f;
+        opt.textContent = f;
+        if (f === prevValue) opt.selected = true;
+        fieldSel.appendChild(opt);
+    });
+}
+
+document.querySelectorAll('select.tbl-sel').forEach(sel => {
+    rebuildFieldSelect(sel);
+    sel.addEventListener('change', () => rebuildFieldSelect(sel));
+});
+</script>
+
+{% elif stage == 'result' %}
+<!-- ============ 第 3 步：多表分流导入结果 ============ -->
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>导入结果</h3><span class="meta">共 {{ summary.tables | length }} 个目标表</span></div>
+    <div class="body">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;">
+            <div style="padding:18px 22px; background:var(--ok-bg, #F0FDF4); border-left:3px solid var(--ok); border-radius:6px;">
+                <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">总成功</div>
+                <div style="font-size:32px; font-weight:700; color:var(--ok); font-family:var(--font-mono);">{{ summary.total_success }}</div>
+                <div style="font-size:12px; color:var(--ink-quiet);">行</div>
+            </div>
+            <div style="padding:18px 22px; background:var(--err-bg, #FEF2F2); border-left:3px solid var(--err); border-radius:6px;">
+                <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">总失败</div>
+                <div style="font-size:32px; font-weight:700; color:var(--err); font-family:var(--font-mono);">{{ summary.total_fail }}</div>
+                <div style="font-size:12px; color:var(--ink-quiet);">行</div>
+            </div>
+        </div>
+
+        <h4 style="font-size:13px; color:var(--ink-soft); margin:18px 0 10px;">分表统计</h4>
+        <table class="dense-table">
+            <thead>
+                <tr><th>目标表</th><th class="text-right">尝试</th><th class="text-right">成功</th><th class="text-right">失败</th><th>错误列表</th></tr>
+            </thead>
+            <tbody>
+                {% for tk, r in summary.tables.items() %}
+                <tr>
+                    <td><strong>{{ r.label }}</strong> <span class="text-tertiary" style="font-size:11px;">({{ tk }})</span></td>
+                    <td class="num-mono text-right">{{ r.attempted }}</td>
+                    <td class="num-mono text-right" style="color:var(--ok); font-weight:600;">{{ r.success }}</td>
+                    <td class="num-mono text-right" style="color:var(--err); font-weight:600;">{{ r.fail }}</td>
+                    <td style="font-size:11px; color:var(--ink-quiet);">
+                        {% if r.errors %}
+                        <details>
+                            <summary style="cursor:pointer; color:var(--accent);">查看 {{ r.errors|length }} 条</summary>
+                            <ol style="margin:6px 0 0 18px; padding:0; line-height:1.7;">
+                                {% for e in r.errors[:20] %}<li>{{ e }}</li>{% endfor %}
+                                {% if r.errors|length > 20 %}<li style="color:var(--ink-quiet);">... 还有 {{ r.errors|length - 20 }} 条</li>{% endif %}
+                            </ol>
+                        </details>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="sticky-actions" style="margin-top:24px;">
+            <div class="right">
+                <a class="btn btn-secondary" href="{{ url_for('data_import') }}">← 再导一次</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

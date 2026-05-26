@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ loc.code }} 库位库存{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:12px;">
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('inventory_list', view='by_location') }}">‹ 返回</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span>库位：{{ loc.code }}</span>
+        <span class="text-tertiary" style="font-size:12px;">
+            {{ loc.wh_name or '-' }} · {{ loc.area_name or '未分配存储区' }} ·
+            <span class="badge">—</span>
+        </span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">库存明细（{{ items|length }} 行）</div>
+    <div class="card-body" style="padding:0;">
+        {% if items %}
+        <table>
+            <thead>
+                <tr><th>物品</th><th>规格</th><th>批次</th><th>在仓</th><th>已预占</th><th>可用</th></tr>
+            </thead>
+            <tbody>
+                {% for it in items %}
+                <tr>
+                    <td><strong>{{ it.sku_name }}</strong> <span class="text-tertiary mono" style="font-size:11px;">{{ it.sku_code }}</span></td>
+                    <td>{{ it.sku_spec or '-' }}</td>
+                    <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
+                    <td class="mono"><strong>{{ it.on_hand }}</strong> {{ it.unit }}</td>
+                    <td class="mono">{{ it.reserved }}</td>
+                    <td class="mono"><strong>{{ it.on_hand - it.reserved }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">该库位暂无库存。</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v14 方案 C · 保持现状 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { font-size: 13px; background: var(--bg-soft); padding: 32px 40px; }
+.page { max-width: 1280px; margin: 0 auto; }
+.head { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px 26px; margin-bottom: 18px; }
+.head .tag { display: inline-block; font-size: 10px; letter-spacing: 2px; padding: 2px 8px; background: var(--warn-bg); color: var(--warn); border-radius: 2px; font-weight: 600; margin-bottom: 6px; }
+.head h1 { font-size: 22px; margin-bottom: 6px; }
+.head .sub { color: var(--ink-quiet); font-size: 13px; }
+
+.demo-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.demo-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.demo-card .head { background: var(--bg-soft); padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--ink-quiet); text-transform: uppercase; margin-bottom: 0; }
+.demo-card .body { padding: 14px; }
+.demo-card .menu-item { padding: 6px 10px; font-size: 12px; color: var(--ink-soft); }
+.demo-card table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.demo-card table th { background: var(--bg-soft); padding: 6px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-quiet); text-align: left; border-bottom: 1px solid var(--line); }
+.demo-card table td { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); font-size: 12px; }
+.demo-card .code-mono { font-family: var(--font-mono); color: var(--accent-deep); }
+
+.form-demo { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px 22px; margin-bottom: 18px; }
+.form-demo h3 { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+.row label { display: block; font-size: 11px; color: var(--ink-quiet); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.row input { width: 100%; max-width: 400px; padding: 7px 10px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--line-input); border-radius: 4px; box-sizing: border-box; }
+.row .hint { font-size: 11px; color: var(--ink-quiet); margin-top: 6px; }
+.row .convention { background: var(--bg-soft); padding: 10px 14px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; margin-top: 8px; color: var(--ink-soft); }
+.row .convention .accent { color: var(--accent-deep); font-weight: 700; }
+
+.code-block { background: var(--bg-input); padding: 14px 18px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; color: var(--ink-soft); overflow-x: auto; }
+.code-block .kw { color: var(--accent-deep); font-weight: 700; }
+.code-block .warn { color: var(--warn); font-weight: 700; }
+
+.back { display: inline-block; padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; text-decoration: none; color: var(--ink); font-size: 12px; margin-bottom: 18px; }
+.back:hover { border-color: var(--accent); color: var(--accent); }
+
+.pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+.pros-cons > div { padding: 14px 18px; border-radius: 6px; font-size: 12px; line-height: 1.7; }
+.pros { background: var(--ok-bg); border-left: 3px solid var(--ok); }
+.cons { background: var(--err-bg); border-left: 3px solid var(--err); }
+.pros strong { color: var(--ok); font-weight: 700; }
+.cons strong { color: var(--err); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<a class="back" href="ui_v14_loc_index.html">← 返回 3 方案对比</a>
+
+<div class="head">
+    <span class="tag">C · 轻方案</span>
+    <h1>保持现状：仅 location.code 自由文本</h1>
+    <div class="sub">不动数据结构。靠用户自己用<code style="background:var(--bg-soft); padding:1px 6px; border-radius:3px;">code</code>命名约定表达楼栋楼层信息。</div>
+</div>
+
+<div class="form-demo">
+    <h3>新建库位表单（现状不变）</h3>
+    <div class="row" style="margin-bottom: 14px;">
+        <label>所属仓库 *</label>
+        <input value="金山主仓" readonly>
+    </div>
+    <div class="row">
+        <label>库位代码 *</label>
+        <input value="1栋-2层-A01">
+        <div class="hint">建议约定一种命名规则，让团队执行</div>
+        <div class="convention">
+            <span class="accent">推荐命名约定：</span><br>
+            · 单层小仓：<span class="accent">A-01</span> / <span class="accent">B-02</span>（A/B 是货架编号）<br>
+            · 多层楼仓：<span class="accent">1栋-2层-A01</span> / <span class="accent">1F-A03</span><br>
+            · 临时区：<span class="accent">隔离-临时-01</span> / <span class="accent">退货-A</span><br>
+            · 跨仓：<span class="accent">分仓-酒柜</span>
+        </div>
+    </div>
+</div>
+
+<div class="demo-row">
+    <div class="demo-card">
+        <div class="head">仓库数据维护菜单（不增项）</div>
+        <div class="body">
+            <div class="menu-item">仓库</div>
+            <div class="menu-item">仓库分配部门</div>
+            <div class="menu-item">仓库使用部门</div>
+            <div class="menu-item">仓库类型</div>
+            <div class="menu-item">责任人</div>
+            <div class="menu-item">库位</div>
+            <div class="menu-item">存储区</div>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <div class="head">库位列表（无结构化分组）</div>
+        <div class="body">
+            <table>
+                <thead><tr><th>库位代码</th><th class="text-right">在仓</th></tr></thead>
+                <tbody>
+                    <tr><td class="code-mono">1栋-2层-A01</td><td style="text-align:right;">128</td></tr>
+                    <tr><td class="code-mono">1栋-2层-A02</td><td style="text-align:right;">86</td></tr>
+                    <tr><td class="code-mono">2栋-1层-B01</td><td style="text-align:right;">15</td></tr>
+                    <tr><td class="code-mono">2栋-1层-B02</td><td style="text-align:right;">22</td></tr>
+                    <tr><td class="code-mono">分仓-酒柜</td><td style="text-align:right;">36</td></tr>
+                </tbody>
+            </table>
+            <div style="font-size:11px; color:var(--ink-quiet); margin-top:8px;">代码自由 → 想分组只能视觉上看名称前缀</div>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <div class="head">"1 号楼总在仓" 查询（模糊匹配）</div>
+        <div class="body">
+            <table>
+                <thead><tr><th>库位代码</th><th class="text-right">在仓</th></tr></thead>
+                <tbody>
+                    <tr><td class="code-mono">1栋-2层-A01</td><td style="text-align:right;">128</td></tr>
+                    <tr><td class="code-mono">1栋-2层-A02</td><td style="text-align:right;">86</td></tr>
+                </tbody>
+            </table>
+            <div style="font-size:11px; color:var(--warn); margin-top:8px;">⚠ SQL: <code>WHERE code LIKE '%1栋%'</code><br>遇到拼写差异（"1栋" vs "1 号楼"）会漏</div>
+        </div>
+    </div>
+</div>
+
+<div class="head">
+    <h1 style="font-size: 16px;">数据库 schema（与现状一致）</h1>
+    <div class="code-block">
+<span class="kw">CREATE TABLE</span> location (
+    id INTEGER PRIMARY KEY,
+    warehouse_id INTEGER <span class="kw">REFERENCES</span> warehouse(id),
+    code TEXT NOT NULL,    <span style="color:var(--ink-faded);">-- 用户自己用约定 "1栋-2层-A01"</span>
+    zone_type TEXT
+);
+<span style="color:var(--ok);">-- 优点：什么都不改</span>
+
+<span class="warn">-- 缺点：查询"1栋总在仓量" 用 LIKE 不严谨</span>
+SELECT SUM(inv.on_hand) FROM inventory inv
+  JOIN location l ON l.id=inv.location_id
+WHERE l.code LIKE <span style="color:var(--warn);">'%1栋%'</span>;  <span style="color:var(--ink-faded);">-- 漏掉 "1号楼-..." 这种</span>
+    </div>
+</div>
+
+<div class="pros-cons">
+    <div class="pros">
+        <strong>★ 优点</strong><br>
+        · 实装零工作量（甚至不用动一行代码）<br>
+        · 命名最灵活，跨仓 / 临时区 / 特殊场景都好处理<br>
+        · 适合**仓库结构简单**的场景：1 个仓库 / 1 栋楼 / 几个货架
+    </div>
+    <div class="cons">
+        <strong>✗ 缺点</strong><br>
+        · 治理靠人，"1栋 / 1号楼 / 1-栋 / 主楼" 几种写法同时存在导致查询漏数<br>
+        · 不能 GROUP BY 楼栋（只能 LIKE 模糊查）<br>
+        · 将来真有 5+ 栋楼时，从 C 升级 A 数据清洗代价大<br>
+        · 部分用户可能根本不写楼栋号，靠记忆识别"A-01 是 1 楼"
+    </div>
+</div>
+
+</div>
+
+</body>
+</html>

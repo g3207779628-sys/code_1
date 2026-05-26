@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>方案 C · 库存流水 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { font-size: 13px; }
+.content { padding: 18px 28px; background: var(--bg-base); }
+.layout { background: var(--bg-base); }
+.sider { width: 200px; }
+.menu li > a { padding: 7px 18px; font-size: 13px; }
+.menu-group { font-size: 10px; letter-spacing: 1px; padding: 12px 20px 4px; }
+.header { height: 52px; }
+
+.page-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.page-title { font-size: 18px; font-weight: 700; margin-bottom: 0; }
+.page-sub { display: inline; font-size: 12px; color: var(--ink-quiet); margin-left: 10px; }
+
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 14px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--r-md); margin-bottom: 12px; align-items: center; }
+.toolbar .field-inline { display: flex; align-items: center; gap: 6px; }
+.toolbar .field-inline label { font-size: 11px; color: var(--ink-quiet); white-space: nowrap; }
+.toolbar input, .toolbar select { padding: 5px 8px; font-size: 12px; width: 140px; background: var(--bg-card); }
+.toolbar input[type=date] { width: 120px; }
+.toolbar .btn { padding: 5px 12px; font-size: 12px; }
+
+.tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 12px;
+    gap: 0;
+}
+.tab-bar a {
+    padding: 9px 18px;
+    font-size: 13px;
+    color: var(--ink-quiet);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    text-decoration: none;
+}
+.tab-bar a:hover { color: var(--ink); }
+.tab-bar a.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-bar a .count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-faded);
+    margin-left: 4px;
+}
+.tab-bar a.active .count { color: var(--accent); }
+
+.inv-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.dense-table { width: 100%; border-collapse: collapse; }
+.dense-table th { background: var(--bg-soft); padding: 8px 12px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ink-quiet); text-align: left; border-bottom: 1px solid var(--line); }
+.dense-table td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid var(--line-soft); }
+.dense-table tr:hover { background: var(--bg-row-hover); }
+.dense-table tr:last-child td { border-bottom: none; }
+.dense-table .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.dense-table .num-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+.dense-table .text-right { text-align: right; }
+.dense-table .sku-name { font-weight: 600; }
+.dense-table .id-cell { font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+.dense-table .delta-in { color: var(--ok); font-weight: 700; }
+.dense-table .delta-out { color: var(--err); font-weight: 700; }
+.tag { font-size: 10px; padding: 1px 6px; line-height: 1.4; border-radius: 2px; }
+
+.tablefoot { padding: 8px 14px; background: var(--bg-soft); border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--ink-quiet); }
+.tablefoot .pages { display: flex; gap: 3px; }
+.tablefoot .pages a { padding: 3px 8px; border: 1px solid var(--line); border-radius: 2px; color: var(--ink); font-size: 11px; background: var(--bg-card); font-family: var(--font-mono); }
+.tablefoot .pages a.active { background: var(--accent); color: #FFF; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="demo-banner"><strong>方案 C · 紧凑工业</strong> · 库存流水 · 12 行/页</div>
+
+<div class="layout">
+    <aside class="sider">
+        <div class="sider-brand"><span class="mark">金</span>金山仓储</div>
+        <ul class="menu">
+            <li class="menu-group">日常使用</li>
+            <li><a href="ui_white_c_dashboard.html">工作台 <span class="arrow">›</span></a></li>
+            <li><a href="#">待审批中心 <span class="arrow">›</span></a></li>
+            <li class="menu-group">日常操作</li>
+            <li><a href="#">入库 <span class="arrow">›</span></a></li>
+            <li><a href="#">出库 <span class="arrow">›</span></a></li>
+            <li><a href="#">调拨 <span class="arrow">›</span></a></li>
+            <li><a href="#">报损 <span class="arrow">›</span></a></li>
+            <li><a href="#">盘点 <span class="arrow">›</span></a></li>
+            <li class="menu-group">查询分析</li>
+            <li><a href="ui_white_c_inventory.html">库存查询 <span class="arrow">›</span></a></li>
+            <li><a href="#" class="active">库存流水 <span class="arrow">›</span></a></li>
+            <li><a href="#">经营报表 <span class="arrow">›</span></a></li>
+            <li><a href="#">库存预测 <span class="arrow">›</span></a></li>
+            <li class="menu-group">数据维护</li>
+            <li><a href="#">商品 <span class="arrow">›</span></a></li>
+            <li class="menu-group">系统</li>
+            <li><a href="#">用户与权限 <span class="arrow">›</span></a></li>
+        </ul>
+    </aside>
+
+    <div class="main">
+        <header class="header">
+            <div class="crumb"><span class="prev">查询分析</span><span class="sep">/</span><span class="now">库存流水</span></div>
+            <div class="header-actions">
+                <span class="user-name" style="font-size:12px;">王经理</span>
+                <span class="quiet">改密</span>
+                <span class="quiet">退出</span>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="page-head">
+                <div>
+                    <span class="page-title">库存流水</span>
+                    <span class="page-sub">全部出入库变动 · 来源 stock_log · 共 1,247 条</span>
+                </div>
+                <div class="flex gap-8">
+                    <a href="#" class="btn btn-sm">导出 Excel</a>
+                    <a href="#" class="btn btn-sm">导出 CSV</a>
+                </div>
+            </div>
+
+            <div class="tab-bar">
+                <a href="#" class="active">全部<span class="count">1,247</span></a>
+                <a href="#">入库<span class="count">+587</span></a>
+                <a href="#">出库<span class="count">-512</span></a>
+                <a href="#">调拨<span class="count">87</span></a>
+                <a href="#">报损<span class="count">31</span></a>
+                <a href="#">盘点<span class="count">30</span></a>
+            </div>
+
+            <div class="toolbar">
+                <div class="field-inline">
+                    <label>日期</label>
+                    <input type="date" value="2026-05-01">
+                    <span style="color:var(--ink-faded);">至</span>
+                    <input type="date" value="2026-05-21">
+                </div>
+                <div class="field-inline">
+                    <label>SKU</label>
+                    <input type="search" placeholder="名称 / 编码">
+                </div>
+                <div class="field-inline">
+                    <label>仓库</label>
+                    <select>
+                        <option>全部</option>
+                        <option>金山主仓</option>
+                        <option>研发中心仓</option>
+                    </select>
+                </div>
+                <div class="field-inline">
+                    <label>操作人</label>
+                    <select>
+                        <option>全部</option>
+                        <option>王经理</option>
+                        <option>李文员</option>
+                        <option>张库管</option>
+                    </select>
+                </div>
+                <a href="#" class="btn btn-primary">查询</a>
+                <a href="#" class="btn">重置</a>
+                <span style="margin-left:auto; font-size:11px; color: var(--ink-quiet);">显示 1-12 / 1,247</span>
+            </div>
+
+            <div class="inv-card">
+                <table class="dense-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 11%;">时间</th>
+                            <th style="width: 12%;">单号</th>
+                            <th style="width: 6%;">类型</th>
+                            <th style="width: 18%;">商品</th>
+                            <th style="width: 13%;">仓库 / 库位</th>
+                            <th class="text-right" style="width: 8%;">变动</th>
+                            <th class="text-right" style="width: 7%;">变动前</th>
+                            <th class="text-right" style="width: 7%;">变动后</th>
+                            <th style="width: 8%;">操作人</th>
+                            <th style="width: 10%;">备注</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="mono text-quiet">05-21 14:08</td>
+                            <td class="id-cell">RKD-...-001</td>
+                            <td><span class="tag tag-success">入库</span></td>
+                            <td class="sku-name">茅台</td>
+                            <td>主仓 / <span class="mono text-quiet">A1</span></td>
+                            <td class="text-right num-mono delta-in">+20</td>
+                            <td class="text-right num-mono text-quiet">108</td>
+                            <td class="text-right num-mono">128</td>
+                            <td>王经理</td>
+                            <td class="text-quiet">采购</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-21 13:42</td>
+                            <td class="id-cell">RKD-...-002</td>
+                            <td><span class="tag tag-success">入库</span></td>
+                            <td class="sku-name">A4 复印纸</td>
+                            <td>主仓 / <span class="mono text-quiet">B2</span></td>
+                            <td class="text-right num-mono delta-in">+500</td>
+                            <td class="text-right num-mono text-quiet">15</td>
+                            <td class="text-right num-mono">515</td>
+                            <td>李文员</td>
+                            <td class="text-quiet">月采购</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-21 11:20</td>
+                            <td class="id-cell">CKD-...-014</td>
+                            <td><span class="tag tag-warn">出库</span></td>
+                            <td class="sku-name">签字笔</td>
+                            <td>主仓 / <span class="mono text-quiet">B1</span></td>
+                            <td class="text-right num-mono delta-out">-12</td>
+                            <td class="text-right num-mono text-quiet">34</td>
+                            <td class="text-right num-mono">22</td>
+                            <td>张库管</td>
+                            <td class="text-quiet">行政领用</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-21 10:45</td>
+                            <td class="id-cell">CKD-...-013</td>
+                            <td><span class="tag tag-warn">出库</span></td>
+                            <td class="sku-name">龙井</td>
+                            <td>主仓 / <span class="mono text-quiet">C1</span></td>
+                            <td class="text-right num-mono delta-out">-2</td>
+                            <td class="text-right num-mono text-quiet">8</td>
+                            <td class="text-right num-mono" style="color:var(--err);">6</td>
+                            <td>王经理</td>
+                            <td class="text-quiet">招待</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-21 09:30</td>
+                            <td class="id-cell">CKD-...-012</td>
+                            <td><span class="tag tag-warn">出库</span></td>
+                            <td class="sku-name">茅台</td>
+                            <td>主仓 / <span class="mono text-quiet">A1</span></td>
+                            <td class="text-right num-mono delta-out">-5</td>
+                            <td class="text-right num-mono text-quiet">113</td>
+                            <td class="text-right num-mono">108</td>
+                            <td>王经理</td>
+                            <td class="text-quiet">招待</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-20 16:20</td>
+                            <td class="id-cell">DBD-...-008</td>
+                            <td><span class="tag tag-info">调拨</span></td>
+                            <td class="sku-name">茅台</td>
+                            <td>主仓→研发</td>
+                            <td class="text-right num-mono">36</td>
+                            <td class="text-right num-mono text-quiet">149</td>
+                            <td class="text-right num-mono">113</td>
+                            <td>王经理</td>
+                            <td class="text-quiet">分仓补</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-20 15:10</td>
+                            <td class="id-cell">BSD-...-005</td>
+                            <td><span class="tag tag-error">报损</span></td>
+                            <td class="sku-name">五粮液</td>
+                            <td>主仓 / <span class="mono text-quiet">A2</span></td>
+                            <td class="text-right num-mono delta-out">-1</td>
+                            <td class="text-right num-mono text-quiet">87</td>
+                            <td class="text-right num-mono">86</td>
+                            <td>张库管</td>
+                            <td class="text-quiet">破损</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-20 11:48</td>
+                            <td class="id-cell">PD-...-003</td>
+                            <td><span class="tag tag-default">盘点</span></td>
+                            <td class="sku-name">A4 复印纸</td>
+                            <td>主仓 / <span class="mono text-quiet">B2</span></td>
+                            <td class="text-right num-mono delta-out">-3</td>
+                            <td class="text-right num-mono text-quiet">18</td>
+                            <td class="text-right num-mono">15</td>
+                            <td>张库管</td>
+                            <td class="text-quiet">月盘亏</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-20 09:15</td>
+                            <td class="id-cell">RKD-...-019</td>
+                            <td><span class="tag tag-success">入库</span></td>
+                            <td class="sku-name">五粮液</td>
+                            <td>主仓 / <span class="mono text-quiet">A2</span></td>
+                            <td class="text-right num-mono delta-in">+24</td>
+                            <td class="text-right num-mono text-quiet">63</td>
+                            <td class="text-right num-mono">87</td>
+                            <td>王经理</td>
+                            <td class="text-quiet">采购</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-19 14:30</td>
+                            <td class="id-cell">CKD-...-011</td>
+                            <td><span class="tag tag-warn">出库</span></td>
+                            <td class="sku-name">签字笔</td>
+                            <td>主仓 / <span class="mono text-quiet">B1</span></td>
+                            <td class="text-right num-mono delta-out">-8</td>
+                            <td class="text-right num-mono text-quiet">42</td>
+                            <td class="text-right num-mono">34</td>
+                            <td>李文员</td>
+                            <td class="text-quiet">部门领用</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-19 10:00</td>
+                            <td class="id-cell">RKD-...-018</td>
+                            <td><span class="tag tag-success">入库</span></td>
+                            <td class="sku-name">龙井</td>
+                            <td>主仓 / <span class="mono text-quiet">C1</span></td>
+                            <td class="text-right num-mono delta-in">+12</td>
+                            <td class="text-right num-mono text-quiet">0</td>
+                            <td class="text-right num-mono">12</td>
+                            <td>王经理</td>
+                            <td class="text-quiet">明前新茶</td>
+                        </tr>
+                        <tr>
+                            <td class="mono text-quiet">05-18 17:42</td>
+                            <td class="id-cell">CKD-...-010</td>
+                            <td><span class="tag tag-warn">出库</span></td>
+                            <td class="sku-name">茅台</td>
+                            <td>主仓 / <span class="mono text-quiet">A1</span></td>
+                            <td class="text-right num-mono delta-out">-3</td>
+                            <td class="text-right num-mono text-quiet">152</td>
+                            <td class="text-right num-mono">149</td>
+                            <td>王经理</td>
+                            <td class="text-quiet">客户招待</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="tablefoot">
+                    <span>显示 1-12 / 共 1,247 条</span>
+                    <div class="pages">
+                        <a href="#">‹</a>
+                        <a href="#" class="active">1</a>
+                        <a href="#">2</a>
+                        <a href="#">3</a>
+                        <a href="#">…</a>
+                        <a href="#">104</a>
+                        <a href="#">›</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-nav">
+                <a href="ui_white_c_inventory.html" class="btn btn-sm">‹ 上一页 库存查询</a>
+                <a href="ui_white_index.html" class="btn btn-sm">返回方案对比</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

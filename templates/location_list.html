@@ -1,39 +1,64 @@
 {% extends "base.html" %}
 {% block title %}库位管理{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">库位</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">
-        <span>库位列表（共 {{ locations|length }} 个）</span>
-        {% if session.role in ['admin', 'manager'] %}
-        <a class="btn" href="{{ url_for('location_new') }}">新增库位</a>
-        {% endif %}
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">库位</div>
+        <div class="page-sub">共 {{ rows|length }} 个 · 仓库 → 存放区域 → 存放位置</div>
     </div>
-    <div class="card-body" style="padding:0;">
-        {% if locations %}
-        <table>
-            <thead><tr><th>所属仓库</th><th>库位编码</th><th>分区类型</th>{% if session.role in ['admin', 'manager'] %}<th>操作</th>{% endif %}</tr></thead>
-            <tbody>
-                {% for l in locations %}
+    {% if session.role in ['admin','manager'] %}
+    <a class="btn btn-primary" href="{{ url_for('location_new') }}">+ 新建库位</a>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>库位列表</h3><span class="meta">{{ rows|length }} 个</span></div>
+    <div class="body" style="padding:0;">
+        {% if rows %}
+        <table class="dense-table">
+            <thead>
                 <tr>
-                    <td>{{ l.warehouse_name }}</td>
-                    <td class="mono">{{ l.code }}</td>
-                    <td><span class="badge badge-{{ l.zone_type }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻','isolation':'隔离','downgrade':'降级'}[l.zone_type] }}</span></td>
-                    {% if session.role in ['admin', 'manager'] %}
-                    <td class="actions">
-                        {% if session.role == 'admin' %}
-                        <form method="post" action="{{ url_for('location_delete', location_id=l.id) }}" style="display:inline;" onsubmit="return confirm('确认删除库位 {{ l.code }}？');">
-                            <button class="btn btn-sm btn-danger" type="submit">删</button>
+                    <th>所属仓库</th>
+                    <th>存放区域</th>
+                    <th>存放位置</th>
+                    <th>类型</th>
+                    <th>责任人</th>
+                    <th>分配部门</th>
+                    <th>使用部门</th>
+                    <th class="text-right">在仓物品</th>
+                    <th class="text-right" style="width:140px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td>{{ r.warehouse_name }}</td>
+                    <td style="color:var(--accent-deep);">{{ r.storage_area or '—' }}</td>
+                    <td class="mono"><strong>{{ r.storage_position or '—' }}</strong></td>
+                    <td>{{ r.wh_type_name or '—' }}</td>
+                    <td>{{ r.owner_name or '—' }}</td>
+                    <td>{{ r.alloc_dept_name or '—' }}</td>
+                    <td>{{ r.use_dept_name or '—' }}</td>
+                    <td class="num-mono text-right">{{ r.active_skus }}</td>
+                    <td class="text-right">
+                        {% if session.role in ['admin','manager'] %}
+                        <a class="btn btn-sm btn-link" href="{{ url_for('location_edit', loc_id=r.id) }}">编辑</a>
+                        <form method="post" action="{{ url_for('location_delete', loc_id=r.id) }}" style="display:inline;"
+                              onsubmit="return confirm('删除库位「{{ r.storage_area }} / {{ r.storage_position }}」？仅无库存时可删');">
+                            <button class="btn btn-sm btn-danger" type="submit">删除</button>
                         </form>
                         {% endif %}
                     </td>
-                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <div class="empty">还没有库位。</div>
+        <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
+            还没有库位。点击右上「+ 新建库位」开始。
+        </div>
         {% endif %}
     </div>
 </div>

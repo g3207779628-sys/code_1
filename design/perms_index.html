@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>权限管理 UI 方案对比 - 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.page { max-width: 1200px; margin: 40px auto; padding: 0 24px; }
+
+.hero {
+    background: linear-gradient(135deg, #001529 0%, #1677FF 100%);
+    color: #FFF;
+    padding: 40px 48px;
+    border-radius: 12px;
+    margin-bottom: 32px;
+    box-shadow: 0 8px 24px rgba(0,21,41,0.2);
+}
+.hero h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+.hero .subtitle { font-size: 14px; opacity: 0.85; }
+.hero .meta {
+    margin-top: 18px;
+    display: flex; gap: 24px;
+    font-size: 12px;
+}
+.hero .meta div { opacity: 0.85; }
+.hero .meta strong { color: #FFF; font-size: 14px; display: block; margin-bottom: 2px; }
+
+.compare-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+.option-card {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s;
+    cursor: pointer;
+    display: flex; flex-direction: column;
+}
+.option-card:hover {
+    border-color: var(--ant-primary);
+    box-shadow: 0 8px 24px rgba(22,119,255,0.12);
+    transform: translateY(-2px);
+}
+.option-preview {
+    height: 220px;
+    background: var(--ant-bg-base);
+    border-bottom: 1px solid var(--ant-divider);
+    padding: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* preview 1 — 分组卡片 */
+.preview-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.preview-1 .mini-card {
+    background: #FFF; border: 1px solid var(--ant-divider);
+    border-radius: 4px; padding: 8px;
+}
+.preview-1 .mini-card .h { display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 6px; }
+.preview-1 .mini-card .h .n { background: var(--ant-success-bg); color: var(--ant-success); padding: 0 6px; border-radius: 8px; font-size: 9px; }
+.preview-1 .mini-card .row {
+    display: flex; gap: 4px; align-items: center;
+    font-size: 9px; padding: 3px 0;
+}
+.preview-1 .mini-card .row .chk {
+    width: 10px; height: 10px; border: 1px solid var(--ant-border); border-radius: 2px;
+}
+.preview-1 .mini-card .row.on .chk { background: var(--ant-primary); border-color: var(--ant-primary); }
+.preview-1 .mini-card .row.on { color: var(--ant-primary); }
+
+/* preview 2 — 角色预设 + chip */
+.preview-2 .presets { display: flex; gap: 6px; margin-bottom: 10px; }
+.preview-2 .preset {
+    flex: 1; background: #FFF; border: 2px solid var(--ant-divider);
+    padding: 6px 4px; text-align: center;
+    border-radius: 4px;
+    font-size: 9px;
+}
+.preview-2 .preset.active { background: var(--ant-primary-light); border-color: var(--ant-primary); color: var(--ant-primary); }
+.preview-2 .chips { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.preview-2 .chip {
+    font-size: 9px; padding: 2px 8px; border-radius: 10px;
+    background: var(--ant-success-bg); color: var(--ant-success);
+    border: 1px solid #B7EB8F;
+}
+.preview-2 .chip.empty {
+    background: #FFF; border: 1px dashed var(--ant-divider); color: var(--ant-text-tertiary);
+}
+.preview-2 .label-line {
+    font-size: 9px; color: var(--ant-text-tertiary);
+    text-transform: uppercase; margin-bottom: 4px;
+}
+
+/* preview 3 — 穿梭框 */
+.preview-3 { display: grid; grid-template-columns: 1fr 30px 1fr; gap: 8px; height: 100%; }
+.preview-3 .box {
+    background: #FFF; border: 1px solid var(--ant-divider); border-radius: 4px;
+    display: flex; flex-direction: column;
+}
+.preview-3 .box .h { padding: 6px 8px; background: #FAFAFA; font-size: 9px; border-bottom: 1px solid var(--ant-divider); display: flex; justify-content: space-between; }
+.preview-3 .box .row { padding: 4px 8px; font-size: 9px; display: flex; gap: 4px; align-items: center; }
+.preview-3 .box .row .chk { width: 8px; height: 8px; border: 1px solid var(--ant-border); }
+.preview-3 .box .row.on .chk { background: var(--ant-primary); border-color: var(--ant-primary); }
+.preview-3 .arrows { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.preview-3 .arrows button {
+    width: 28px; height: 24px; border: 1px solid var(--ant-divider);
+    background: #FFF; border-radius: 3px; font-size: 10px; cursor: default;
+}
+
+/* preview 4 — 矩阵 */
+.preview-4 { font-size: 9px; overflow: hidden; }
+.preview-4 table { width: 100%; border-collapse: collapse; background: #FFF; }
+.preview-4 th, .preview-4 td { border: 1px solid #F0F0F0; padding: 4px 2px; text-align: center; }
+.preview-4 th { background: #FAFAFA; font-size: 8px; font-weight: 500; }
+.preview-4 th:first-child, .preview-4 td:first-child { text-align: left; padding-left: 6px; background: #FCFCFC; font-weight: 500; }
+.preview-4 .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1.5px solid var(--ant-divider);
+    display: inline-block;
+}
+.preview-4 .dot.on { background: var(--ant-primary); border-color: var(--ant-primary); }
+.preview-4 .dot.lock { background: var(--ant-text-tertiary); border-color: var(--ant-text-tertiary); }
+
+.option-meta { padding: 20px; flex: 1; }
+.option-meta h2 {
+    font-size: 18px; font-weight: 600; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+}
+.option-meta h2 .num {
+    width: 28px; height: 28px;
+    background: var(--ant-primary);
+    color: #FFF; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-family: var(--font-num);
+}
+.option-meta .feature {
+    font-size: 12px; color: var(--ant-text-secondary);
+    margin: 10px 0; line-height: 1.7;
+}
+.option-meta .pros-cons {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin: 12px 0;
+}
+.option-meta .pros, .option-meta .cons {
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.option-meta .pros {
+    background: var(--ant-success-bg);
+    border-left: 3px solid var(--ant-success);
+}
+.option-meta .cons {
+    background: #FFF7E6;
+    border-left: 3px solid var(--ant-warning);
+}
+.option-meta .pros strong, .option-meta .cons strong {
+    display: block; font-size: 11px; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.option-meta .pros strong { color: var(--ant-success); }
+.option-meta .cons strong { color: var(--ant-warning); }
+.option-meta .pros ul, .option-meta .cons ul { padding-left: 14px; margin: 0; }
+.option-meta .pros li, .option-meta .cons li { margin-bottom: 2px; }
+
+.option-meta .scene {
+    font-size: 12px;
+    padding: 8px 12px;
+    background: #FAFAFA;
+    border-left: 3px solid var(--ant-text-tertiary);
+    border-radius: 0 4px 4px 0;
+    color: var(--ant-text-secondary);
+    margin-bottom: 12px;
+}
+.option-meta .scene strong { color: var(--ant-text); }
+
+.option-actions {
+    padding: 12px 20px;
+    border-top: 1px solid var(--ant-divider);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.option-actions .meta { font-size: 12px; color: var(--ant-text-tertiary); }
+
+.compare-table {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 32px;
+}
+.compare-table .table th { font-weight: 600; color: var(--ant-text); }
+.compare-table .check { color: var(--ant-success); font-weight: 600; }
+.compare-table .nope { color: var(--ant-text-tertiary); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+    <div class="hero">
+        <h1>权限管理 UI — 4 套设计方案</h1>
+        <div class="subtitle">为「金山仓储」管理员设计的菜单权限分配界面 · 请选出最符合贵公司日常使用习惯的方案</div>
+        <div class="meta">
+            <div><strong>13</strong>项菜单权限</div>
+            <div><strong>5</strong>个一级分组</div>
+            <div><strong>15-20</strong>位用户规模</div>
+            <div><strong>4</strong>种交互方案对比</div>
+        </div>
+    </div>
+
+    <div class="compare-grid">
+
+        <!-- 方案 1 -->
+        <a href="perms_v1_card_groups.html" style="color:inherit;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="preview-1">
+                    <div class="mini-card">
+                        <div class="h"><span>工作台</span><span class="n">2/2</span></div>
+                        <div class="row on"><span class="chk"></span> 首页</div>
+                        <div class="row on"><span class="chk"></span> 待审批</div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="h"><span>业务</span><span class="n" style="background:#FFFBE6;color:#FAAD14;">2/3</span></div>
+                        <div class="row on"><span class="chk"></span> 入库</div>
+                        <div class="row on"><span class="chk"></span> 出库</div>
+                        <div class="row"><span class="chk"></span> 退换货</div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="h"><span>仓库管理</span><span class="n">5/5</span></div>
+                        <div class="row on"><span class="chk"></span> 库存</div>
+                        <div class="row on"><span class="chk"></span> 调拨</div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="h"><span>商品管理</span><span class="n" style="background:#F5F5F5;color:#666;">0/2</span></div>
+                        <div class="row"><span class="chk"></span> 商品</div>
+                        <div class="row"><span class="chk"></span> 供应商</div>
+                    </div>
+                </div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">1</span> 分组卡片</h2>
+                <div class="feature">把菜单按一级分组拆成多张小卡片，每张卡片头部有"已选 X/Y"汇总和"全选/取消"切换。点击卡片内任意一行即可勾选/取消。</div>
+
+                <div class="scene"><strong>适合场景：</strong> 菜单分组明确、按部门授权、希望"一眼看清每组授了多少"</div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul>
+                            <li>视觉清晰，分类感强</li>
+                            <li>每组带进度汇总</li>
+                            <li>无学习成本</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul>
+                            <li>页面较长，需滚动</li>
+                            <li>批量操作不便</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">复杂度 ★★☆☆☆</span>
+                <span class="btn btn-primary btn-sm">查看完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 2 -->
+        <a href="perms_v2_role_template.html" style="color:inherit;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="preview-2">
+                    <div class="presets">
+                        <div class="preset">仓库经理</div>
+                        <div class="preset active">采购员</div>
+                        <div class="preset">出库员</div>
+                        <div class="preset">实习生</div>
+                    </div>
+                    <div class="label-line">已授权 5 项</div>
+                    <div class="chips">
+                        <span class="chip">首页 ×</span>
+                        <span class="chip">入库 ×</span>
+                        <span class="chip">库存 ×</span>
+                        <span class="chip">商品 ×</span>
+                        <span class="chip">供应商 ×</span>
+                    </div>
+                    <div class="label-line">可添加</div>
+                    <div class="chips">
+                        <span class="chip empty">+ 出库</span>
+                        <span class="chip empty">+ 调拨</span>
+                        <span class="chip empty">+ 报损</span>
+                        <span class="chip empty">+ 盘点</span>
+                    </div>
+                </div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">2</span> 角色预设 + 微调</h2>
+                <div class="feature">顶部 4 个"预设角色"按钮一键套用模板（仓库经理/采购员/出库员/实习生），下方 chip 加减微调。最快 1 秒完成一个新员工的授权。</div>
+
+                <div class="scene"><strong>适合场景：</strong> 人员流动多、岗位标准化、希望"傻瓜式"快速授权</div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul>
+                            <li>预设一键到位</li>
+                            <li>chip 形式不易选错</li>
+                            <li>对非技术经理友好</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul>
+                            <li>需先建预设模板</li>
+                            <li>批量改 chip 略麻烦</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">复杂度 ★★★☆☆</span>
+                <span class="btn btn-primary btn-sm">查看完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 3 -->
+        <a href="perms_v3_transfer.html" style="color:inherit;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="preview-3">
+                    <div class="box">
+                        <div class="h"><span>可分配</span><span style="color:var(--ant-primary);">2/8</span></div>
+                        <div class="row on"><span class="chk"></span> 入库管理</div>
+                        <div class="row"><span class="chk"></span> 退换货</div>
+                        <div class="row"><span class="chk"></span> 调拨</div>
+                        <div class="row on"><span class="chk"></span> 存储区</div>
+                        <div class="row"><span class="chk"></span> 报损</div>
+                        <div class="row"><span class="chk"></span> 盘点</div>
+                    </div>
+                    <div class="arrows">
+                        <button>→</button>
+                        <button>←</button>
+                    </div>
+                    <div class="box">
+                        <div class="h"><span>已授权</span><span style="color:var(--ant-success);">5 项</span></div>
+                        <div class="row"><span class="chk"></span> 首页</div>
+                        <div class="row"><span class="chk"></span> 出库</div>
+                        <div class="row"><span class="chk"></span> 库存查询</div>
+                        <div class="row"><span class="chk"></span> 商品</div>
+                        <div class="row"><span class="chk"></span> 供应商</div>
+                    </div>
+                </div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">3</span> 双列穿梭框</h2>
+                <div class="feature">经典 Ant Design Transfer 风格。左侧"可分配"/ 右侧"已授权"，中间箭头批量转移。两边都带搜索框，按一级菜单分组显示。</div>
+
+                <div class="scene"><strong>适合场景：</strong> 经常需要"打包"调整、菜单数多、专业系统管理员</div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul>
+                            <li>批量转移效率高</li>
+                            <li>权限对比直观</li>
+                            <li>专业系统标配</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul>
+                            <li>初次使用需适应</li>
+                            <li>视觉密度高</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">复杂度 ★★★★☆</span>
+                <span class="btn btn-primary btn-sm">查看完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+        <!-- 方案 4 -->
+        <a href="perms_v4_matrix.html" style="color:inherit;">
+        <div class="option-card">
+            <div class="option-preview">
+                <div class="preview-4">
+                    <table>
+                        <tr>
+                            <th></th>
+                            <th>首页</th>
+                            <th>入库</th>
+                            <th>出库</th>
+                            <th>库存</th>
+                            <th>调拨</th>
+                            <th>商品</th>
+                            <th>通知</th>
+                        </tr>
+                        <tr>
+                            <td>admin</td>
+                            <td><span class="dot lock"></span></td>
+                            <td><span class="dot lock"></span></td>
+                            <td><span class="dot lock"></span></td>
+                            <td><span class="dot lock"></span></td>
+                            <td><span class="dot lock"></span></td>
+                            <td><span class="dot lock"></span></td>
+                            <td><span class="dot lock"></span></td>
+                        </tr>
+                        <tr>
+                            <td>王经理</td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                        </tr>
+                        <tr>
+                            <td>李秀丽</td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                        </tr>
+                        <tr>
+                            <td>张志强</td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                        </tr>
+                        <tr>
+                            <td>陈思思</td>
+                            <td><span class="dot on"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                            <td><span class="dot"></span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="option-meta">
+                <h2><span class="num">4</span> 用户 × 菜单矩阵</h2>
+                <div class="feature">一个表格看清所有人的所有权限：行是用户，列是菜单，格子是开关。点格子即可切换。可按角色/岗位筛选，也可导出 CSV。</div>
+
+                <div class="scene"><strong>适合场景：</strong> 5-20 人小团队、需要横向比较、审计权限分布</div>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <strong>优点</strong>
+                        <ul>
+                            <li>一屏看全公司权限</li>
+                            <li>横向比较快</li>
+                            <li>支持导出审计</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <strong>缺点</strong>
+                        <ul>
+                            <li>菜单 >15 项时变窄</li>
+                            <li>用户多需横滚</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="option-actions">
+                <span class="meta">复杂度 ★★★☆☆</span>
+                <span class="btn btn-primary btn-sm">查看完整方案 →</span>
+            </div>
+        </div>
+        </a>
+
+    </div>
+
+    <!-- 对比表 -->
+    <div class="compare-table">
+        <div class="card-head" style="padding:16px 20px;border-bottom:1px solid var(--ant-divider);">
+            <div class="card-head-title">4 个方案横向对比</div>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>对比项</th>
+                    <th class="text-center">方案 1<br><small class="text-tertiary">分组卡片</small></th>
+                    <th class="text-center">方案 2<br><small class="text-tertiary">角色预设</small></th>
+                    <th class="text-center">方案 3<br><small class="text-tertiary">双列穿梭</small></th>
+                    <th class="text-center">方案 4<br><small class="text-tertiary">矩阵</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>编辑单人速度</td>
+                    <td class="text-center">中等</td>
+                    <td class="text-center check">最快</td>
+                    <td class="text-center">较快</td>
+                    <td class="text-center">中等</td>
+                </tr>
+                <tr>
+                    <td>批量授权</td>
+                    <td class="text-center">不支持</td>
+                    <td class="text-center check">预设支持</td>
+                    <td class="text-center check">支持</td>
+                    <td class="text-center">单格切换</td>
+                </tr>
+                <tr>
+                    <td>横向比较多人</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center check">是（核心优势）</td>
+                </tr>
+                <tr>
+                    <td>对新员工友好</td>
+                    <td class="text-center check">高</td>
+                    <td class="text-center check">高</td>
+                    <td class="text-center">中</td>
+                    <td class="text-center">中</td>
+                </tr>
+                <tr>
+                    <td>视觉密度</td>
+                    <td class="text-center">低（疏朗）</td>
+                    <td class="text-center">低（疏朗）</td>
+                    <td class="text-center">中</td>
+                    <td class="text-center">高（紧凑）</td>
+                </tr>
+                <tr>
+                    <td>需要滚动</td>
+                    <td class="text-center">纵向滚</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center">横向滚</td>
+                </tr>
+                <tr>
+                    <td>导出审计报告</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center nope">否</td>
+                    <td class="text-center check">CSV 导出</td>
+                </tr>
+                <tr>
+                    <td>开发工作量</td>
+                    <td class="text-center">小</td>
+                    <td class="text-center">中（需预设表）</td>
+                    <td class="text-center">中</td>
+                    <td class="text-center">中</td>
+                </tr>
+                <tr>
+                    <td>推荐人数规模</td>
+                    <td class="text-center">不限</td>
+                    <td class="text-center">不限</td>
+                    <td class="text-center">不限</td>
+                    <td class="text-center">≤20 人最佳</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 32px; padding: 20px; background: #FFF; border-radius: 8px; border: 1px solid var(--ant-divider);">
+        <h3 style="font-size: 15px; margin-bottom: 10px;">📋 选型建议</h3>
+        <ul style="padding-left: 20px; font-size: 13px; line-height: 2; color: var(--ant-text-secondary);">
+            <li>如果贵公司 <strong>每月需要新建/调整 5 个以上用户</strong>，推荐 <strong>方案 2（角色预设）</strong> — 一键套用模板最高效</li>
+            <li>如果 <strong>权限变动少、但希望分类清晰</strong>，推荐 <strong>方案 1（分组卡片）</strong> — 视觉最舒服</li>
+            <li>如果 <strong>有专门的 IT/系统管理员</strong>，推荐 <strong>方案 3（双列穿梭）</strong> — 操作最快</li>
+            <li>如果 <strong>用户规模 ≤ 20 人且关心权限审计</strong>，推荐 <strong>方案 4（矩阵）</strong> — 一屏看全公司</li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; padding: 20px; color: var(--ant-text-tertiary); font-size: 12px;">
+        金山仓储 · UI 设计方案 v1 · 2026-05 · 选定后将进入开发阶段
+    </div>
+
+</div>
+
+</body>
+</html>

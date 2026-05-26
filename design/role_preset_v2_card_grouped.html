@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>预设角色 - 方案 2（卡片+分组预览）- 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.page { max-width: 1280px; margin: 0 auto; padding: 24px; }
+.toolbar {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.toolbar h2 { font-size: 16px; font-weight: 600; }
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.preset-card {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.preset-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+.preset-card-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--ant-divider);
+    display: flex; justify-content: space-between; align-items: flex-start;
+}
+.preset-card-head .info { flex: 1; }
+.preset-card-head .name {
+    font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+}
+.preset-card-head .desc {
+    font-size: 12px; color: var(--ant-text-secondary);
+    margin-top: 4px;
+}
+.preset-card-head .badge-total {
+    background: var(--ant-primary);
+    color: #FFF;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-family: var(--font-num);
+    font-weight: 600;
+}
+.preset-card-body { padding: 14px 18px; }
+.group-block { margin-bottom: 10px; }
+.group-block:last-child { margin-bottom: 0; }
+.group-block .group-name {
+    font-size: 11px; color: var(--ant-text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+}
+.group-block .group-name .count {
+    background: var(--ant-success-bg);
+    color: var(--ant-success);
+    padding: 0 6px; border-radius: 8px;
+    text-transform: none; letter-spacing: 0;
+    font-family: var(--font-num);
+}
+.perm-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.perm-chips .chip {
+    font-size: 12px; padding: 2px 8px;
+    background: var(--ant-success-bg);
+    color: var(--ant-success);
+    border: 1px solid #B7EB8F;
+    border-radius: 10px;
+}
+.preset-card-foot {
+    padding: 10px 18px;
+    background: #FAFAFA;
+    border-top: 1px solid var(--ant-divider);
+    display: flex; justify-content: flex-end; gap: 6px;
+}
+.btn-ghost {
+    padding: 4px 12px;
+    border: 1px solid var(--ant-divider);
+    background: #FFF;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--ant-text-secondary);
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-ghost:hover { color: var(--ant-primary); border-color: var(--ant-primary); }
+.btn-ghost.danger { color: var(--ant-error); border-color: #FFCCC7; }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+    <strong>方案 2：卡片 + 分组预览</strong> ｜ 每张卡片完整展示该预设包含的所有菜单（按一级菜单分组）· 鼠标悬停看全貌
+</div>
+
+<div class="page">
+    <a href="role_preset_index.html" class="btn btn-sm" style="margin-bottom: 16px;">‹ 返回方案列表</a>
+
+    <div class="toolbar">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <h2>预设角色管理</h2>
+            <span class="text-secondary" style="font-size:12px;">共 <strong>4</strong> 个预设</span>
+        </div>
+        <a class="btn btn-primary btn-sm" href="role_preset_new.html">＋ 新建预设</a>
+    </div>
+
+    <div class="preset-grid">
+
+        <div class="preset-card">
+            <div class="preset-card-head">
+                <div class="info">
+                    <div class="name">仓库经理</div>
+                    <div class="desc">查看所有 + 审批权</div>
+                </div>
+                <div class="badge-total">14 项</div>
+            </div>
+            <div class="preset-card-body">
+                <div class="group-block">
+                    <div class="group-name">日常使用 <span class="count">2</span></div>
+                    <div class="perm-chips"><span class="chip">工作台</span><span class="chip">待审批中心</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">日常操作 <span class="count">5</span></div>
+                    <div class="perm-chips"><span class="chip">入库</span><span class="chip">出库</span><span class="chip">调拨</span><span class="chip">报损</span><span class="chip">盘点</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">查询分析 <span class="count">4</span></div>
+                    <div class="perm-chips"><span class="chip">库存查询</span><span class="chip">库存流水</span><span class="chip">经营报表</span><span class="chip">库存预测</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">数据维护 <span class="count">2</span></div>
+                    <div class="perm-chips"><span class="chip">商品</span><span class="chip">供应商</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">系统 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">通知渠道</span></div>
+                </div>
+            </div>
+            <div class="preset-card-foot">
+                <a class="btn-ghost" href="role_preset_edit.html">编辑</a>
+                <button class="btn-ghost">复制</button>
+                <button class="btn-ghost danger">删除</button>
+            </div>
+        </div>
+
+        <div class="preset-card">
+            <div class="preset-card-head">
+                <div class="info">
+                    <div class="name">采购员</div>
+                    <div class="desc">入库 + 商品 + 供应商</div>
+                </div>
+                <div class="badge-total">5 项</div>
+            </div>
+            <div class="preset-card-body">
+                <div class="group-block">
+                    <div class="group-name">日常使用 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">工作台</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">日常操作 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">入库</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">查询分析 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">库存查询</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">数据维护 <span class="count">2</span></div>
+                    <div class="perm-chips"><span class="chip">商品</span><span class="chip">供应商</span></div>
+                </div>
+            </div>
+            <div class="preset-card-foot">
+                <a class="btn-ghost" href="role_preset_edit.html">编辑</a>
+                <button class="btn-ghost">复制</button>
+                <button class="btn-ghost danger">删除</button>
+            </div>
+        </div>
+
+        <div class="preset-card">
+            <div class="preset-card-head">
+                <div class="info">
+                    <div class="name">出库员</div>
+                    <div class="desc">仅出库 + 库存查询</div>
+                </div>
+                <div class="badge-total">3 项</div>
+            </div>
+            <div class="preset-card-body">
+                <div class="group-block">
+                    <div class="group-name">日常使用 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">工作台</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">日常操作 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">出库</span></div>
+                </div>
+                <div class="group-block">
+                    <div class="group-name">查询分析 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">库存查询</span></div>
+                </div>
+            </div>
+            <div class="preset-card-foot">
+                <a class="btn-ghost" href="role_preset_edit.html">编辑</a>
+                <button class="btn-ghost">复制</button>
+                <button class="btn-ghost danger">删除</button>
+            </div>
+        </div>
+
+        <div class="preset-card">
+            <div class="preset-card-head">
+                <div class="info">
+                    <div class="name">普通员工</div>
+                    <div class="desc">仅工作台</div>
+                </div>
+                <div class="badge-total">1 项</div>
+            </div>
+            <div class="preset-card-body">
+                <div class="group-block">
+                    <div class="group-name">日常使用 <span class="count">1</span></div>
+                    <div class="perm-chips"><span class="chip">工作台</span></div>
+                </div>
+            </div>
+            <div class="preset-card-foot">
+                <a class="btn-ghost" href="role_preset_edit.html">编辑</a>
+                <button class="btn-ghost">复制</button>
+                <button class="btn-ghost danger">删除</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div style="margin-top: 24px; padding: 16px 20px; background: #FFF; border-radius: 6px; font-size:12px; color: var(--ant-text-secondary);">
+        <strong>方案 2 特点</strong>：每张卡片完整列出该预设包含的所有菜单（中文 label），按一级菜单分组。视觉清晰，<strong>不用点编辑就能看全</strong>。适合预设数 ≤ 10、平时主要是"看预设含什么"而非批量改的场景。
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}通知渠道与预警{% endblock %}
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="page-title">通知渠道与预警</span>
+        <span class="page-sub">{{ rules|length }} 条规则 · {{ channels|length }} 个渠道 · {{ events|length }} 条最近事件</span>
+    </div>
+    <div class="flex gap-8">
+        <form method="post" style="display:inline;">
+            <input type="hidden" name="action" value="run_scan">
+            <button class="btn btn-sm btn-primary" type="submit">立即扫描一次</button>
+        </form>
+    </div>
+</div>
+
+<div class="form-card" style="margin-bottom:16px;">
+    <div class="head">
+        <span class="accent-bar"></span>
+        <h3>预警规则</h3>
+        <span class="meta">{{ rules|length }} 条 · 触发后按下方配置发通知</span>
+    </div>
+    <div class="body">
+        {% for r in rules %}
+        {% set picked_ids = (r.recipient_user_ids or '').split(',') %}
+        {% set picked_channels = (r.channel_codes or '').split(',') %}
+        <form method="post" class="rule-card {% if not r.enabled %}is-disabled{% endif %}" id="rule-{{ r.id }}">
+            <input type="hidden" name="action" value="save_rule">
+            <input type="hidden" name="rule_id" value="{{ r.id }}">
+
+            <div class="rule-head">
+                <span class="accent-bar"></span>
+                <h3>
+                    {% if r.rule_type == 'low_stock' %}低库存预警
+                    {% elif r.rule_type == 'damage_pending' %}报损待审
+                    {% else %}{{ r.rule_type }}{% endif %}
+                </h3>
+                <span class="rule-summary">#{{ r.id }}</span>
+                <div class="actions">
+                    <label class="toggle-label">
+                        <span class="toggle">
+                            <input type="checkbox" name="enabled" {% if r.enabled %}checked{% endif %}
+                                onchange="this.closest('.rule-card').classList.toggle('is-disabled', !this.checked)">
+                            <span class="slider"></span>
+                        </span>
+                        <span>启用</span>
+                    </label>
+                    <button class="btn btn-sm btn-primary" type="submit">保存</button>
+                </div>
+            </div>
+
+            <div class="rule-body">
+                <div class="section">
+                    <div class="section-label">通知渠道 <span class="section-hint">勾选哪些渠道发送（可多选）</span></div>
+                    <div class="chip-group">
+                        {% for code in all_channel_codes %}
+                        <label class="chip {% if code in picked_channels %}checked{% endif %}">
+                            <input type="checkbox" name="channel_codes" value="{{ code }}"
+                                {% if code in picked_channels %}checked{% endif %}
+                                onchange="chipToggle(this); syncInappMask(this.closest('.rule-card'))">
+                            {{ code }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-label">通知发给谁 <span class="section-hint">勾后邮件/短信发到该人；不勾用渠道默认收件人</span></div>
+                    <div class="recipient-area">
+                        <div class="chip-group" style="margin-bottom:8px;">
+                            <span class="chip-quick" onclick="recipientAll(this, true)">全选</span>
+                            <span class="chip-quick" onclick="recipientByRole(this, 'admin,manager')">仅管理</span>
+                            <span class="chip-quick" onclick="recipientAll(this, false)">全不选</span>
+                        </div>
+                        <div class="chip-group">
+                            {% for u in all_users %}
+                            <label class="chip {% if u.id|string in picked_ids %}checked{% endif %}" data-role="{{ u.role }}">
+                                <input type="checkbox" name="recipient_user_ids" value="{{ u.id }}"
+                                    {% if u.id|string in picked_ids %}checked{% endif %}
+                                    onchange="chipToggle(this)">
+                                {{ u.display_name or u.username }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="recipient-mask" style="display:none;">
+                        <strong>📢 站内通知</strong> · 对所有登录用户可见 · 无需指定收件人
+                    </div>
+                </div>
+            </div>
+        </form>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function chipToggle(input) {
+    const label = input.closest('.chip');
+    if (label) label.classList.toggle('checked', input.checked);
+}
+function syncInappMask(card) {
+    const checked = Array.from(card.querySelectorAll('input[name="channel_codes"]:checked')).map(i => i.value);
+    const onlyInapp = (checked.length === 1 && checked[0] === 'inapp');
+    const area = card.querySelector('.recipient-area');
+    const mask = card.querySelector('.recipient-mask');
+    if (!area || !mask) return;
+    area.style.display = onlyInapp ? 'none' : '';
+    mask.style.display = onlyInapp ? '' : 'none';
+}
+function recipientAll(quickBtn, on) {
+    const card = quickBtn.closest('.rule-card');
+    card.querySelectorAll('input[name="recipient_user_ids"]').forEach(input => {
+        input.checked = on;
+        chipToggle(input);
+    });
+}
+function recipientByRole(quickBtn, roles) {
+    const roleSet = new Set(roles.split(','));
+    const card = quickBtn.closest('.rule-card');
+    card.querySelectorAll('.chip[data-role]').forEach(label => {
+        const should = roleSet.has(label.dataset.role);
+        const input = label.querySelector('input[name="recipient_user_ids"]');
+        if (input) {
+            input.checked = should;
+            chipToggle(input);
+        }
+    });
+}
+// 初始化遮罩状态
+document.querySelectorAll('.rule-card').forEach(card => syncInappMask(card));
+</script>
+
+<div class="card">
+    <div class="card-header"><span>通知渠道（共 {{ channels|length }} 个）</span></div>
+    <div class="card-body">
+        <div class="text-tertiary" style="font-size:12px; margin-bottom:12px;">
+            <strong>外部渠道需要的凭证</strong>：邮件→SMTP；短信→阿里云 AccessKey；
+            <strong>其他方式</strong>→粘贴一个 Webhook URL（飞书/钉钉/企微群机器人都支持，自建系统也行）。
+            <br>邮件、短信代码已接入，凭证未填时<strong>"测试发送"</strong>会失败——按工程上的说法叫<strong>"只写接口"</strong>，逻辑已完整，等正式上线时填入真实凭证即可立即生效。
+        </div>
+
+        {% for c in channels %}
+        <details {% if c.enabled %}open{% endif %} style="margin-bottom:12px; border:1px solid var(--line); border-radius:6px; padding:12px;">
+            <summary style="cursor:pointer; font-weight:600;">
+                {{ c.name }} <span class="badge" style="margin-left:8px;">{{ c.code }}</span>
+                {% if c.enabled %}<span class="badge" style="margin-left:4px;color:var(--ok);">已启用</span>
+                {% else %}<span class="badge" style="margin-left:4px;color:var(--ink-quiet);">未启用</span>{% endif %}
+            </summary>
+            <form method="post" style="margin-top:12px;">
+                <input type="hidden" name="action" value="save_channel">
+                <input type="hidden" name="code" value="{{ c.code }}">
+                <div class="form-row"><label><input type="checkbox" name="enabled" {% if c.enabled %}checked{% endif %}> 启用此渠道</label></div>
+
+                {% if c.code == 'email' %}
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+                    <div class="form-row"><label>SMTP 服务器</label><input type="text" name="cfg_smtp_server" value="{{ c.config.get('smtp_server','') }}" placeholder="如 smtp.qq.com"></div>
+                    <div class="form-row"><label>端口</label><input type="text" name="cfg_smtp_port" value="{{ c.config.get('smtp_port','465') }}"></div>
+                    <div class="form-row"><label>用户名（邮箱）</label><input type="text" name="cfg_smtp_user" value="{{ c.config.get('smtp_user','') }}"></div>
+                    <div class="form-row"><label>密码 / 授权码</label><input type="password" name="cfg_smtp_password" value="{{ c.config.get('smtp_password','') }}"></div>
+                    <div class="form-row"><label>From 地址</label><input type="text" name="cfg_from_addr" value="{{ c.config.get('from_addr','') }}"></div>
+                    <div class="form-row"><label>SSL（1 或 0）</label><input type="text" name="cfg_use_ssl" value="{{ c.config.get('use_ssl','1') }}"></div>
+                    <div class="form-row" style="grid-column:1/-1;"><label>默认收件人</label><input type="text" name="cfg_default_recipient" value="{{ c.config.get('default_recipient','') }}" placeholder="多个用逗号分隔"></div>
+                </div>
+
+                {% elif c.code == 'sms' %}
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+                    <div class="form-row"><label>AccessKeyId</label><input type="text" name="cfg_access_key_id" value="{{ c.config.get('access_key_id','') }}"></div>
+                    <div class="form-row"><label>AccessKeySecret</label><input type="password" name="cfg_access_key_secret" value="{{ c.config.get('access_key_secret','') }}"></div>
+                    <div class="form-row"><label>签名名称（SignName）</label><input type="text" name="cfg_sign_name" value="{{ c.config.get('sign_name','') }}"></div>
+                    <div class="form-row"><label>模板 Code</label><input type="text" name="cfg_template_code" value="{{ c.config.get('template_code','') }}"></div>
+                    <div class="form-row"><label>Region</label><input type="text" name="cfg_region" value="{{ c.config.get('region','cn-hangzhou') }}"></div>
+                    <div class="form-row"><label>默认收件人手机号</label><input type="text" name="cfg_default_recipient" value="{{ c.config.get('default_recipient','') }}" placeholder="多个用逗号分隔"></div>
+                </div>
+
+                {% elif c.code == 'webhook' %}
+                <div class="text-tertiary" style="font-size:12px; margin-bottom:8px;">
+                    用一个 <strong>Webhook URL</strong> 把通知 POST 到群机器人或任何能接收 JSON 的系统。常见用法：<br>
+                    · <strong>飞书</strong>：群设置 → 群机器人 → 添加 → 自定义机器人 → 复制 URL。<code>Body Template</code> 留空即可，系统默认按飞书格式发。<br>
+                    · <strong>钉钉</strong>：群设置 → 智能群助手 → 添加自定义机器人 → 安全选『自定义关键词』填 <code>仓储</code> → 复制 URL。<code>Body Template</code> 填 <code>{"msgtype":"markdown","markdown":{"title":"{subject}","text":"### {subject}\n{body}"}}</code>。<br>
+                    · <strong>企业微信群机器人</strong>：群设置 → 添加群机器人 → 自定义 → 复制 URL。<code>Body Template</code> 填 <code>{"msgtype":"text","text":{"content":"【{subject}】\n{body}"}}</code>。<br>
+                    · <strong>自建系统</strong>：填你自己的接收端点 + 自定义 JSON 模板（占位符 <code>{subject}</code> 和 <code>{body}</code> 会被替换）。
+                </div>
+                <div class="form-row"><label>Webhook URL</label>
+                    <input type="text" name="cfg_webhook_url" value="{{ c.config.get('webhook_url','') }}"
+                           placeholder="如 https://open.feishu.cn/open-apis/bot/v2/hook/xxx">
+                </div>
+                <div class="form-row"><label>预设格式</label>
+                    <select name="cfg_preset" onchange="applyPreset(this)">
+                        {% set preset = c.config.get('preset','feishu') %}
+                        <option value="feishu"   {% if preset=='feishu'   %}selected{% endif %}>飞书（默认）</option>
+                        <option value="dingtalk" {% if preset=='dingtalk' %}selected{% endif %}>钉钉（markdown）</option>
+                        <option value="wechat"   {% if preset=='wechat'   %}selected{% endif %}>企业微信群机器人</option>
+                        <option value="custom"   {% if preset=='custom'   %}selected{% endif %}>自定义</option>
+                    </select>
+                </div>
+                <div class="form-row"><label>Body Template（JSON，<code>{subject}</code>/<code>{body}</code> 会被替换）</label>
+                    <textarea name="cfg_body_template" rows="3" style="width:100%;font-family:monospace;font-size:12px;">{{ c.config.get('body_template','') }}</textarea>
+                </div>
+
+                {% elif c.code == 'inapp' %}
+                <div class="text-tertiary" style="font-size:13px;">站内通知会写到 alert_event 表，可以在下方"最近预警事件"看到。无需配置。</div>
+                {% endif %}
+
+                <div style="margin-top:12px;">
+                    <button class="btn btn-primary btn-sm" type="submit">保存</button>
+                </div>
+            </form>
+
+            {% if c.code != 'inapp' %}
+            <form method="post" style="margin-top:8px; display:flex; gap:6px; align-items:center;">
+                <input type="hidden" name="action" value="test_send">
+                <input type="hidden" name="code" value="{{ c.code }}">
+                <input type="text" name="test_recipient" placeholder="测试接收人（留空用默认）" style="width:240px;">
+                <button class="btn btn-secondary btn-sm" type="submit">测试发送</button>
+            </form>
+            {% endif %}
+        </details>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+const WEBHOOK_PRESETS = {
+    feishu:   '',
+    dingtalk: '{"msgtype":"markdown","markdown":{"title":"{subject}","text":"### {subject}\\n{body}"}}',
+    wechat:   '{"msgtype":"text","text":{"content":"【{subject}】\\n{body}"}}',
+    custom:   ''
+};
+function applyPreset(sel) {
+    const form = sel.closest('form');
+    const ta = form.querySelector('textarea[name="cfg_body_template"]');
+    if (!ta) return;
+    const val = WEBHOOK_PRESETS[sel.value];
+    if (val !== undefined && (ta.value.trim() === '' || sel.value !== 'custom')) {
+        ta.value = val;
+    }
+}
+</script>
+
+<div class="dense-card" style="margin-top:14px;">
+    <div class="head">
+        <h3>最近预警事件 <span class="count">{{ events|length }}</span></h3>
+        <span style="font-size:11px; color:var(--ink-quiet);">最多 30 条</span>
+    </div>
+    {% if events %}
+    <table class="dense-table">
+        <thead><tr><th>时间</th><th>规则</th><th>已发送渠道</th><th>状态</th><th>载荷</th></tr></thead>
+        <tbody>
+            {% for e in events %}
+            <tr>
+                <td class="mono" style="color:var(--ink-quiet);">{{ e.triggered_at[5:16] }}</td>
+                <td><span class="tag tag-default">{{ e.rule_type }}</span></td>
+                <td class="mono" style="color:var(--ink-quiet);">{{ e.notified_channels or '-' }}</td>
+                <td>
+                    {% if e.status == 'sent' %}<span class="tag tag-success">已发送</span>
+                    {% elif e.status == 'failed' %}<span class="tag tag-error">失败</span>
+                    {% elif e.status == 'partial' %}<span class="tag tag-warn">部分</span>
+                    {% else %}<span class="tag tag-default">{{ e.status }}</span>{% endif %}
+                </td>
+                <td style="color:var(--ink-soft); max-width:560px;">{{ e.payload_json | readable_payload(e.rule_type) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}<div style="padding:20px; text-align:center; color:var(--ink-quiet);">还没有预警事件。点击右上"立即扫描一次"或等待每日 9 点定时扫描。</div>{% endif %}
+</div>
+
+{% endblock %}

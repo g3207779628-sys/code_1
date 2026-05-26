@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v17 P2 · 库存查询 · 顶部折叠筛选 · 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body { font-size: 13px; background: var(--bg-soft); padding: 24px 32px; }
+.page { max-width: 1280px; margin: 0 auto; }
+.back { display: inline-block; padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; text-decoration: none; color: var(--ink); font-size: 12px; margin-bottom: 14px; }
+.back:hover { border-color: var(--accent); color: var(--accent); }
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
+.page-head .page-title { font-size: 20px; font-weight: 700; }
+.page-head .page-sub { font-size: 12px; color: var(--ink-quiet); margin-left: 8px; }
+.tag-demo { display: inline-block; font-size: 10px; letter-spacing: 2px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent-deep); border-radius: 2px; font-weight: 600; margin-bottom: 6px; }
+
+.filter-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 18px; margin-bottom: 14px; }
+.filter-row1 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 90px; gap: 10px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; color: var(--ink-quiet); }
+.field input, .field .picker {
+    padding: 7px 10px; font-size: 12px; background: var(--bg-input);
+    border: 1px solid var(--line-input); border-radius: 4px;
+    height: 34px; box-sizing: border-box;
+}
+.field .picker { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.field .picker.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); }
+.field .picker .ar { color: var(--accent); font-size: 10px; }
+.btn-apply { background: var(--accent); color: #FFF; border: 1px solid var(--accent); border-radius: 4px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; height: 34px; }
+.btn-apply:hover { background: var(--accent-deep); }
+
+.more-toggle {
+    margin-top: 12px;
+    padding: 8px 14px;
+    background: var(--accent-soft);
+    border: 1px dashed var(--accent);
+    border-radius: 4px;
+    color: var(--accent-deep);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 600;
+}
+.advanced { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); display: none; }
+.advanced.open { display: block; }
+.filter-row2 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-items: end; }
+
+.summary-strip { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 18px; display: flex; gap: 28px; margin-bottom: 14px; }
+.summary-strip .stat { font-size: 11px; color: var(--ink-quiet); }
+.summary-strip .stat .num { font-size: 16px; font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; display: block; margin-top: 2px; }
+.summary-strip .stat.danger .num { color: var(--err); }
+
+.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.filter-chip {
+    background: var(--accent-soft); color: var(--accent-deep);
+    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.filter-chip .x { cursor: pointer; opacity: 0.6; }
+
+.table-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.table-card table { width: 100%; border-collapse: collapse; }
+.table-card th { background: var(--bg-soft); padding: 10px 12px; font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--ink); text-align: left; border-bottom: 1px solid var(--line); }
+.table-card td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
+.tag-success { background: var(--ok-bg); color: var(--ok); padding: 1px 6px; border-radius: 2px; font-size: 11px; }
+.tag-warn { background: var(--warn-bg); color: var(--warn); padding: 1px 6px; border-radius: 2px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="page">
+<a class="back" href="ui_v17_query_index.html">← 返回 3 方案对比</a>
+
+<div class="page-head">
+    <div>
+        <span class="tag-demo">P2 · 库存查询</span>
+        <div class="page-title">库存查询</div>
+        <span class="page-sub">顶部 4 项常用 + 高级展开 · 共 36 行库存</span>
+    </div>
+</div>
+
+<div class="filter-card">
+    <div class="filter-row1">
+        <div class="field">
+            <label>搜索（物品名 / 编码）</label>
+            <input type="text" placeholder="如 茅台 / SP000001">
+        </div>
+        <div class="field">
+            <label>仓库</label>
+            <div class="picker active"><span>金山主仓</span><span class="ar">换 →</span></div>
+        </div>
+        <div class="field">
+            <label>类型</label>
+            <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+        </div>
+        <div class="field">
+            <label>使用部门</label>
+            <div class="picker active"><span>市场部</span><span class="ar">换 →</span></div>
+        </div>
+        <div class="field">
+            <label>状态</label>
+            <div class="picker"><span>已分配</span><span class="ar">换 →</span></div>
+        </div>
+        <button class="btn-apply">应用</button>
+    </div>
+
+    <div class="more-toggle" onclick="this.nextElementSibling.classList.toggle('open'); this.textContent = this.nextElementSibling.classList.contains('open') ? '↑ 收起高级筛选' : '+ 高级筛选 (5 项)';">
+        ↑ 收起高级筛选
+    </div>
+    <div class="advanced open">
+        <div class="filter-row2">
+            <div class="field">
+                <label>楼栋号</label>
+                <input type="text" placeholder="如 1 号楼">
+            </div>
+            <div class="field">
+                <label>楼层</label>
+                <input type="text" placeholder="如 2 层">
+            </div>
+            <div class="field">
+                <label>库位</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+            <div class="field">
+                <label>分配部门</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+            <div class="field">
+                <label>责任人</label>
+                <div class="picker"><span style="color:var(--ink-faded);">全部</span><span class="ar">选择 →</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="active-filters">
+    <span class="filter-chip">仓库: 金山主仓 <span class="x">×</span></span>
+    <span class="filter-chip">使用部门: 市场部 <span class="x">×</span></span>
+    <span class="filter-chip">状态: 已分配 <span class="x">×</span></span>
+</div>
+
+<div class="summary-strip">
+    <div class="stat"><span class="num">15</span> 命中库存行</div>
+    <div class="stat"><span class="num">1,234</span> 在仓总数</div>
+    <div class="stat danger"><span class="num">3</span> 低库存</div>
+    <div class="stat"><span class="num">8</span> 命中库位</div>
+</div>
+
+<div class="table-card">
+    <table>
+        <thead>
+            <tr>
+                <th>物品</th>
+                <th>楼栋·楼层·库位</th>
+                <th>使用部门</th>
+                <th>责任人</th>
+                <th>类型</th>
+                <th class="text-right">在仓</th>
+                <th>状态</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>茅台</strong> <span style="color:var(--ink-quiet); font-size:11px;">(53° 飞天)</span></td>
+                <td><span style="color:var(--accent-deep);">1 号楼</span> · 2 层 · A-01</td>
+                <td>市场部</td>
+                <td>张经理</td>
+                <td>综合仓</td>
+                <td class="num-mono" style="text-align:right;"><strong>128</strong></td>
+                <td><span class="tag-success">已分配</span></td>
+            </tr>
+            <tr>
+                <td><strong>五粮液</strong></td>
+                <td><span style="color:var(--accent-deep);">1 号楼</span> · 2 层 · A-02</td>
+                <td>市场部</td>
+                <td>张经理</td>
+                <td>综合仓</td>
+                <td class="num-mono" style="text-align:right;"><strong>86</strong></td>
+                <td><span class="tag-success">已分配</span></td>
+            </tr>
+            <tr>
+                <td><strong>A4 复印纸</strong></td>
+                <td><span style="color:var(--accent-deep);">1 号楼</span> · 1 层 · B-01</td>
+                <td>市场部</td>
+                <td>王经理</td>
+                <td>办公仓</td>
+                <td class="num-mono" style="color:var(--err); text-align:right;"><strong>15</strong></td>
+                <td><span class="tag-warn">低库存</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}商品管理{% endblock %}
+{% block title %}物品列表{% endblock %}
 {% block content %}
 
 <div class="card">
     <div class="card-header">
-        <span>商品 SKU 列表（共 {{ skus|length }} 个）</span>
+        <span>物品列表（共 {{ skus|length }} 个）</span>
         {% if session.role in ['admin', 'manager'] %}
-        <a class="btn" href="{{ url_for('sku_new') }}">新增 SKU</a>
+        <a class="btn btn-primary" href="{{ url_for('sku_new') }}">新增物品</a>
         {% endif %}
     </div>
     <div class="card-body" style="padding:0;">
@@ -14,34 +14,39 @@
         <table>
             <thead>
                 <tr>
-                    <th>SKU 编码</th>
-                    <th>商品名</th>
+                    <th style="width:60px;">图片</th>
+                    <th>物品名</th>
                     <th>规格</th>
                     <th>单位</th>
-                    <th>存储区</th>
                     <th>安全库存</th>
-                    <th>成本价</th>
-                    <th>售价</th>
+                    <th>编号</th>
                     {% if session.role in ['admin', 'manager'] %}<th>操作</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for s in skus %}
                 <tr>
-                    <td class="mono">{{ s.code }}</td>
-                    <td>{{ s.name }}</td>
+                    <td>
+                        {% if s.image_path %}
+                        <img src="{{ url_for('download_attachment', filepath=s.image_path) }}" style="width:40px; height:40px; object-fit:cover; border:1px solid var(--line); border-radius:4px;" alt="">
+                        {% else %}
+                        <span style="display:inline-block; width:40px; height:40px; line-height:40px; text-align:center; color:var(--ink-faded); border:1px dashed var(--line); border-radius:4px; font-size:10px;">—</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ s.name }}</strong></td>
                     <td>{{ s.spec or '-' }}</td>
                     <td>{{ s.unit }}</td>
-                    <td><span class="badge badge-{{ s.storage_zone }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻'}[s.storage_zone] }}</span></td>
                     <td class="mono">{{ s.safety_stock }}</td>
-                    <td class="mono">¥{{ '%.2f'|format(s.cost_price) }}</td>
-                    <td class="mono">¥{{ '%.2f'|format(s.sale_price) }}</td>
+                    <td class="mono text-tertiary" style="font-size:11px;">{{ s.code }}</td>
                     {% if session.role in ['admin', 'manager'] %}
                     <td class="actions">
+                        {% if 'sku_detail' in available_endpoints %}
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('sku_detail', sku_id=s.id) }}">查看</a>
+                        {% endif %}
                         <a class="btn btn-sm btn-secondary" href="{{ url_for('sku_edit', sku_id=s.id) }}">编辑</a>
                         {% if session.role == 'admin' %}
-                        <form method="post" action="{{ url_for('sku_delete', sku_id=s.id) }}" style="display:inline;" onsubmit="return confirm('确认删除 {{ s.code }}？');">
-                            <button class="btn btn-sm btn-danger" type="submit">删</button>
+                        <form method="post" action="{{ url_for('sku_delete', sku_id=s.id) }}" style="display:inline;" onsubmit="return confirm('确认删除 {{ s.name }}？');">
+                            <button class="btn btn-sm btn-danger" type="submit">删除</button>
                         </form>
                         {% endif %}
                     </td>
@@ -51,7 +56,7 @@
             </tbody>
         </table>
         {% else %}
-        <div class="empty">还没有商品。点击右上角"新增 SKU"开始。</div>
+        <div class="empty">还没有物品。点击右上角"新增物品"开始。</div>
         {% endif %}
     </div>
 </div>

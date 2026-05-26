@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}选择{{ title }}{% endblock %}
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <span>选择{{ title }}（共 {{ rows|length }} 项）</span>
+        <span>
+            {% if new_endpoint and session.role in ['admin','manager'] %}
+            <button class="btn btn-primary btn-sm" type="button" onclick="document.getElementById('new-modal').classList.add('open')">+ 新建{{ title }}</button>
+            {% endif %}
+            <a class="btn btn-secondary btn-sm" href="{{ return_path }}">‹ 返回</a>
+        </span>
+    </div>
+    <div class="card-body">
+        <input type="text" id="picker-search" placeholder="搜索..." style="width:300px; margin-bottom:12px;" oninput="filterPickerRows(this.value)">
+        {% if multi %}
+        <div style="margin-bottom:12px;">
+            <button class="btn btn-primary btn-sm" onclick="confirmMulti()">确认选中 (<span id="multi-count">0</span>)</button>
+            <span class="text-tertiary" style="font-size:12px; margin-left:8px;">勾选多项后点确认</span>
+        </div>
+        {% endif %}
+        <table id="picker-table">
+            <thead>
+                <tr>
+                    {% if multi %}<th style="width:40px;"></th>{% endif %}
+                    <th>名称</th>
+                    <th>详情</th>
+                    <th style="width:80px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr data-id="{{ r.id }}" data-label="{{ r.label }}" data-text="{{ r.label }} {{ r.extra }}">
+                    {% if multi %}
+                    <td><input type="checkbox" class="multi-check" value="{{ r.id }}" {% if r.id|string in current_ids %}checked{% endif %} onchange="updateMultiCount()"></td>
+                    {% endif %}
+                    <td><strong>{{ r.label }}</strong></td>
+                    <td style="font-size:12px; color:var(--ink-quiet);">{{ r.extra }}</td>
+                    <td>
+                        {% if not multi %}
+                        <a class="btn btn-sm btn-primary" href="{{ return_path }}{% if '?' in return_path %}&{% else %}?{% endif %}picker_target={{ target }}&picker_id={{ r.id }}&picker_label={{ r.label|urlencode }}">选中</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="{% if multi %}4{% else %}3{% endif %}" class="empty">还没有{{ title }}。点击右上"+ 新建{{ title }}"开始。</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if new_endpoint %}
+<!-- 新建 modal -->
+<div id="new-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>新建{{ title }}</h3>
+        {% for field in new_fields %}
+        {% set name = field[0] %}
+        {% set label = field[1] %}
+        {% set ftype = field[2] %}
+        {% set options = field[3] if field|length > 3 else None %}
+        <div class="form-row">
+            <label>{{ label }}</label>
+            {% if ftype == 'select' %}
+            <select id="new-{{ name }}" name="{{ name }}">
+                <option value="">— 请选择 —</option>
+                {% for v, l in options or [] %}
+                <option value="{{ v }}">{{ l }}</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <input type="{{ ftype }}" id="new-{{ name }}" name="{{ name }}">
+            {% endif %}
+        </div>
+        {% endfor %}
+        <div class="modal-actions">
+            <button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('new-modal').classList.remove('open')">取消</button>
+            <button class="btn btn-primary btn-sm" type="button" onclick="submitNew()">保存</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function filterPickerRows(q) {
+    q = (q || '').toLowerCase().trim();
+    document.querySelectorAll('#picker-table tbody tr').forEach(tr => {
+        const text = (tr.dataset.text || '').toLowerCase();
+        tr.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+}
+
+function updateMultiCount() {
+    const n = document.querySelectorAll('.multi-check:checked').length;
+    document.getElementById('multi-count').textContent = n;
+}
+updateMultiCount();
+
+function confirmMulti() {
+    const ids = [];
+    const labels = [];
+    document.querySelectorAll('.multi-check:checked').forEach(cb => {
+        ids.push(cb.value);
+        const tr = cb.closest('tr');
+        labels.push(tr.dataset.label);
+    });
+    const ret = "{{ return_path|safe }}";
+    const sep = ret.includes('?') ? '&' : '?';
+    window.location = ret + sep + 'picker_target={{ target }}&picker_id=' + encodeURIComponent(ids.join(',')) + '&picker_label=' + encodeURIComponent(labels.join(','));
+}
+
+{% if new_endpoint %}
+async function submitNew() {
+    const fd = new FormData();
+    {% for field in new_fields %}
+    fd.append('{{ field[0] }}', document.getElementById('new-{{ field[0] }}').value);
+    {% endfor %}
+    fd.append('inline', '1');
+    const r = await fetch('{{ url_for(new_endpoint) }}', {method:'POST', body:fd});
+    const j = await r.json();
+    if (j.error) { alert(j.error); return; }
+    // 新建成功后，自动选中该项（单选模式下直接回跳）
+    const ret = "{{ return_path|safe }}";
+    const sep = ret.includes('?') ? '&' : '?';
+    window.location = ret + sep + 'picker_target={{ target }}&picker_id=' + encodeURIComponent(j.id) + '&picker_label=' + encodeURIComponent(j.label);
+}
+{% endif %}
+</script>
+
+{% endblock %}

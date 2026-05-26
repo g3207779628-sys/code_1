@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>权限编辑 - 方案 1（分组复选框）- 金山仓储</title>
+<link rel="stylesheet" href="mockup_shared.css">
+<style>
+.page { max-width: 1000px; margin: 0 auto; padding: 24px; }
+
+.user-banner {
+    background: linear-gradient(135deg, #1677FF 0%, #4096FF 100%);
+    color: #FFF;
+    padding: 20px 28px;
+    border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(22,119,255,0.15);
+}
+.user-banner .info { display: flex; align-items: center; gap: 14px; }
+.user-banner .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 600;
+}
+.user-banner h2 { font-size: 17px; font-weight: 600; }
+.user-banner .sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.user-banner .stat {
+    text-align: right;
+}
+.user-banner .stat .label { font-size: 11px; opacity: 0.85; }
+.user-banner .stat .value {
+    font-size: 22px; font-weight: 600; font-family: var(--font-num);
+}
+
+.toolbar {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px;
+}
+.toolbar .left { color: var(--ant-text-secondary); }
+.toolbar .left strong { color: var(--ant-primary); font-family: var(--font-num); font-size: 18px; }
+
+.perm-card {
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+.perm-card-head {
+    padding: 12px 18px;
+    background: #FAFAFA;
+    border-bottom: 1px solid var(--ant-divider);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.perm-card-head .name {
+    font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+}
+.perm-card-head .name .badge {
+    background: var(--ant-success-bg);
+    color: var(--ant-success);
+    padding: 1px 8px; border-radius: 8px;
+    font-size: 11px; font-family: var(--font-num);
+    border: 1px solid #B7EB8F;
+}
+.perm-card-head .name .badge.empty {
+    background: #FAFAFA; color: var(--ant-text-tertiary); border-color: var(--ant-divider);
+}
+.perm-card-head .toggle {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--ant-primary);
+    user-select: none;
+}
+.perm-card-body { padding: 8px 0; }
+.perm-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+}
+.perm-item:hover { background: var(--ant-bg-hover); }
+.perm-item.checked {
+    border-left-color: var(--ant-primary);
+    background: rgba(22,119,255,0.04);
+}
+.perm-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
+.perm-item .label { font-size: 13px; flex: 1; }
+.perm-item.checked .label { font-weight: 500; }
+
+.footer {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: #FFF;
+    border: 1px solid var(--ant-divider);
+    border-radius: 6px;
+    display: flex; justify-content: flex-end; gap: 8px;
+    position: sticky; bottom: 20px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+    <strong>方案 1：分组复选框</strong> ｜ 按一级菜单拆成卡片 · 每张卡片头部"全选/取消该组" · 操作直观
+</div>
+
+<div class="page">
+    <a href="user_perms_index.html" class="btn btn-sm" style="margin-bottom: 16px;">‹ 返回方案列表</a>
+
+    <div class="user-banner">
+        <div class="info">
+            <div class="avatar">王</div>
+            <div>
+                <h2>王经理 <span class="tag tag-info" style="margin-left:8px;background:rgba(255,255,255,0.2);color:#FFF;border-color:rgba(255,255,255,0.3);">仓库经理</span></h2>
+                <div class="sub">邮箱 wang@example.com · 手机 138****6688 · 创建于 2026-03-15</div>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="label">当前权限</div>
+            <div class="value">9 / 16</div>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <div class="left">已勾选 <strong>9</strong> 项菜单权限</div>
+        <div>
+            <button class="btn btn-sm">全部清空</button>
+            <button class="btn btn-sm">全部勾选</button>
+        </div>
+    </div>
+
+    <!-- 日常使用 -->
+    <div class="perm-card">
+        <div class="perm-card-head">
+            <div class="name">日常使用 <span class="badge">2 / 2</span></div>
+            <span class="toggle">取消该组</span>
+        </div>
+        <div class="perm-card-body">
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">工作台</span></label>
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">待审批中心</span></label>
+        </div>
+    </div>
+
+    <!-- 日常操作 -->
+    <div class="perm-card">
+        <div class="perm-card-head">
+            <div class="name">日常操作 <span class="badge">3 / 5</span></div>
+            <span class="toggle">全选该组</span>
+        </div>
+        <div class="perm-card-body">
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">入库</span></label>
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">出库</span></label>
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">调拨</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">报损</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">盘点</span></label>
+        </div>
+    </div>
+
+    <!-- 查询分析 -->
+    <div class="perm-card">
+        <div class="perm-card-head">
+            <div class="name">查询分析 <span class="badge">2 / 4</span></div>
+            <span class="toggle">全选该组</span>
+        </div>
+        <div class="perm-card-body">
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">库存查询</span></label>
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">库存流水</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">经营报表</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">库存预测</span></label>
+        </div>
+    </div>
+
+    <!-- 数据维护 -->
+    <div class="perm-card">
+        <div class="perm-card-head">
+            <div class="name">数据维护 <span class="badge">2 / 5</span></div>
+            <span class="toggle">全选该组</span>
+        </div>
+        <div class="perm-card-body">
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">商品</span></label>
+            <label class="perm-item checked"><input type="checkbox" checked><span class="label">供应商</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">仓库</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">库位</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">存储区</span></label>
+        </div>
+    </div>
+
+    <!-- 系统 -->
+    <div class="perm-card">
+        <div class="perm-card-head">
+            <div class="name">系统 <span class="badge empty">0 / 5</span></div>
+            <span class="toggle">全选该组</span>
+        </div>
+        <div class="perm-card-body">
+            <label class="perm-item"><input type="checkbox"><span class="label">用户与权限</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">岗位管理</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">通知渠道</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">数据备份</span></label>
+            <label class="perm-item"><input type="checkbox"><span class="label">修改密码</span></label>
+        </div>
+    </div>
+
+    <div class="footer">
+        <a class="btn" href="javascript:history.back()">取消</a>
+        <button class="btn btn-primary">保存权限（9 项）</button>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.perm-item input').forEach(cb => {
+    cb.addEventListener('change', () => cb.closest('label').classList.toggle('checked', cb.checked));
+});
+</script>
+</body>
+</html>

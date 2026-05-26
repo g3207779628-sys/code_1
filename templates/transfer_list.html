@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}物品调拨{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">调拨</span>{% endblock %}
+{% block content %}
+
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">调拨单</div>
+        <div class="page-sub">共 {{ orders|length }} 张 · 跨库位 / 跨仓库 搬动库存</div>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('transfer_new') }}">+ 新建调拨单</a>
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>调拨单列表</h3><span class="meta">{{ orders|length }} 张</span></div>
+    <div class="body" style="padding:0;">
+        {% if orders %}
+        <table class="dense-table">
+            <thead>
+                <tr>
+                    <th>单号</th>
+                    <th>日期</th>
+                    <th>调出（仓库 · 存放区域/位置）</th>
+                    <th>调入</th>
+                    <th>物品</th>
+                    <th>状态</th>
+                    <th class="text-right">行数</th>
+                    <th class="text-right">数量</th>
+                    <th>创建人</th>
+                    <th class="text-right" style="width:120px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                {% set s = order_summary.get(o.order_no) %}
+                <tr>
+                    <td class="mono"><a href="{{ url_for('transfer_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
+                    <td class="mono" style="font-size:11px;">{{ o.transfer_date }}</td>
+                    <td>
+                        {{ o.from_wh_name }} · <span class="mono">{{ o.from_loc_code }}</span>
+                    </td>
+                    <td>
+                        {{ o.to_wh_name }} · <span class="mono">{{ o.to_loc_code }}</span>
+                    </td>
+                    <td class="sku-name" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ s.sku_names if s and s.sku_names else '—' }}
+                    </td>
+                    <td>
+                        {% if o.status == 'draft' %}<span class="tag tag-warn">草稿</span>
+                        {% elif o.status == 'completed' %}<span class="tag tag-success">已完成</span>
+                        {% else %}<span class="tag">已撤销</span>{% endif %}
+                    </td>
+                    <td class="num-mono text-right">{{ o.line_count }}</td>
+                    <td class="num-mono text-right"><strong>{{ o.total_qty }}</strong></td>
+                    <td>{{ o.creator_name or '—' }}</td>
+                    <td class="text-right">
+                        <a class="btn btn-sm btn-link" href="{{ url_for('transfer_detail', order_no=o.order_no) }}">查看</a>
+                        {% if o.status == 'draft' %}
+                        <form method="post" action="{{ url_for('transfer_cancel', order_no=o.order_no) }}" style="display:inline;" onsubmit="return confirm('撤销该调拨单？');">
+                            <button class="btn btn-sm btn-danger" type="submit">撤销</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
+            还没有调拨单。点击右上「+ 新建调拨单」开始。
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

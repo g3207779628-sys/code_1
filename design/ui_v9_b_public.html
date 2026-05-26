@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v9 方案 B · 公共欢迎页（未登录）· 金山仓储</title>
+<link rel="stylesheet" href="ui_white_shared.css">
+<style>
+body {
+    background:
+        radial-gradient(circle at 30% 30%, var(--accent-soft) 0%, var(--bg-base) 55%),
+        radial-gradient(circle at 75% 75%, var(--bg-soft) 0%, var(--bg-base) 55%);
+    font-size: 13px;
+    min-height: 100vh;
+    color: var(--ink);
+}
+.page { min-height: 100vh; display: flex; flex-direction: column; }
+
+.top {
+    padding: 22px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--line-soft);
+}
+.top .brand {
+    font-size: 15px; font-weight: 700; letter-spacing: 3px;
+}
+.top .brand .accent { color: var(--accent-deep); }
+.top .meta {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--ink-quiet);
+    letter-spacing: 2px;
+}
+
+.main {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px;
+}
+.v9-hero {
+    display: flex; flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
+}
+.v9-hero-pre {
+    font-family: var(--font-mono);
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 8px;
+    color: var(--accent-deep);
+    margin-bottom: 14px;
+}
+.v9-hero-main {
+    font-size: 124px; font-weight: 800;
+    letter-spacing: 16px;
+    line-height: 1;
+    margin-bottom: 18px;
+}
+.v9-hero-main .fill { color: var(--accent-deep); }
+.v9-hero-main .stroke {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--accent-deep);
+}
+.v9-hero-sub {
+    font-size: 22px; font-weight: 300;
+    letter-spacing: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+}
+.v9-hero-meta {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--ink-faded);
+    letter-spacing: 4px;
+}
+
+.btn-enter {
+    background: var(--accent);
+    color: #FFF;
+    border: 1px solid var(--accent);
+    border-radius: var(--r-sm);
+    padding: 14px 32px;
+    font-size: 14px; font-weight: 500;
+    letter-spacing: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 32px;
+}
+.btn-enter:hover { background: var(--accent-deep); }
+
+/* 底部系统信息 strip */
+.info-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    max-width: 720px;
+    width: 100%;
+    overflow: hidden;
+}
+.info-strip .cell {
+    background: var(--bg-card);
+    padding: 14px 18px;
+    text-align: center;
+}
+.info-strip .cell .k {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-quiet);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.info-strip .cell .v {
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+.info-strip .cell .v.accent {
+    color: var(--accent-deep);
+    font-family: var(--font-mono);
+}
+
+.foot {
+    padding: 18px 40px;
+    display: flex; justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-faded);
+    letter-spacing: 3px;
+    border-top: 1px solid var(--line-soft);
+}
+.foot a { color: var(--ink-quiet); text-decoration: none; }
+.foot a:hover { color: var(--accent); }
+
+.demo-tag {
+    position: fixed;
+    top: 12px; right: 12px;
+    background: var(--accent-deep);
+    color: #FFF;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    z-index: 999;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-tag">MOCKUP · B · PUBLIC /</div>
+
+<div class="page">
+
+    <div class="top">
+        <div class="brand">金山<span class="accent">仓储</span></div>
+        <div class="meta" id="now-time">··· · ···</div>
+    </div>
+
+    <div class="main">
+        <div class="v9-hero">
+            <div class="v9-hero-pre">KINGSOFT WAREHOUSE</div>
+            <div class="v9-hero-main">
+                <span class="fill">WEL</span><span class="stroke">COME</span>
+            </div>
+            <div class="v9-hero-sub">金山仓库管理</div>
+            <div class="v9-hero-meta">// V9 · BUILD 20260521</div>
+        </div>
+
+        <a href="ui_white_c_login.html" class="btn-enter">进入管理系统 →</a>
+
+        <div class="info-strip">
+            <div class="cell">
+                <div class="k">版本</div>
+                <div class="v accent">V9.0</div>
+            </div>
+            <div class="cell">
+                <div class="k">服务</div>
+                <div class="v">运行中</div>
+            </div>
+            <div class="cell">
+                <div class="k">最后更新</div>
+                <div class="v">5-21</div>
+            </div>
+            <div class="cell">
+                <div class="k">注册用户</div>
+                <div class="v accent">28</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="foot">
+        <div>KINGSOFT-WMS · V9 · 内部办公仓储系统 · 不对外开放</div>
+        <div><a href="ui_v9_index.html">← 回 v9 方案对比</a></div>
+    </div>
+
+</div>
+
+<script>
+function pad(n) { return n < 10 ? '0' + n : n; }
+function tick() {
+    var d = new Date();
+    document.getElementById('now-time').textContent =
+        d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+        ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+tick(); setInterval(tick, 30000);
+</script>
+
+</body>
+</html>

@@ -1,47 +1,50 @@
 {% extends "base.html" %}
-{% block title %}拣货 {{ ob.order_no }}{% endblock %}
+{% block title %}出库 {{ ob.order_no }}{% endblock %}
 {% block content %}
 
 <div class="card">
     <div class="card-header">
-        <span>拣货任务 <span class="mono">{{ ob.order_no }}</span> · 关联销售单 <a class="mono" href="{{ url_for('sales_detail', order_no=ob.sales_order_no) }}">{{ ob.sales_order_no }}</a></span>
+        <span>出库单 <span class="mono">{{ ob.order_no }}</span></span>
         <span>
-            {% if ob.status == 'pending' %}<span class="badge badge-downgrade">待拣货</span>
+            {% if ob.status == 'pending' %}<span class="badge badge-downgrade">待出库</span>
             {% elif ob.status == 'completed' %}<span class="badge badge-in">已完成</span>
             {% else %}<span class="badge badge-out">已取消</span>{% endif %}
         </span>
     </div>
     <div class="card-body">
         <div style="margin-bottom:16px; padding:12px; background:var(--color-bg-alt); border-left:3px solid var(--color-primary);">
-            <strong>收件人：</strong>{{ ob.receiver_name }} · <span class="mono">{{ ob.receiver_phone }}</span><br>
-            <strong>地址：</strong>{{ ob.receiver_addr or '-' }}
+            <strong>收件方：</strong>{{ ob.receiver_desc or '-' }}<br>
+            {% if ob.note %}<strong>备注：</strong>{{ ob.note }}<br>{% endif %}
+            {% set atts = ob.attachments | attachments_list %}
+            {% if atts %}
+            <strong>附件：</strong>
+            {% for path in atts %}
+            <a href="{{ url_for('download_attachment', filepath=path) }}" target="_blank" style="margin-right:8px;">{{ path.split('/')[-1] }}</a>
+            {% endfor %}
+            {% endif %}
         </div>
 
         <h3 style="color:var(--color-primary); border-left:3px solid var(--color-accent); padding-left:10px;">
-            🔻 按 FIFO 派的批次（系统已自动选老批次）
+            按 FIFO 派的批次
         </h3>
         <table>
             <thead>
                 <tr>
                     <th>库位</th>
-                    <th>SKU</th>
-                    <th>商品</th>
+                    <th>物品</th>
                     <th>批次号</th>
-                    <th>生产日期</th>
-                    <th>效期</th>
-                    <th>要拣数量</th>
+                    <th>要出数量</th>
+                    <th>已撤销</th>
                 </tr>
             </thead>
             <tbody>
                 {% for it in items %}
                 <tr>
-                    <td class="mono"><strong>{{ it.location_code }}</strong> <span class="badge badge-{{ it.zone_type }}">{{ {'normal':'常温','cold':'冷藏','freeze':'冷冻','isolation':'隔离','downgrade':'降级'}[it.zone_type] }}</span></td>
-                    <td class="mono">{{ it.sku_code }}</td>
+                    <td class="mono"><strong>{{ it.location_code }}</strong></td>
                     <td>{{ it.sku_name }} {% if it.sku_spec %}<span style="color:var(--color-text-soft);font-size:12px;">{{ it.sku_spec }}</span>{% endif %}</td>
                     <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
-                    <td class="mono">{{ it.production_date }}</td>
-                    <td class="mono">{{ it.expiry_date }}</td>
-                    <td class="mono"><strong style="font-size:18px;color:var(--color-out);">{{ it.quantity }}</strong></td>
+                    <td class="mono"><strong style="font-size:16px;color:var(--color-out);">{{ it.quantity }}</strong></td>
+                    <td class="mono">{{ it.reversed_qty or 0 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -49,22 +52,63 @@
 
         <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
             {% if ob.status == 'pending' %}
-            <form method="post" action="{{ url_for('pick_complete', order_no=ob.order_no) }}" onsubmit="return confirm('确认所有商品已按上表拣好？提交后会实扣库存。');">
-                <button class="btn" type="submit">✓ 我已拣完（实扣库存）</button>
+            <form method="post" action="{{ url_for('pick_complete', order_no=ob.order_no) }}" onsubmit="return confirm('确认所有物品已按上表出库？提交后会实扣库存。');">
+                <button class="btn" type="submit">✓ 已出库（实扣库存）</button>
             </form>
             <div style="margin-top:8px; font-size:12px; color:var(--color-text-soft);">
-                完成时系统会做：①写出库流水（每行一条） ②实扣 inventory.on_hand 同时释放 reserved ③销售单和出库单都转为"已完成"。
+                完成时系统会做：①写出库流水（每行一条） ②实扣 inventory.on_hand 同时释放 reserved ③出库单转为"已完成"。
             </div>
             {% else %}
             <div style="color:var(--color-text-soft);">
-                拣货员：{{ ob.picker_name }} · 完成时间：<span class="mono">{{ ob.completed_at }}</span>
+                出库员：{{ ob.picker_name or '-' }} · 完成时间：<span class="mono">{{ ob.completed_at }}</span>
             </div>
             {% endif %}
             <div style="margin-top:12px;">
-                <a class="btn btn-secondary" href="{{ url_for('pick_list') }}">返回任务列表</a>
+                <a class="btn btn-secondary" href="{{ url_for('pick_list') }}">返回出库列表</a>
             </div>
         </div>
     </div>
 </div>
+
+{% if ob.status == 'completed' %}
+<div class="card">
+    <div class="card-header">出库后退回（部分撤销）</div>
+    <div class="card-body">
+        <form method="post" action="{{ url_for('pick_reverse', order_no=ob.order_no) }}" onsubmit="return confirm('确认撤销？已撤销数量会自动回到原批次原库位。');">
+            <table>
+                <thead>
+                    <tr><th>物品</th><th>批次</th><th>库位</th><th>原数量</th><th>已撤销</th><th>剩余可撤</th><th>本次撤销</th></tr>
+                </thead>
+                <tbody>
+                    {% for it in items %}
+                    {% set remaining = it.quantity - (it.reversed_qty or 0) %}
+                    <tr>
+                        <td class="mono">{{ it.sku_code }}</td>
+                        <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
+                        <td class="mono">{{ it.location_code }}</td>
+                        <td class="mono">{{ it.quantity }}</td>
+                        <td class="mono">{{ it.reversed_qty or 0 }}</td>
+                        <td class="mono">{{ remaining }}</td>
+                        <td>
+                            {% if remaining > 0 %}
+                            <input type="number" name="reverse_qty_{{ it.id }}" min="0" max="{{ remaining }}" style="width:80px;" placeholder="0">
+                            {% else %}
+                            <span style="color:var(--color-text-soft);">已全撤</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="margin-top:12px;">
+                <button class="btn btn-secondary" type="submit">提交撤销</button>
+                <span style="font-size:12px; color:var(--color-text-soft); margin-left:12px;">
+                    每行可多次撤销，累计不超过原数量。
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 
 {% endblock %}

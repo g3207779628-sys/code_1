@@ -226,9 +226,38 @@ def _post_webhook(url, data):
         rj = r.json()
     except ValueError:
         return False, f"返回非 JSON：{r.text[:200]}"
-    if rj.get("errcode") in (0, None) or rj.get("StatusCode") == 0 or rj.get("code") == 0:
-        return True, "已发送"
+    if "code" in rj:
+        if rj.get("code") == 0:
+            return True, "已发送"
+        return False, f"失败：{rj}"
+    if "errcode" in rj:
+        if rj.get("errcode") == 0:
+            return True, "已发送"
+        return False, f"失败：{rj}"
+    if "StatusCode" in rj:
+        if rj.get("StatusCode") == 0:
+            return True, "已发送"
+        return False, f"失败：{rj}"
     return False, f"失败：{rj}"
+
+
+def _feishu_sign(secret):
+    timestamp = str(int(time.time()))
+    string_to_sign = f"{timestamp}\n{secret}"
+    sign = base64.b64encode(
+        hmac.new(string_to_sign.encode("utf-8"), b"", digestmod=hashlib.sha256).digest()
+    ).decode("utf-8")
+    return timestamp, sign
+
+
+def _apply_feishu_auth(data, cfg):
+    secret = cfg.get("secret") or cfg.get("sign_secret") or cfg.get("webhook_secret")
+    if not secret:
+        return data
+    timestamp, sign = _feishu_sign(secret)
+    signed_data = dict(data)
+    signed_data.update({"timestamp": timestamp, "sign": sign})
+    return signed_data
 
 
 def _send_dingtalk(cfg, recipient, subject, body, payload):
@@ -249,7 +278,7 @@ def _send_feishu(cfg, recipient, subject, body, payload):
     if not webhook or not webhook.startswith("http"):
         return False, "飞书缺 webhook_url"
     data = {"msg_type": "text", "content": {"text": f"【{subject}】\n{body}"}}
-    return _post_webhook(webhook, data)
+    return _post_webhook(webhook, _apply_feishu_auth(data, cfg))
 
 
 def _send_webhook(cfg, recipient, subject, body, payload):
@@ -257,6 +286,10 @@ def _send_webhook(cfg, recipient, subject, body, payload):
     webhook = cfg.get("webhook_url") or recipient
     if not webhook or not webhook.startswith("http"):
         return False, "通用 Webhook 缺 webhook_url"
+    preset = (cfg.get("preset") or "").lower()
+    if preset == "feishu" and not (cfg.get("body_template") or "").strip():
+        data = {"msg_type": "text", "content": {"text": f"【{subject}】\n{body}"}}
+        return _post_webhook(webhook, _apply_feishu_auth(data, cfg))
     template = cfg.get("body_template") or '{"text":"【{subject}】\\n{body}"}'
     body_escaped = body.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
     subject_escaped = subject.replace('\\', '\\\\').replace('"', '\\"')

@@ -1,13 +1,24 @@
 {% extends "base.html" %}
+{% from "_pager.html" import pager %}
 {% block title %}物品列表{% endblock %}
 {% block content %}
 
 <div class="card">
     <div class="card-header">
-        <span>物品列表（共 {{ skus|length }} 个）</span>
+        <span>物品列表（共 {{ pg.total }} 个）</span>
         {% if session.role in ['admin', 'manager'] %}
         <a class="btn btn-primary" href="{{ url_for('sku_new') }}">新增物品</a>
         {% endif %}
+    </div>
+    <div class="card-body">
+        <form method="get" style="display:flex; gap:10px; align-items:end;">
+            <div class="form-row" style="margin-bottom:0; flex:1; max-width:340px;">
+                <label>搜索物品</label>
+                <input type="text" name="q" value="{{ q }}" placeholder="名称 / 编号 / 品牌">
+            </div>
+            <button class="btn btn-primary" type="submit">查询</button>
+            {% if q %}<a class="btn btn-secondary" href="{{ url_for('sku_list') }}">重置</a>{% endif %}
+        </form>
     </div>
     <div class="card-body" style="padding:0;">
         {% if skus %}
@@ -56,9 +67,10 @@
             </tbody>
         </table>
         {% else %}
-        <div class="empty">还没有物品。点击右上角"新增物品"开始。</div>
+        <div class="empty">{% if q %}没有匹配"{{ q }}"的物品。<a href="{{ url_for('sku_list') }}">清除搜索</a>{% else %}还没有物品。点击右上角"新增物品"开始。{% endif %}</div>
         {% endif %}
     </div>
+    {{ pager(pg) }}
 </div>
 
 {% endblock %}

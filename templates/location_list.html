@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pager.html" import pager %}
 {% block title %}库位管理{% endblock %}
 {% block crumb %}<span class="sep">/</span><span class="current">库位</span>{% endblock %}
 {% block content %}
@@ -6,47 +7,93 @@
 <div class="v13-page-head">
     <div>
         <div class="page-title">库位</div>
-        <div class="page-sub">共 {{ rows|length }} 个 · 仓库 → 存放区域 → 存放位置</div>
+        <div class="page-sub">共 {{ pg.total }} 个库位 · 武汉仓库=正式库位，待归位=旧库位（物品暂存待指派）</div>
     </div>
     {% if session.role in ['admin','manager'] %}
     <a class="btn btn-primary" href="{{ url_for('location_new') }}">+ 新建库位</a>
     {% endif %}
 </div>
 
+<div class="form-card" style="margin-bottom:14px;">
+    <div class="body">
+        <form method="get" style="display:flex; flex-wrap:wrap; gap:12px; align-items:end;">
+            <div class="form-row" style="margin-bottom:0;">
+                <label>关键字</label>
+                <input type="text" name="q" value="{{ f.q }}" placeholder="编号/位置/楼栋/名称/责任人">
+            </div>
+            <div class="form-row" style="margin-bottom:0;">
+                <label>仓库</label>
+                <select name="warehouse_id">
+                    <option value="">全部</option>
+                    {% for w in warehouses %}
+                    <option value="{{ w.id }}" {% if f.warehouse_id == w.id|string %}selected{% endif %}>{{ w.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row" style="margin-bottom:0;">
+                <label>类型</label>
+                <select name="wh_type_id">
+                    <option value="">全部</option>
+                    {% for t in wh_types %}
+                    <option value="{{ t.id }}" {% if f.wh_type_id == t.id|string %}selected{% endif %}>{{ t.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row" style="margin-bottom:0;">
+                <label>使用部门</label>
+                <select name="use_dept_id">
+                    <option value="">全部</option>
+                    {% for d in use_depts %}
+                    <option value="{{ d.id }}" {% if f.use_dept_id == d.id|string %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="btn btn-primary" type="submit">查询</button>
+            <a class="btn btn-secondary" href="{{ url_for('location_list') }}">重置</a>
+        </form>
+    </div>
+</div>
+
 <div class="form-card">
-    <div class="head"><span class="accent-bar"></span><h3>库位列表</h3><span class="meta">{{ rows|length }} 个</span></div>
+    <div class="head"><span class="accent-bar"></span><h3>库位列表</h3><span class="meta">{{ pg.total }} 个</span></div>
     <div class="body" style="padding:0;">
         {% if rows %}
         <table class="dense-table">
             <thead>
                 <tr>
-                    <th>所属仓库</th>
-                    <th>存放区域</th>
-                    <th>存放位置</th>
+                    <th>仓库编号</th>
+                    <th>楼栋·楼层</th>
+                    <th>具体位置</th>
+                    <th>仓库名称</th>
                     <th>类型</th>
-                    <th>责任人</th>
-                    <th>分配部门</th>
                     <th>使用部门</th>
+                    <th>分配部门</th>
+                    <th>责任人</th>
+                    <th>仓库用途</th>
+                    <th>整改状态</th>
                     <th class="text-right">在仓物品</th>
-                    <th class="text-right" style="width:140px;">操作</th>
+                    <th class="text-right" style="width:110px;">操作</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in rows %}
                 <tr>
-                    <td>{{ r.warehouse_name }}</td>
+                    <td class="mono">{{ r.wh_code or '—' }}</td>
                     <td style="color:var(--accent-deep);">{{ r.storage_area or '—' }}</td>
                     <td class="mono"><strong>{{ r.storage_position or '—' }}</strong></td>
+                    <td>{{ r.room_name or '—' }}</td>
                     <td>{{ r.wh_type_name or '—' }}</td>
-                    <td>{{ r.owner_name or '—' }}</td>
-                    <td>{{ r.alloc_dept_name or '—' }}</td>
                     <td>{{ r.use_dept_name or '—' }}</td>
+                    <td>{{ r.alloc_dept_name or '—' }}</td>
+                    <td>{{ r.owner_name or '—' }}</td>
+                    <td class="text-tertiary" style="max-width:200px;">{{ r.purpose or '—' }}</td>
+                    <td>{% if r.rectify_status %}<span class="badge">{{ r.rectify_status }}</span>{% else %}—{% endif %}</td>
                     <td class="num-mono text-right">{{ r.active_skus }}</td>
                     <td class="text-right">
                         {% if session.role in ['admin','manager'] %}
                         <a class="btn btn-sm btn-link" href="{{ url_for('location_edit', loc_id=r.id) }}">编辑</a>
                         <form method="post" action="{{ url_for('location_delete', loc_id=r.id) }}" style="display:inline;"
-                              onsubmit="return confirm('删除库位「{{ r.storage_area }} / {{ r.storage_position }}」？仅无库存时可删');">
+                              onsubmit="return confirm('删除库位「{{ r.wh_code or r.storage_position }}」？仅无库存时可删');">
                             <button class="btn btn-sm btn-danger" type="submit">删除</button>
                         </form>
                         {% endif %}
@@ -57,10 +104,11 @@
         </table>
         {% else %}
         <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
-            还没有库位。点击右上「+ 新建库位」开始。
+            没有符合条件的库位。<a href="{{ url_for('location_list') }}">清除筛选</a>
         </div>
         {% endif %}
     </div>
+    {{ pager(pg) }}
 </div>
 
 {% endblock %}

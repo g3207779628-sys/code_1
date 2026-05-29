@@ -156,14 +156,6 @@
                         </div>
                     </div>
                     <div class="field">
-                        <label>所属方</label>
-                        <div class="picker {% if f.owner_party_id %}active{% endif %}" onclick="openPicker('owner-party', 'owner_party_id')">
-                            <input type="hidden" name="owner_party_id" id="owner_party_id" value="{{ f.owner_party_id }}">
-                            <span class="lbl {% if not f.owner_party_id %}empty{% endif %}" id="owner_party_id-label">{{ '已选' if f.owner_party_id else '全部' }}</span>
-                            <span class="ar">选 →</span>
-                        </div>
-                    </div>
-                    <div class="field">
                         <label>管理方</label>
                         <div class="picker {% if f.owner_admin_id %}active{% endif %}" onclick="openPicker('owner-admin', 'owner_admin_id')">
                             <input type="hidden" name="owner_admin_id" id="owner_admin_id" value="{{ f.owner_admin_id }}">
@@ -250,12 +242,13 @@
                     <th>物品</th>
                     <th>编号</th>
                     <th>大类</th>
-                    <th>所属方</th>
+                    <th>仓库</th>
                     <th>存放区域 / 位置</th>
+                    <th>类型</th>
                     <th>使用部门</th>
                     <th>责任人</th>
-                    <th>类型</th>
                     <th class="text-right">在仓</th>
+                    <th class="text-right">单位</th>
                 </tr>
             </thead>
             <tbody>
@@ -264,12 +257,13 @@
                     <td class="sku-name"><strong>{{ r.sku_name }}</strong>{% if r.sku_spec %} <span style="color:var(--ink-quiet); font-size:11px;">({{ r.sku_spec }})</span>{% endif %}</td>
                     <td class="mono" style="font-size:11px;">{{ r.sku_code }}</td>
                     <td>{% if r.category_major_name %}<span class="tag" style="background:var(--info-bg); color:var(--info);">{{ r.category_major_name }}</span>{% else %}—{% endif %}</td>
-                    <td>{{ r.owner_party_name or '—' }}</td>
+                    <td>{{ r.wh_name or '—' }}</td>
                     <td><span style="color:var(--accent-deep);">{{ r.storage_area }}</span> / {{ r.storage_position }}</td>
+                    <td>{{ r.wh_type_name or '—' }}</td>
                     <td>{{ r.use_dept_name or '—' }}</td>
                     <td>{{ r.owner_user_name or '—' }}</td>
-                    <td>{{ r.wh_type_name or '—' }}</td>
                     <td class="num-mono text-right" style="{% if r.safety_stock and r.on_hand < r.safety_stock %}color:var(--err);{% endif %}"><strong>{{ r.on_hand }}</strong></td>
+                    <td class="text-right text-tertiary">{{ r.sku_unit or '' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

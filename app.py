@@ -909,9 +909,19 @@ def index():
 @app.route("/sku")
 @login_required
 def sku_list():
+    q = request.args.get("q", "").strip()
+    where, params = "", []
+    if q:
+        where = "WHERE name LIKE ? OR code LIKE ? OR IFNULL(brand,'') LIKE ?"
+        kw = f"%{q}%"; params = [kw, kw, kw]
     with database.get_conn() as conn:
-        skus = conn.execute("SELECT * FROM sku ORDER BY code").fetchall()
-    return render_template("sku_list.html", skus=skus)
+        total = conn.execute(f"SELECT COUNT(*) AS c FROM sku {where}", params).fetchone()["c"]
+        pg = _pagination(total)
+        skus = conn.execute(
+            f"SELECT * FROM sku {where} ORDER BY code LIMIT ? OFFSET ?",
+            params + [pg["per_page"], pg["offset"]],
+        ).fetchall()
+    return render_template("sku_list.html", skus=skus, pg=pg, q=q)
 
 
 def _next_sku_code(conn):
@@ -1140,17 +1150,33 @@ def inbound_list():
     """v20: 列表加 仓库 / 楼栋 / 楼层 / 物品 / 数量 信息（聚合自 inbound_item）。
     v24: 加条件查询(单号/状态/物品) + 创建时间区间 + 分页。"""
     f = {
-        "q":         request.args.get("q", "").strip(),         # 单号 / 物品
-        "status":    request.args.get("status", "").strip(),
-        "date_from": request.args.get("date_from", "").strip(),  # 创建时间
-        "date_to":   request.args.get("date_to", "").strip(),
+        "order_no":          request.args.get("order_no", "").strip(),
+        "item":              request.args.get("item", "").strip(),
+        "category_major_id": request.args.get("category_major_id", "").strip(),
+        "warehouse_id":      request.args.get("warehouse_id", "").strip(),
+        "operator":          request.args.get("operator", "").strip(),
+        "status":            request.args.get("status", "").strip(),
+        "date_from":         request.args.get("date_from", "").strip(),
+        "date_to":           request.args.get("date_to", "").strip(),
     }
     where, params = [], []
-    if f["q"]:
-        where.append("(o.order_no LIKE ? OR EXISTS "
-                     "(SELECT 1 FROM inbound_item ii JOIN sku s ON s.id=ii.sku_id "
-                     "WHERE ii.order_no=o.order_no AND (s.name LIKE ? OR s.code LIKE ?)))")
-        params += [f"%{f['q']}%"] * 3
+    if f["order_no"]:
+        where.append("o.order_no LIKE ?"); params.append(f"%{f['order_no']}%")
+    if f["item"]:
+        where.append("EXISTS (SELECT 1 FROM inbound_item ii JOIN sku s ON s.id=ii.sku_id "
+                     "WHERE ii.order_no=o.order_no AND (s.name LIKE ? OR s.code LIKE ?))")
+        params += [f"%{f['item']}%", f"%{f['item']}%"]
+    if f["category_major_id"]:
+        where.append("EXISTS (SELECT 1 FROM inbound_item ii JOIN sku s ON s.id=ii.sku_id "
+                     "WHERE ii.order_no=o.order_no AND s.category_major_id=?)")
+        params.append(f["category_major_id"])
+    if f["warehouse_id"]:
+        where.append("EXISTS (SELECT 1 FROM inbound_item ii JOIN location l ON l.id=ii.location_id "
+                     "WHERE ii.order_no=o.order_no AND l.warehouse_id=?)")
+        params.append(f["warehouse_id"])
+    if f["operator"]:
+        where.append("(IFNULL(uo.display_name,'') LIKE ? OR IFNULL(uc.display_name,'') LIKE ?)")
+        params += [f"%{f['operator']}%", f"%{f['operator']}%"]
     if f["status"]:
         where.append("o.status = ?"); params.append(f["status"])
     if f["date_from"]:
@@ -1159,37 +1185,39 @@ def inbound_list():
         where.append("date(o.created_at) <= ?"); params.append(f["date_to"])
     where_sql = (" WHERE " + " AND ".join(where)) if where else ""
 
-    base = """SELECT o.*,
-                     uo.display_name AS operator_name,
-                     uc.display_name AS creator_name,
-                     ua.display_name AS approver_name,
-                     (SELECT COALESCE(SUM(quantity), 0) FROM inbound_item WHERE order_no = o.order_no) AS total_qty,
-                     (SELECT COUNT(*) FROM inbound_item WHERE order_no = o.order_no) AS line_count
-              FROM inbound_order o
-              LEFT JOIN user uo ON uo.id = o.operator_id
-              LEFT JOIN user uc ON uc.id = o.creator_id
-              LEFT JOIN user ua ON ua.id = o.approver_id"""
+    join = (" FROM inbound_order o "
+            "LEFT JOIN user uo ON uo.id=o.operator_id "
+            "LEFT JOIN user uc ON uc.id=o.creator_id "
+            "LEFT JOIN user ua ON ua.id=o.approver_id")
     with database.get_conn() as conn:
-        filtered_total = conn.execute(
-            "SELECT COUNT(*) AS c FROM inbound_order o" + where_sql, params).fetchone()["c"]
+        filtered_total = conn.execute("SELECT COUNT(*) AS c" + join + where_sql, params).fetchone()["c"]
         pg = _pagination(filtered_total)
-        orders = conn.execute(base + where_sql + " ORDER BY o.id DESC LIMIT ? OFFSET ?",
-                              params + [pg["per_page"], pg["offset"]]).fetchall()
-        # 每张订单的首行聚合摘要（仓库/楼栋/楼层/物品）
+        orders = conn.execute(
+            "SELECT o.*, uo.display_name AS operator_name, uc.display_name AS creator_name, "
+            "ua.display_name AS approver_name, "
+            "(SELECT COALESCE(SUM(quantity),0) FROM inbound_item WHERE order_no=o.order_no) AS total_qty, "
+            "(SELECT COUNT(*) FROM inbound_item WHERE order_no=o.order_no) AS line_count"
+            + join + where_sql + " ORDER BY o.id DESC LIMIT ? OFFSET ?",
+            params + [pg["per_page"], pg["offset"]]).fetchall()
         order_summary = {}
         for o in orders:
             row = conn.execute(
                 """SELECT w.name AS wh_name, l.storage_area, l.storage_position,
-                          GROUP_CONCAT(DISTINCT s.name) AS sku_names
+                          GROUP_CONCAT(DISTINCT s.name) AS sku_names,
+                          GROUP_CONCAT(DISTINCT icm.name) AS cat_names
                    FROM inbound_item ii
                    JOIN location l ON l.id = ii.location_id
                    JOIN warehouse w ON w.id = l.warehouse_id
                    JOIN sku s ON s.id = ii.sku_id
+                   LEFT JOIN item_category_major icm ON icm.id = s.category_major_id
                    WHERE ii.order_no = ?""",
                 (o["order_no"],),
             ).fetchone()
             order_summary[o["order_no"]] = row
-    return render_template("inbound_list.html", orders=orders, order_summary=order_summary, f=f, pg=pg)
+        warehouses = conn.execute("SELECT id, name FROM warehouse ORDER BY id").fetchall()
+        cat_majors = conn.execute("SELECT id, name FROM item_category_major ORDER BY name").fetchall()
+    return render_template("inbound_list.html", orders=orders, order_summary=order_summary, f=f, pg=pg,
+                           warehouses=warehouses, cat_majors=cat_majors)
 
 
 @app.route("/inbound/new", methods=["GET", "POST"])
@@ -1500,7 +1528,7 @@ def inventory_list():
     sql = """
         SELECT i.id AS inv_id, i.on_hand, i.reserved,
                s.id AS sku_id, s.code AS sku_code, s.name AS sku_name, s.spec AS sku_spec, s.brand,
-               s.safety_stock,
+               s.safety_stock, s.unit AS sku_unit,
                icm.name AS category_major_name,
                ic.name AS category_name,
                op.name AS owner_party_name,
@@ -1938,17 +1966,35 @@ def requisition_confirm_outbound(order_no):
 @login_required
 def pick_list():
     f = {
-        "q":         request.args.get("q", "").strip(),         # 单号 / 收件方 / 物品
-        "status":    request.args.get("status", "").strip(),
-        "date_from": request.args.get("date_from", "").strip(),  # 创建时间
-        "date_to":   request.args.get("date_to", "").strip(),
+        "order_no":          request.args.get("order_no", "").strip(),
+        "receiver":          request.args.get("receiver", "").strip(),
+        "item":              request.args.get("item", "").strip(),
+        "category_major_id": request.args.get("category_major_id", "").strip(),
+        "warehouse_id":      request.args.get("warehouse_id", "").strip(),
+        "operator":          request.args.get("operator", "").strip(),
+        "status":            request.args.get("status", "").strip(),
+        "date_from":         request.args.get("date_from", "").strip(),
+        "date_to":           request.args.get("date_to", "").strip(),
     }
     where, params = [], []
-    if f["q"]:
-        where.append("(ob.order_no LIKE ? OR IFNULL(ob.receiver_desc,'') LIKE ? OR EXISTS "
-                     "(SELECT 1 FROM outbound_item oi JOIN sku s ON s.id=oi.sku_id "
-                     "WHERE oi.order_no=ob.order_no AND (s.name LIKE ? OR s.code LIKE ?)))")
-        params += [f"%{f['q']}%"] * 4
+    if f["order_no"]:
+        where.append("ob.order_no LIKE ?"); params.append(f"%{f['order_no']}%")
+    if f["receiver"]:
+        where.append("IFNULL(ob.receiver_desc,'') LIKE ?"); params.append(f"%{f['receiver']}%")
+    if f["item"]:
+        where.append("EXISTS (SELECT 1 FROM outbound_item oi JOIN sku s ON s.id=oi.sku_id "
+                     "WHERE oi.order_no=ob.order_no AND (s.name LIKE ? OR s.code LIKE ?))")
+        params += [f"%{f['item']}%", f"%{f['item']}%"]
+    if f["category_major_id"]:
+        where.append("EXISTS (SELECT 1 FROM outbound_item oi JOIN sku s ON s.id=oi.sku_id "
+                     "WHERE oi.order_no=ob.order_no AND s.category_major_id=?)")
+        params.append(f["category_major_id"])
+    if f["warehouse_id"]:
+        where.append("EXISTS (SELECT 1 FROM outbound_item oi JOIN location l ON l.id=oi.location_id "
+                     "WHERE oi.order_no=ob.order_no AND l.warehouse_id=?)")
+        params.append(f["warehouse_id"])
+    if f["operator"]:
+        where.append("IFNULL(up.display_name,'') LIKE ?"); params.append(f"%{f['operator']}%")
     if f["status"]:
         where.append("ob.status = ?"); params.append(f["status"])
     if f["date_from"]:
@@ -1957,16 +2003,16 @@ def pick_list():
         where.append("date(ob.created_at) <= ?"); params.append(f["date_to"])
     where_sql = (" WHERE " + " AND ".join(where)) if where else ""
 
-    base = """SELECT ob.*, ob.receiver_desc, up.display_name AS picker_name,
-                      (SELECT COUNT(*) FROM outbound_item WHERE order_no = ob.order_no) AS line_count,
-                      (SELECT COALESCE(SUM(quantity),0) FROM outbound_item WHERE order_no = ob.order_no) AS total_qty,
-                      (SELECT COALESCE(SUM(reversed_qty),0) FROM outbound_item WHERE order_no = ob.order_no) AS reversed_qty
-               FROM outbound_order ob
-               LEFT JOIN user up ON up.id = ob.picker_id"""
+    join = " FROM outbound_order ob LEFT JOIN user up ON up.id = ob.picker_id"
+    base = ("SELECT ob.*, ob.receiver_desc, up.display_name AS picker_name, "
+            "(SELECT COUNT(*) FROM outbound_item WHERE order_no = ob.order_no) AS line_count, "
+            "(SELECT COALESCE(SUM(quantity),0) FROM outbound_item WHERE order_no = ob.order_no) AS total_qty, "
+            "(SELECT COALESCE(SUM(reversed_qty),0) FROM outbound_item WHERE order_no = ob.order_no) AS reversed_qty"
+            + join)
     order_clause = " ORDER BY (CASE ob.status WHEN 'pending' THEN 0 ELSE 1 END), ob.id DESC"
     with database.get_conn() as conn:
         filtered_total = conn.execute(
-            "SELECT COUNT(*) AS c FROM outbound_order ob" + where_sql, params).fetchone()["c"]
+            "SELECT COUNT(*) AS c" + join + where_sql, params).fetchone()["c"]
         pg = _pagination(filtered_total)
         orders = conn.execute(base + where_sql + order_clause + " LIMIT ? OFFSET ?",
                               params + [pg["per_page"], pg["offset"]]).fetchall()
@@ -1983,7 +2029,10 @@ def pick_list():
                 (o["order_no"],),
             ).fetchone()
             order_summary[o["order_no"]] = row
-    return render_template("pick_list.html", orders=orders, order_summary=order_summary, f=f, pg=pg)
+        warehouses = conn.execute("SELECT id, name FROM warehouse ORDER BY id").fetchall()
+        cat_majors = conn.execute("SELECT id, name FROM item_category_major ORDER BY name").fetchall()
+    return render_template("pick_list.html", orders=orders, order_summary=order_summary, f=f, pg=pg,
+                           warehouses=warehouses, cat_majors=cat_majors)
 
 
 @app.route("/pick/<order_no>")
@@ -2141,7 +2190,9 @@ def damage_list():
                LEFT JOIN user uv ON uv.id = d.approver_id
                ORDER BY d.id DESC"""
         ).fetchall()
-    return render_template("damage_list.html", rows=rows, reason_label=DAMAGE_REASON_LABEL)
+    pg = _pagination(len(rows))
+    rows = rows[pg["offset"]:pg["offset"] + pg["per_page"]]
+    return render_template("damage_list.html", rows=rows, reason_label=DAMAGE_REASON_LABEL, pg=pg)
 
 
 @app.route("/damage/new", methods=["GET", "POST"])
@@ -2272,7 +2323,9 @@ def stocktake_list():
                LEFT JOIN user ucl ON ucl.id = st.closer_id
                ORDER BY st.id DESC"""
         ).fetchall()
-    return render_template("stocktake_list.html", orders=orders)
+    pg = _pagination(len(orders))
+    orders = orders[pg["offset"]:pg["offset"] + pg["per_page"]]
+    return render_template("stocktake_list.html", orders=orders, pg=pg)
 
 
 @app.route("/stocktake/new", methods=["GET", "POST"])
@@ -3050,7 +3103,9 @@ def warehouse_list():
                       (SELECT COUNT(*) FROM location WHERE warehouse_id=w.id) AS loc_count
                FROM warehouse w ORDER BY w.id"""
         ).fetchall()
-    return render_template("warehouse_list.html", rows=rows)
+    pg = _pagination(len(rows))
+    rows = rows[pg["offset"]:pg["offset"] + pg["per_page"]]
+    return render_template("warehouse_list.html", rows=rows, pg=pg)
 
 
 def _next_warehouse_code(conn):
@@ -3162,23 +3217,50 @@ ZONE_TYPE_LABEL = {}  # 留空字典向后兼容（部分查询仍含 l.zone_typ
 @app.route("/location")
 @login_required
 def location_list():
+    f = {
+        "q":            request.args.get("q", "").strip(),
+        "warehouse_id": request.args.get("warehouse_id", "").strip(),
+        "wh_type_id":   request.args.get("wh_type_id", "").strip(),
+        "use_dept_id":  request.args.get("use_dept_id", "").strip(),
+    }
+    where, params = [], []
+    if f["q"]:
+        kw = f"%{f['q']}%"
+        where.append("(IFNULL(l.wh_code,'') LIKE ? OR IFNULL(l.storage_position,'') LIKE ? "
+                     "OR IFNULL(l.storage_area,'') LIKE ? OR IFNULL(l.room_name,'') LIKE ? "
+                     "OR IFNULL(wo.name,'') LIKE ?)")
+        params += [kw, kw, kw, kw, kw]
+    if f["warehouse_id"]:
+        where.append("l.warehouse_id=?"); params.append(f["warehouse_id"])
+    if f["wh_type_id"]:
+        where.append("l.wh_type_id=?"); params.append(f["wh_type_id"])
+    if f["use_dept_id"]:
+        where.append("l.use_dept_id=?"); params.append(f["use_dept_id"])
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+    base = (f"FROM location l JOIN warehouse w ON w.id=l.warehouse_id "
+            "LEFT JOIN wh_alloc_dept wad ON wad.id=l.alloc_dept_id "
+            "LEFT JOIN wh_use_dept   wud ON wud.id=l.use_dept_id "
+            "LEFT JOIN wh_type       wt  ON wt.id=l.wh_type_id "
+            "LEFT JOIN wh_owner      wo  ON wo.id=l.resp_owner_id "
+            f"{where_sql}")
     with database.get_conn() as conn:
+        total = conn.execute(f"SELECT COUNT(*) AS c {base}", params).fetchone()["c"]
+        pg = _pagination(total)
         rows = conn.execute(
-            """SELECT l.*, w.name AS warehouse_name,
-                      wad.name AS alloc_dept_name,
-                      wud.name AS use_dept_name,
-                      wt.name  AS wh_type_name,
-                      wo.name AS owner_name,
-                      (SELECT COUNT(*) FROM inventory WHERE location_id=l.id AND on_hand>0) AS active_skus
-               FROM location l
-               JOIN warehouse w ON w.id=l.warehouse_id
-               LEFT JOIN wh_alloc_dept wad ON wad.id=l.alloc_dept_id
-               LEFT JOIN wh_use_dept   wud ON wud.id=l.use_dept_id
-               LEFT JOIN wh_type       wt  ON wt.id=l.wh_type_id
-               LEFT JOIN wh_owner      wo  ON wo.id=l.resp_owner_id
-               ORDER BY w.id, l.storage_area, l.storage_position"""
+            f"""SELECT l.*, w.name AS warehouse_name, wad.name AS alloc_dept_name,
+                       wud.name AS use_dept_name, wt.name AS wh_type_name, wo.name AS owner_name,
+                       (SELECT COUNT(*) FROM inventory WHERE location_id=l.id AND on_hand>0) AS active_skus
+                {base}
+                ORDER BY w.id, l.wh_code, l.storage_area, l.storage_position
+                LIMIT ? OFFSET ?""",
+            params + [pg["per_page"], pg["offset"]],
         ).fetchall()
-    return render_template("location_list.html", rows=rows, zone_label=ZONE_TYPE_LABEL)
+        warehouses = conn.execute("SELECT id, name FROM warehouse ORDER BY id").fetchall()
+        wh_types = conn.execute("SELECT id, name FROM wh_type ORDER BY name").fetchall()
+        use_depts = conn.execute("SELECT id, name FROM wh_use_dept ORDER BY name").fetchall()
+    return render_template("location_list.html", rows=rows, pg=pg, f=f,
+                           warehouses=warehouses, wh_types=wh_types, use_depts=use_depts,
+                           zone_label=ZONE_TYPE_LABEL)
 
 
 @app.route("/location/new", methods=["GET", "POST"])
@@ -3347,6 +3429,8 @@ def transfer_list():
                LEFT JOIN user uc ON uc.id=t.creator_id
                ORDER BY t.id DESC"""
         ).fetchall()
+        pg = _pagination(len(orders))
+        orders = orders[pg["offset"]:pg["offset"] + pg["per_page"]]
         # 每张调拨单的物品摘要
         order_summary = {}
         for o in orders:
@@ -3358,7 +3442,7 @@ def transfer_list():
                 (o["order_no"],),
             ).fetchone()
             order_summary[o["order_no"]] = row
-    return render_template("transfer_list.html", orders=orders, order_summary=order_summary)
+    return render_template("transfer_list.html", orders=orders, order_summary=order_summary, pg=pg)
 
 
 @app.route("/transfer/new", methods=["GET", "POST"])

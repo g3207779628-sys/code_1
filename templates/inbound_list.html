@@ -1,8 +1,8 @@
 {% extends "base.html" %}
+{% from "_pager.html" import pager %}
 {% block title %}入库单{% endblock %}
 {% block crumb %}<span class="sep">/</span><span class="current">入库</span>{% endblock %}
 {% block content %}
-{% from "_pager.html" import pager %}
 
 <div class="v13-page-head">
     <div>
@@ -12,34 +12,44 @@
     <a class="btn btn-primary" href="{{ url_for('inbound_new') }}">+ 新建入库单</a>
 </div>
 
-<form class="list-filter" method="get" action="{{ url_for('inbound_list') }}"
-      style="background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-  <div style="display:flex;flex-direction:column;gap:5px;min-width:200px;flex:1;">
-    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">单号 / 物品</label>
-    <input type="text" name="q" value="{{ f.q }}" placeholder="关键字" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
+<div class="form-card" style="margin-bottom:14px;">
+  <div class="body">
+    <form method="get" action="{{ url_for('inbound_list') }}"
+          style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+      <div class="form-row" style="margin-bottom:0;"><label>单号</label>
+        <input type="text" name="order_no" value="{{ f.order_no }}" placeholder="入库单号"></div>
+      <div class="form-row" style="margin-bottom:0;"><label>物品名/编号</label>
+        <input type="text" name="item" value="{{ f.item }}" placeholder="物品名称或编号"></div>
+      <div class="form-row" style="margin-bottom:0;"><label>物品大类</label>
+        <select name="category_major_id">
+          <option value="">全部</option>
+          {% for c in cat_majors %}<option value="{{ c.id }}" {% if f.category_major_id==c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select></div>
+      <div class="form-row" style="margin-bottom:0;"><label>仓库</label>
+        <select name="warehouse_id">
+          <option value="">全部</option>
+          {% for w in warehouses %}<option value="{{ w.id }}" {% if f.warehouse_id==w.id|string %}selected{% endif %}>{{ w.name }}</option>{% endfor %}
+        </select></div>
+      <div class="form-row" style="margin-bottom:0;"><label>经手人</label>
+        <input type="text" name="operator" value="{{ f.operator }}" placeholder="创建人/操作人"></div>
+      <div class="form-row" style="margin-bottom:0;"><label>状态</label>
+        <select name="status">
+          <option value="">全部</option>
+          <option value="draft" {% if f.status=='draft' %}selected{% endif %}>草稿</option>
+          <option value="approved" {% if f.status=='approved' %}selected{% endif %}>已审核</option>
+          <option value="rejected" {% if f.status=='rejected' %}selected{% endif %}>已驳回</option>
+        </select></div>
+      <div class="form-row" style="margin-bottom:0;"><label>创建时间 从</label>
+        <input type="date" name="date_from" value="{{ f.date_from }}"></div>
+      <div class="form-row" style="margin-bottom:0;"><label>到</label>
+        <input type="date" name="date_to" value="{{ f.date_to }}"></div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary">筛选</button>
+        <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">重置</a>
+      </div>
+    </form>
   </div>
-  <div style="display:flex;flex-direction:column;gap:5px;">
-    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">状态</label>
-    <select name="status" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
-      <option value="">全部</option>
-      <option value="draft" {% if f.status=='draft' %}selected{% endif %}>草稿</option>
-      <option value="approved" {% if f.status=='approved' %}selected{% endif %}>已审核</option>
-      <option value="rejected" {% if f.status=='rejected' %}selected{% endif %}>已驳回</option>
-    </select>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:5px;">
-    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">创建时间 从</label>
-    <input type="date" name="date_from" value="{{ f.date_from }}" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
-  </div>
-  <div style="display:flex;flex-direction:column;gap:5px;">
-    <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">到</label>
-    <input type="date" name="date_to" value="{{ f.date_to }}" style="font-size:13px;padding:8px 10px;border:1px solid var(--line-input);border-radius:8px;">
-  </div>
-  <div style="display:flex;gap:8px;">
-    <button type="submit" class="btn btn-primary">筛选</button>
-    <a class="btn btn-secondary" href="{{ url_for('inbound_list') }}">重置</a>
-  </div>
-</form>
+</div>
 
 <div class="form-card">
     <div class="head"><span class="accent-bar"></span><h3>入库单列表</h3><span class="meta">{{ pg.total }} 张</span></div>
@@ -49,16 +59,14 @@
             <thead>
                 <tr>
                     <th>单号</th>
-                    <th>仓库</th>
-                    <th>存放区域 / 位置</th>
-                    <th>物品</th>
-                    <th>入库员工</th>
-                    <th>状态</th>
-                    <th class="text-right">明细行</th>
-                    <th class="text-right">总数量</th>
-                    <th>创建人</th>
                     <th>创建时间</th>
-                    <th class="text-right" style="width:160px;">操作</th>
+                    <th>物品</th>
+                    <th>大类</th>
+                    <th class="text-right">数量</th>
+                    <th>仓库 · 库位</th>
+                    <th>状态</th>
+                    <th>经手人</th>
+                    <th class="text-right" style="width:130px;">操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -66,26 +74,19 @@
                 {% set s = order_summary.get(o.order_no) %}
                 <tr>
                     <td class="mono"><a href="{{ url_for('inbound_detail', order_no=o.order_no) }}">{{ o.order_no }}</a></td>
-                    <td>{{ s.wh_name if s and s.wh_name else '—' }}</td>
-                    <td>
-                        {% if s and s.storage_area %}<span style="color:var(--accent-deep);">{{ s.storage_area }}</span>{% endif %}
-                        {% if s and s.storage_position %} / {{ s.storage_position }}{% endif %}
-                        {% if not s or (not s.storage_area and not s.storage_position) %}—{% endif %}
-                    </td>
+                    <td class="mono" style="font-size:11px; color:var(--ink-quiet);">{{ (o.created_at or '')[:16] }}</td>
                     <td class="sku-name" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                        {{ s.sku_names if s and s.sku_names else '—' }}
-                    </td>
-                    <td>{{ o.operator_name or '—' }}</td>
+                        {{ s.sku_names if s and s.sku_names else '—' }}{% if o.line_count > 1 %} <span class="text-tertiary">等{{ o.line_count }}项</span>{% endif %}</td>
+                    <td>{% if s and s.cat_names %}<span class="tag" style="background:var(--info-bg); color:var(--info);">{{ s.cat_names }}</span>{% else %}—{% endif %}</td>
+                    <td class="num-mono text-right"><strong>{{ o.total_qty }}</strong></td>
+                    <td>{% if s and s.wh_name %}{{ s.wh_name }}{% if s.storage_position %} · <span style="color:var(--accent-deep);">{{ s.storage_position }}</span>{% endif %}{% else %}—{% endif %}</td>
                     <td>
                         {% if o.status == 'draft' %}<span class="tag tag-warn">草稿</span>
                         {% elif o.status == 'approved' %}<span class="tag tag-success">已审核</span>
                         {% elif o.status == 'cancelled' %}<span class="tag">已撤销</span>
                         {% else %}<span class="tag tag-error">已驳回</span>{% endif %}
                     </td>
-                    <td class="num-mono text-right">{{ o.line_count }}</td>
-                    <td class="num-mono text-right"><strong>{{ o.total_qty }}</strong></td>
-                    <td>{{ o.creator_name or '—' }}</td>
-                    <td class="mono" style="font-size:11px; color:var(--ink-quiet);">{{ (o.created_at or '')[:16] }}</td>
+                    <td>{{ o.operator_name or o.creator_name or '—' }}</td>
                     <td class="text-right">
                         <a class="btn btn-sm btn-link" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">查看</a>
                         {% if o.status == 'draft' %}
@@ -101,7 +102,7 @@
         <div style="padding:0 12px 8px;">{{ pager(pg) }}</div>
         {% else %}
         <div style="padding:32px; text-align:center; color:var(--ink-quiet);">
-            {% if f.q or f.status or f.date_from or f.date_to %}没有符合筛选条件的入库单。<a href="{{ url_for('inbound_list') }}">重置</a>{% else %}还没有入库单。点击右上「+ 新建入库单」开始。{% endif %}
+            {% if f.order_no or f.item or f.category_major_id or f.warehouse_id or f.operator or f.status or f.date_from or f.date_to %}没有符合筛选条件的入库单。<a href="{{ url_for('inbound_list') }}">重置</a>{% else %}还没有入库单。点击右上「+ 新建入库单」开始。{% endif %}
         </div>
         {% endif %}
     </div>

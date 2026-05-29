@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pager.html" import pager %}
 {% block title %}报损管理{% endblock %}
 {% block content %}
 
@@ -58,6 +59,7 @@
         <div class="empty">还没有报损记录。<br>发现损耗时点 <a href="{{ url_for('damage_new') }}">提交报损</a>。</div>
         {% endif %}
     </div>
+    {{ pager(pg) }}
 </div>
 <div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
     报损流程：员工发现 → 拍照存证 → 主管审批 → 系统扣库存 + 写损耗流水。<br>

@@ -148,6 +148,13 @@ def done():
 
 
 if __name__ == "__main__":
+    import os
     database.init_db()  # 幂等：确保 requisition 等表已建好
-    print("领用申请门户启动：http://0.0.0.0:5001  (免登录公开页)")
-    app.run(host="0.0.0.0", port=5001, debug=False, use_reloader=False)
+    # 默认用 waitress（生产级 WSGI server，跨平台）；调试设 FLASK_DEV=1 走 Flask dev server
+    if os.environ.get("FLASK_DEV") == "1":
+        print("[portal] Flask dev server on 0.0.0.0:5001")
+        app.run(host="0.0.0.0", port=5001, debug=False, use_reloader=False)
+    else:
+        from waitress import serve
+        print("[portal] waitress on 0.0.0.0:5001 (threads=4)  免登录公开页")
+        serve(app, host="0.0.0.0", port=5001, threads=4)

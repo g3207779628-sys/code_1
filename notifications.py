@@ -25,6 +25,14 @@ import requests
 
 import database
 
+# 发外部通知统一用这个会话：trust_env=False 表示不读系统/环境代理。
+# 原因：Windows 上 requests 会自动套用「系统代理」(注册表 WinINET，常被 Clash 等
+# 代理软件的"系统代理"开关写入)，把飞书/企微/阿里云短信等【国内】服务的请求也送去
+# 国外节点，导致 TLS 握手被中断 (SSL: UNEXPECTED_EOF_WHILE_READING)。这些都是国内
+# 服务、本就该直连，故统一绕过环境代理。
+_HTTP = requests.Session()
+_HTTP.trust_env = False
+
 
 def _load_config(channel_code):
     with database.get_conn() as conn:
@@ -133,7 +141,7 @@ def _send_sms(cfg, recipient, subject, body, payload):
         "TemplateParam": json.dumps(template_param, ensure_ascii=False),
     }
     params["Signature"] = _aliyun_sign(params, sk)
-    resp = requests.post("https://dysmsapi.aliyuncs.com/", data=params, timeout=15)
+    resp = _HTTP.post("https://dysmsapi.aliyuncs.com/", data=params, timeout=15)
     try:
         j = resp.json()
     except ValueError:
@@ -152,7 +160,7 @@ def _wechat_get_token(corpid, corpsecret):
     item = _WECHAT_TOKEN_CACHE.get(cache_key)
     if item and time.time() < item["exp"] - 60:
         return item["token"]
-    r = requests.get(
+    r = _HTTP.get(
         "https://qyapi.weixin.qq.com/cgi-bin/gettoken",
         params={"corpid": corpid, "corpsecret": corpsecret},
         timeout=10,
@@ -177,7 +185,7 @@ def _send_wechat_work(cfg, recipient, subject, body, payload):
         "text": {"content": f"【{subject}】\n{body}"},
         "safe": 0,
     }
-    r = requests.post(
+    r = _HTTP.post(
         f"https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={token}",
         json=data, timeout=10,
     ).json()
@@ -204,7 +212,7 @@ def _send_qq_bot(cfg, recipient, subject, body, payload):
     else:
         return False, "recipient 需要 group:xxx 或 user:xxx 格式"
     headers = {"Authorization": f"Bearer {token}"} if token else {}
-    r = requests.post(f"{base.rstrip('/')}{endpoint}", json=data, headers=headers, timeout=10).json()
+    r = _HTTP.post(f"{base.rstrip('/')}{endpoint}", json=data, headers=headers, timeout=10).json()
     if r.get("status") == "ok" or r.get("retcode") == 0:
         return True, "QQ 消息已发送"
     return False, f"QQ 失败：{r}"
@@ -213,7 +221,7 @@ def _send_qq_bot(cfg, recipient, subject, body, payload):
 # ---------- 群机器人 Webhook ----------
 
 def _post_webhook(url, data):
-    r = requests.post(url, json=data, timeout=10)
+    r = _HTTP.post(url, json=data, timeout=10)
     try:
         rj = r.json()
     except ValueError:

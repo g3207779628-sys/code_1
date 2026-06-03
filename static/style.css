@@ -1,15 +1,12 @@
-/* merged: layout-2 base + font-3 fonts + depth-1 elevation */
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/400.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/500.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/600.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/700.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/800.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.20/400.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.20/500.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.20/700.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.9/400.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.9/500.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.9/700.css");
+/* self-hosted Latin webfonts: Inter + JetBrains Mono (中文走系统字体栈,不依赖外网) */
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/static/fonts/inter-400.woff2') format('woff2');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('/static/fonts/inter-500.woff2') format('woff2');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/static/fonts/inter-600.woff2') format('woff2');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('/static/fonts/inter-700.woff2') format('woff2');}
+@font-face{font-family:'Inter';font-style:normal;font-weight:800;font-display:swap;src:url('/static/fonts/inter-800.woff2') format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url('/static/fonts/jbmono-400.woff2') format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url('/static/fonts/jbmono-500.woff2') format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url('/static/fonts/jbmono-700.woff2') format('woff2');}
 
 :root {
     /* 背景层级 —— 工作区底色压暗一档，与纯白卡片拉开层次，立体感来源 */

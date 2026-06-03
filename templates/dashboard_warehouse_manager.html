@@ -56,7 +56,7 @@
                     <td><span class="tag tag-warn">待审</span></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" style="color:var(--ink-quiet); text-align:center;">无</td></tr>
+                <tr><td colspan="4" class="empty-cell"><span class="ico">✓</span>暂无待审入库单</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -78,7 +78,7 @@
                     <td class="num-mono text-right">{{ s.safety_stock }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" style="color:var(--ink-quiet); text-align:center;">无低库存</td></tr>
+                <tr><td colspan="4" class="empty-cell"><span class="ico">✓</span>库存充足，无需补货</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -99,34 +99,12 @@
                     <td class="num-mono text-right {{ 'delta-in' if r.delta > 0 else 'delta-out' }}">{{ '+' if r.delta > 0 }}{{ r.delta }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="3" style="color:var(--ink-quiet); text-align:center;">无</td></tr>
+                <tr><td colspan="3" class="empty-cell"><span class="ico">○</span>暂无出入库记录</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-</div>
-
-{# === 团队工作量（近 30 天，紧凑表格） === #}
-<div class="dense-card">
-    <div class="head"><h3>团队工作量 <span style="font-size:10px; color:var(--ink-quiet); font-weight:400;">· 近 30 天</span></h3></div>
-    <table class="dense-table">
-        <thead><tr><th>员工</th><th>岗位</th><th class="text-right">入库审批</th><th class="text-right">出库拣货</th><th class="text-right">报损审批</th><th class="text-right">总流水</th></tr></thead>
-        <tbody>
-            {% for t in team_workload %}
-            <tr>
-                <td class="sku-name">{{ t.name }}</td>
-                <td style="color:var(--ink-quiet); font-size:11px;">{{ POSITIONS.get(t.position, t.position) }}</td>
-                <td class="num-mono text-right">{{ t.inbound_approved }}</td>
-                <td class="num-mono text-right">{{ t.picked }}</td>
-                <td class="num-mono text-right">{{ t.approved }}</td>
-                <td class="num-mono text-right" style="color:var(--accent);">{{ t.log_count }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6" style="color:var(--ink-quiet); text-align:center;">暂无数据</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
 </div>
 
 {% endblock %}

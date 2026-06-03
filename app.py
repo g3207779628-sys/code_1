@@ -783,16 +783,6 @@ def index():
         # 各 dashboard 需要的角色化数据
         if pos == "warehouse_manager":
             ctx["pending_approvals"] = _pending_approvals(conn, 8)
-            # v12: 团队工作量改为"近 30 天"窗口（今日往往太稀疏），过滤空 position（""+NULL 都排除），显示全部
-            ctx["team_workload"] = conn.execute(
-                "SELECT u.display_name AS name, u.position, "
-                "(SELECT COUNT(*) FROM inbound_order WHERE approver_id=u.id AND date(approved_at) >= date('now','-30 days')) AS inbound_approved, "
-                "(SELECT COUNT(*) FROM outbound_order WHERE picker_id=u.id AND date(completed_at) >= date('now','-30 days')) AS picked, "
-                "(SELECT COUNT(*) FROM damage_log WHERE approver_id=u.id AND date(approved_at) >= date('now','-30 days')) AS approved, "
-                "(SELECT COUNT(*) FROM stock_log WHERE operator_id=u.id AND date(occurred_at) >= date('now','-30 days')) AS log_count "
-                "FROM user u WHERE u.position IS NOT NULL AND TRIM(u.position) != '' "
-                "ORDER BY (picked + approved + inbound_approved + log_count) DESC LIMIT 14"
-            ).fetchall()
             ctx["low_stock_top3"] = conn.execute(
                 "SELECT s.code, s.name, s.safety_stock, COALESCE(SUM(i.on_hand),0) AS on_hand, "
                 "(SELECT (l.storage_area || ' / ' || l.storage_position) FROM location l JOIN inventory i2 ON i2.location_id=l.id "
@@ -1095,13 +1085,13 @@ def sku_detail(sku_id):
             (sku_id,),
         ).fetchone()["total"]
 
-        # 存放位置（该物品有库存的库位，去重；不显示存储区）
+        # 存放位置（该物品有库存的库位，去重）；统一格式 = 存储区 / 存放位置，与库存查询页一致
         positions = [
-            r["storage_position"] for r in conn.execute(
-                "SELECT DISTINCT l.storage_position FROM inventory i "
+            r["loc"] for r in conn.execute(
+                "SELECT DISTINCT (l.storage_area || ' / ' || l.storage_position) AS loc FROM inventory i "
                 "JOIN location l ON l.id = i.location_id "
                 "WHERE i.sku_id = ? AND i.on_hand > 0 "
-                "ORDER BY l.storage_position",
+                "ORDER BY l.storage_area, l.storage_position",
                 (sku_id,),
             ).fetchall()
         ]
@@ -1109,7 +1099,7 @@ def sku_detail(sku_id):
         # 采购记录（导入的入库单据：采购数量 + 采购时间）
         purchases = conn.execute(
             """SELECT io.created_at AS purchase_time, ii.quantity, io.order_no,
-                      l.storage_position AS loc
+                      (l.storage_area || ' / ' || l.storage_position) AS loc
                FROM inbound_item ii
                JOIN inbound_order io ON io.order_no = ii.order_no
                JOIN location l ON l.id = ii.location_id
@@ -1118,10 +1108,10 @@ def sku_detail(sku_id):
             (sku_id,),
         ).fetchall()
 
-        # 出库流水（客服出入库台账导入的月度出库；只显示存放位置）
+        # 出库流水（客服出入库台账导入的月度出库）
         outbound_rows = conn.execute(
             """SELECT sl.occurred_at, sl.delta, sl.event_type, sl.source_doc, sl.note,
-                      l.storage_position AS loc
+                      (l.storage_area || ' / ' || l.storage_position) AS loc
                FROM stock_log sl
                JOIN location l ON l.id = sl.location_id
                WHERE sl.sku_id = ?

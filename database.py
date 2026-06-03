@@ -400,7 +400,7 @@ CREATE TABLE IF NOT EXISTS requisition_order (
     category_name TEXT,                           -- 类别名快照
     apply_date DATE,                              -- 申请日期
     note TEXT,                                    -- 申领说明
-    status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('submitted','handled','cancelled')),
+    status TEXT NOT NULL DEFAULT 'submitted' CHECK(status IN ('submitted','handled','cancelled','rejected')),
     source TEXT DEFAULT 'portal',                 -- 来源：portal=扫码门户
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -684,6 +684,20 @@ def _migrate(conn):
         )
         conn.execute("PRAGMA writable_schema = OFF")
         conn.execute("PRAGMA foreign_keys = ON")
+
+    # 4b. requisition_order status 增加 'rejected'（驳回）—— 直接改 CHECK 定义文本，不动数据
+    ro = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='requisition_order'"
+    ).fetchone()
+    if ro and "'rejected'" not in (ro["sql"] or ""):
+        conn.execute("PRAGMA writable_schema = ON")
+        conn.execute(
+            "UPDATE sqlite_master SET sql = "
+            "REPLACE(sql, \"'submitted','handled','cancelled'\", "
+            "\"'submitted','handled','cancelled','rejected'\") "
+            "WHERE type='table' AND name='requisition_order'"
+        )
+        conn.execute("PRAGMA writable_schema = OFF")
 
     # 5. user 表加联系字段（v2: 勾选用户后真发到该人）
     user_cols = [r["name"] for r in conn.execute("PRAGMA table_info(user)").fetchall()]

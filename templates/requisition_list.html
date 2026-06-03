@@ -3,8 +3,8 @@
 {% block crumb %}<span class="sep">/</span><span class="current">出库管理</span><span class="sep">/</span><span class="current">申领表</span>{% endblock %}
 {% block content %}
 {% from "_pager.html" import pager %}
-{% set st_map = {'submitted':'待处理','handled':'已处理','cancelled':'已取消'} %}
-{% set st_cls = {'submitted':'badge-warn','handled':'badge-ok','cancelled':'badge-mute'} %}
+{% set st_map = {'submitted':'待处理','handled':'已处理','cancelled':'已取消','rejected':'已驳回'} %}
+{% set st_cls = {'submitted':'badge-warn','handled':'badge-ok','cancelled':'badge-mute','rejected':'badge-danger'} %}
 
 <style>
 .req-list .v13-page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -31,6 +31,7 @@
 .req-list .badge-warn{color:var(--accent-deep);background:var(--accent-soft);}
 .req-list .badge-ok{color:var(--ok);background:var(--ok-bg);}
 .req-list .badge-mute{color:var(--ink-quiet);background:var(--bg-soft);}
+.req-list .badge-danger{color:var(--err);background:var(--err-bg);}
 .req-list .note-cell{max-width:200px;color:var(--ink-soft);font-size:12px;}
 .req-list .empty{padding:48px;text-align:center;color:var(--ink-quiet);background:var(--bg-card);
   border:1px solid var(--line);border-radius:var(--radius);}
@@ -85,6 +86,7 @@
           <option value="">全部</option>
           <option value="submitted" {% if f.status=='submitted' %}selected{% endif %}>待处理</option>
           <option value="handled" {% if f.status=='handled' %}selected{% endif %}>已处理</option>
+          <option value="rejected" {% if f.status=='rejected' %}selected{% endif %}>已驳回</option>
           <option value="cancelled" {% if f.status=='cancelled' %}selected{% endif %}>已取消</option>
         </select>
       </div>
@@ -126,6 +128,11 @@
                   onsubmit="return confirm('确认对申请单 {{ o.order_no }} 出库？\n将按 FIFO 实扣库存并生成出库单，此操作不可撤销。');"
                   style="display:inline;">
               <button type="submit" class="btn btn-primary btn-sm">出库确认</button>
+            </form>
+            <form method="post" action="{{ url_for('requisition_reject', order_no=o.order_no) }}"
+                  onsubmit="return confirm('确认驳回申请单 {{ o.order_no }}？\n驳回后该申请将被拒绝，不会出库。');"
+                  style="display:inline;margin-left:6px;">
+              <button type="submit" class="btn btn-secondary btn-sm">驳回</button>
             </form>
           {% elif o.status == 'handled' %}
             {% if outbound_by.get(o.order_no) %}

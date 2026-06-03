@@ -1867,6 +1867,26 @@ def requisition_list():
                            f=f, total_all=total_all, depts=depts, cats=cats)
 
 
+@app.route("/requisition/<order_no>/reject", methods=["POST"])
+@login_required
+def requisition_reject(order_no):
+    """驳回领用申请：仅 submitted 可驳回，置 rejected，不动库存。"""
+    with database.get_conn() as conn:
+        order = conn.execute("SELECT * FROM requisition_order WHERE order_no = ?", (order_no,)).fetchone()
+        if not order:
+            flash("申请单不存在", "error")
+            return redirect(url_for("requisition_list"))
+        if order["status"] != "submitted":
+            flash("只能驳回待处理的申请单", "error")
+            return redirect(url_for("requisition_list"))
+        conn.execute(
+            "UPDATE requisition_order SET status='rejected' WHERE order_no=?",
+            (order_no,),
+        )
+    flash(f"申请单 {order_no} 已驳回", "success")
+    return redirect(url_for("requisition_list"))
+
+
 @app.route("/requisition/<order_no>/confirm-outbound", methods=["POST"])
 @login_required
 def requisition_confirm_outbound(order_no):

@@ -1,45 +1,49 @@
-/* code_1 — White v8 (方案 C 紧凑工业)
- * 纯白底 + 橙红 #FF4500 + 紧凑 13px 基字
- * 来源：design/ui_white_shared.css
- *
- * 兼容性：所有原 class 名保留，只换样式。
- * 改色策略：替换 :root 变量后，所有引用 var(--*) 的组件自动适配。
- */
+/* merged: layout-2 base + font-3 fonts + depth-1 elevation */
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/400.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/500.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/600.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/700.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.18/800.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.20/400.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.20/500.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.20/700.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.9/400.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.9/500.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-sc@5.2.9/700.css");
 
 :root {
-    /* 背景层级 */
-    --bg: #FFFFFF;            /* 主背景 纯白 */
+    /* 背景层级 —— 工作区底色压暗一档，与纯白卡片拉开层次，立体感来源 */
+    --bg: #FFFFFF;            /* 主背景 纯白（卡片用） */
     --bg-base: #FFFFFF;       /* 别名 */
     --bg-card: #FFFFFF;       /* 卡片 纯白 */
-    --bg-soft: #F7F8FA;       /* 软底 sider 外的工作区背景 */
-    --bg-alt: #F7F8FA;        /* 别名 = bg-soft（旧代码兼容） */
-    --bg-quiet: #F2F2F2;
-    --bg-input: #FAFAFB;       /* 输入框 极浅灰 */
+    --bg-soft: #F4F6F9;       /* 工作区背景 略带冷灰，衬托卡片浮起 */
+    --bg-alt: #F4F6F9;        /* 别名 = bg-soft（旧代码兼容） */
+    --bg-quiet: #EEF1F5;
+    --bg-input: #F8FAFC;       /* 输入框 极浅灰 */
     --bg-input-focus: #FFFFFF;
-    --bg-row-hover: #FFF8F4;   /* 表格 hover 带一点暖 */
+    --bg-row-hover: #FFF7F2;   /* 表格 hover 带一点暖 */
     --bg-accent-soft: #FFF0EA; /* 浅橙底 active */
 
     /* 文字 */
-    --ink: #1A1A1A;            /* 主文字 接近黑 */
-    --ink-soft: #2E2E2E;
-    --ink-quiet: #6E6E6E;
-    --ink-faint: #ADADAD;
-    --ink-faded: #ADADAD;      /* 别名 */
+    --ink: #1A1F29;            /* 主文字 近黑略带蓝灰 */
+    --ink-soft: #353C49;
+    --ink-quiet: #6B7280;
+    --ink-faint: #A6ADBA;
+    --ink-faded: #A6ADBA;      /* 别名 */
 
-    /* 边框 */
-    --line: #ECECEC;
-    --line-soft: #F2F2F2;
-    --line-input: #E0E0E0;
+    /* 边框 —— 略柔，卡片靠阴影而非重边框分块 */
+    --line: #E7EAF0;
+    --line-soft: #EFF2F6;
+    --line-input: #DCE0E8;
 
-    /* 橙红 accent (OrangeRed 系) — v18 降饱和一档，企业级克制暖橙 */
-    --accent: #E05D1C;        /* 原 #FF4500 → 降饱和+沉一档，减少“刺”感 */
+    /* 橙红 accent (品牌橙保留) */
+    --accent: #E05D1C;
     --accent-hover: #BE4A12;
     --accent-light: #EE7B45;
     --accent-deep: #BE4A12;
-    --accent-soft: #FCEEE6;
+    --accent-soft: #FDEFE7;
     --accent-fade: #F7DECE;
-    /* 中性墨色阶（用于大面积数字/链接去橙化） */
-    --ink-num: #1A1A1A;
+    --ink-num: #1A1F29;
 
     /* 状态色 */
     --warn: #EA8600;
@@ -51,19 +55,23 @@
     --info: #1F6FEB;
     --info-bg: #EFF6FF;
 
-    /* 字体 */
-    --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+    /* 字体 —— 占位（基底默认值，后面「字体覆盖层」会用 font-3 方案覆盖） */
+    --font-sans: "Noto Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
     --font-mono: "SF Mono", "JetBrains Mono", Consolas, Monaco, monospace;
+    --font-cn: var(--font-sans);
 
-    /* 圆角与阴影 */
-    --radius: 8px;
-    --radius-sm: 4px;
-    /* v18 elevation：中性冷灰阴影（原 shadow-md 是橙色阴影，偏业余）*/
-    --shadow-sm: 0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.04);
-    --shadow-md: 0 4px 10px rgba(16,24,40,0.07), 0 2px 4px rgba(16,24,40,0.05);
-    --shadow-lg: 0 12px 28px rgba(16,24,40,0.10), 0 4px 8px rgba(16,24,40,0.05);
-    /* 间距 token（8 基数）*/
-    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px;
+    /* 圆角 —— 整体放大，更现代松弛（后面「立体覆盖层」会同步 depth-1 圆角） */
+    --radius: 12px;
+    --radius-sm: 7px;
+    --radius-lg: 16px;
+
+    /* elevation —— 基底默认（后面「立体覆盖层」用 depth-1 多层阴影覆盖） */
+    --shadow-sm: 0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06);
+    --shadow-md: 0 6px 16px rgba(16,24,40,0.07), 0 2px 6px rgba(16,24,40,0.05);
+    --shadow-lg: 0 18px 40px rgba(16,24,40,0.12), 0 6px 14px rgba(16,24,40,0.06);
+
+    /* 间距 token（8 基数，整体放大用于松弛留白） */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 40px; --sp-8: 56px;
 }
 
 * { box-sizing: border-box; }
@@ -77,9 +85,9 @@ body {
     color: var(--ink);
     font-family: var(--font-sans);
     font-size: 13px;
-    line-height: 1.55;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.005em;
+    letter-spacing: -0.003em;
 }
 
 a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
@@ -87,8 +95,8 @@ a:hover { color: var(--accent-hover); }
 
 .mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; letter-spacing: 0; }
 
-h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.015em; color: var(--ink); }
-h1 { font-size: 26px; line-height: 1.2; }
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.012em; color: var(--ink); }
+h1 { font-size: 27px; line-height: 1.2; }
 h2 { font-size: 20px; line-height: 1.3; }
 h3 { font-size: 16px; line-height: 1.4; }
 h4 { font-size: 14px; line-height: 1.4; }
@@ -103,9 +111,9 @@ button { font-family: inherit; }
     min-height: 100vh;
 }
 
-/* Sider */
+/* Sider —— 略宽，导航更舒展 */
 .sider {
-    width: 200px;                  /* v8 C: 220 → 200 紧凑 */
+    width: 212px;
     background: var(--bg-card);
     border-right: 1px solid var(--line);
     position: fixed;
@@ -114,7 +122,7 @@ button { font-family: inherit; }
     z-index: 100;
 }
 .sider-brand {
-    padding: 18px 20px 14px;
+    padding: 22px 22px 16px;
     font-size: 16px;
     font-weight: 700;
     color: var(--ink);
@@ -133,24 +141,27 @@ button { font-family: inherit; }
 .nav {
     list-style: none;
     margin: 0;
-    padding: 12px 0;
+    padding: 14px 10px;
 }
 .nav-item {
     position: relative;
     cursor: pointer;
     border-left: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    margin-bottom: 2px;
 }
 .nav-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 18px;                 /* v8 C: 紧凑 */
+    padding: 10px 14px;
     color: var(--ink-soft);
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     transition: background 0.12s, color 0.12s;
     user-select: none;
     letter-spacing: 0.01em;
+    border-radius: var(--radius-sm);
 }
 .nav-caret {
     color: var(--ink-faint);
@@ -168,7 +179,7 @@ button { font-family: inherit; }
     transform: translateX(2px);
 }
 .nav-item.active {
-    border-left-color: var(--accent);
+    border-left-color: transparent;
 }
 .nav-item.active > .nav-label {
     color: var(--ink);
@@ -178,11 +189,11 @@ button { font-family: inherit; }
     display: none;
     list-style: none;
     margin: 0;
-    padding: 6px 0;
+    padding: 8px 0;
     position: absolute;
     left: 100%;
     top: 0;
-    min-width: 180px;
+    min-width: 184px;
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -202,7 +213,7 @@ button { font-family: inherit; }
 .submenu li { margin: 0; }
 .submenu a {
     display: block;
-    padding: 8px 18px;
+    padding: 9px 18px;
     color: var(--ink-soft);
     font-size: 13px;
     font-weight: 500;
@@ -217,7 +228,7 @@ button { font-family: inherit; }
     margin: 4px 12px;
     list-style: none;
 }
-/* ===== 三级悬浮菜单（出库管理 → 出库单列表 / 申领表）===== */
+/* ===== 三级悬浮菜单 ===== */
 .submenu-parent {
     position: relative;
     list-style: none;
@@ -226,7 +237,7 @@ button { font-family: inherit; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 18px;
+    padding: 9px 18px;
     color: var(--ink-soft);
     font-size: 13px;
     font-weight: 500;
@@ -241,16 +252,15 @@ button { font-family: inherit; }
     color: var(--ink);
 }
 .submenu-parent.active > .submenu-parent-label { font-weight: 600; }
-/* .submenu-child 复用 .submenu 的绝对定位向右弹出；微调 top 让首项与父项对齐 */
-.submenu-child { top: -6px; }
+.submenu-child { top: -8px; }
 .submenu-parent:hover > .submenu-child { display: block; }
 /* ===== 通用分页控件 ===== */
 .pager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-  padding:12px 4px;margin-top:10px;font-size:13px;color:var(--ink-soft);}
+  padding:14px 4px;margin-top:10px;font-size:13px;color:var(--ink-soft);}
 .pager-info{white-space:nowrap;}
 .pager-btns{display:flex;gap:6px;flex-wrap:wrap;}
 
-/* 旧单层菜单 class 兼容（如果仍有页面引用，不再使用但保留样式不至于错位） */
+/* 旧单层菜单 class 兼容 */
 .sider-section {
     padding: 18px 24px 6px;
     font-size: 11px;
@@ -265,7 +275,7 @@ button { font-family: inherit; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 7px 12px;
+    padding: 8px 12px;
     color: var(--ink-soft);
     font-size: 13px;
     font-weight: 500;
@@ -277,20 +287,20 @@ button { font-family: inherit; }
 
 /* Main */
 .main {
-    margin-left: 200px;            /* v8 C: 220 → 200 同步 sider 宽度 */
+    margin-left: 212px;
     flex: 1;
     display: flex; flex-direction: column;
     min-height: 100vh;
 }
 
-/* Header */
+/* Header —— 略高，更透气 */
 .header {
-    height: 52px;                  /* v8 C: 56 → 52 紧凑 */
+    height: 60px;
     border-bottom: 1px solid var(--line);
     background: var(--bg-card);
     display: flex;
     align-items: center;
-    padding: 0 28px;
+    padding: 0 32px;
     position: sticky; top: 0; z-index: 50;
 }
 .header .crumb {
@@ -310,61 +320,57 @@ button { font-family: inherit; }
 .header-user a { margin-left: 12px; color: var(--ink-quiet); font-size: 12px; }
 .header-user a:hover { color: var(--accent); }
 
-/* Page header */
+/* Page header —— 加大上下留白 */
 .page-header {
-    padding: 24px 32px 0;
+    padding: 32px 36px 0;
     background: var(--bg);
 }
-.page-header h1 { margin: 0 0 4px; }
+.page-header h1 { margin: 0 0 6px; }
 .page-header .subtitle {
     font-size: 14px;
     color: var(--ink-soft);
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
-/* Container (legacy + main content) */
+/* Container —— 工作区主留白加大，呼吸感来源 */
 .container {
     flex: 1;
-    padding: 24px 28px 48px;
-    width: 100%;                /* v10: 去掉 max-width 1340px，列表页铺满整个工作区 */
+    padding: 32px 36px 60px;
+    width: 100%;
     background: var(--bg-soft);
 }
 
-/* === v8 小卡片居中工具类 === */
+/* === 小卡片居中工具类 === */
 .center-card {
-    max-width: 480px;            /* 默认 480px，登录页可用 .center-card.narrow 改 400px */
+    max-width: 480px;
     margin: 0 auto;
 }
 .center-card.narrow { max-width: 400px; }
 .center-card.wide   { max-width: 720px; }
 
-/* 业务表单页居中包裹 */
 .form-wrap {
     max-width: 920px;
     margin: 0 auto;
 }
 
-/* v11: 删除原 .container > .card:only-child 兜底规则
- * 原意让单卡片表单自动居中到 720px，但同时把列表页（只有一个 card）也夹到中间。
- * 现在所有页面都铺满 container；需要居中的表单页显式用 .form-wrap 包裹。 */
-
-/* Legacy navbar — hidden in Stripe layout (we use sider) */
+/* Legacy navbar */
 .navbar { display: none; }
 
-/* ===== Flash — 方案 1 顶部横幅 ===== */
-.flash-list { margin-bottom: 18px; }
+/* ===== Flash ===== */
+.flash-list { margin-bottom: 20px; }
 .flash {
     display: flex;
     align-items: center;
-    padding: 12px 18px;
+    padding: 14px 20px;
     border: 1px solid var(--line);
     border-left: 4px solid var(--ink-quiet);
     background: var(--bg-card);
     color: var(--ink);
     border-radius: var(--radius);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     font-size: 14px;
     line-height: 1.5;
+    box-shadow: var(--shadow-sm);
 }
 .flash::before {
     content: "i";
@@ -398,7 +404,7 @@ button { font-family: inherit; }
     background: var(--bg-alt);
 }
 
-/* ===== Toast 浮窗 — 方案 2 ===== */
+/* ===== Toast 浮窗 ===== */
 #toast-stack {
     position: fixed;
     top: 24px; right: 24px;
@@ -412,7 +418,7 @@ button { font-family: inherit; }
     border: 1px solid var(--line);
     border-left: 3px solid var(--ink-soft);
     border-radius: var(--radius);
-    padding: 12px 14px;
+    padding: 13px 15px;
     box-shadow: var(--shadow-lg);
     display: flex; align-items: flex-start; gap: 10px;
     animation: toastIn 0.25s ease-out;
@@ -450,7 +456,7 @@ button { font-family: inherit; }
     to   { opacity: 0; transform: translateX(40px); max-height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
 }
 
-/* ===== 内联消息 — 方案 3 ===== */
+/* ===== 内联消息 ===== */
 .inline-msg {
     display: inline-flex;
     align-items: center;
@@ -473,19 +479,19 @@ button { font-family: inherit; }
 .inline-msg.info { color: var(--ink-quiet); }
 .inline-msg.info::before { content: "ⓘ"; }
 
-/* ===== Card ===== */
+/* ===== Card —— 松弛卡片：更大圆角 + 柔阴影 + 更大内距 ===== */
 .card {
-    background: var(--bg);
+    background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     overflow: hidden;
-    transition: box-shadow 0.2s;
+    transition: box-shadow 0.2s, transform 0.2s;
 }
 .card:hover { box-shadow: var(--shadow-md); }
 .card-header {
-    padding: 14px 20px;
+    padding: 18px 24px;
     border-bottom: 1px solid var(--line-soft);
     font-size: 14px;
     font-weight: 600;
@@ -496,18 +502,18 @@ button { font-family: inherit; }
     background: var(--bg);
 }
 .card-header a { font-size: 13px; font-weight: 500; }
-.card-body { padding: 20px; }
+.card-body { padding: 24px; }
 
 /* ===== Buttons ===== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 14px;
+    padding: 7px 16px;
     font-size: 13px;
     font-weight: 500;
     line-height: 1.4;
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-input);
     border-radius: var(--radius-sm);
     background: var(--bg);
     color: var(--ink);
@@ -522,20 +528,10 @@ button { font-family: inherit; }
     color: var(--ink);
     box-shadow: 0 1px 2px rgba(60, 66, 87, 0.06);
 }
-.btn-primary {
-    background: var(--ink);
-    color: var(--bg);
-    border-color: var(--ink);
-}
-.btn-primary:hover {
-    background: #18324F;
-    border-color: #18324F;
-    color: var(--bg);
-}
 .btn-secondary {
     background: var(--bg);
     color: var(--ink-soft);
-    border-color: var(--line);
+    border-color: var(--line-input);
 }
 .btn-secondary:hover {
     background: var(--bg-alt);
@@ -551,9 +547,9 @@ button { font-family: inherit; }
     color: var(--err);
     border-color: var(--err);
 }
-.btn-sm { padding: 3px 10px; font-size: 12px; }
+.btn-sm { padding: 4px 11px; font-size: 12px; }
 
-/* v13: ghost 链接风按钮 — 用于"查看 / 详情 / 历史"等纯展示操作 */
+/* ghost 链接风按钮 */
 .btn-link {
     background: transparent;
     color: var(--accent);
@@ -567,10 +563,10 @@ button { font-family: inherit; }
 }
 
 /* ===== Forms ===== */
-.form-row { margin-bottom: 14px; }
+.form-row { margin-bottom: 16px; }
 .form-row label {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     font-size: 12px;
     color: var(--ink-soft);
     font-weight: 500;
@@ -579,8 +575,8 @@ input[type=text], input[type=password], input[type=number],
 input[type=email], input[type=date], input[type=tel],
 textarea, select {
     width: 100%;
-    padding: 7px 11px;
-    border: 1px solid var(--line);
+    padding: 8px 12px;
+    border: 1px solid var(--line-input);
     background: var(--bg);
     border-radius: var(--radius-sm);
     font-family: inherit;
@@ -592,10 +588,10 @@ textarea, select {
 input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 115, 230, 0.12);
+    box-shadow: 0 0 0 3px rgba(224, 93, 28, 0.12);
 }
 
-/* v22: 下拉框主题化（楼栋 / 楼层 / 月份等高频 select 享受） */
+/* 下拉框主题化 */
 select {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -624,8 +620,6 @@ select option {
     background: var(--bg-card);
     color: var(--ink);
 }
-/* 下拉展开高度：浏览器原生 size 属性才能控行数；普通 select 浏览器自定（Chrome 默认 ~20 条）。
-   如需限制 5 条显示请加 size="5"，但会变成"列表"而非"下拉"——折中：保留原生交互，仅提升视觉。 */
 select.size-5[size] { font-size: 14px; padding: 6px 10px; }
 
 /* ===== Tables ===== */
@@ -635,7 +629,7 @@ table {
     background: var(--bg);
 }
 th, td {
-    padding: 11px 14px;
+    padding: 13px 16px;
     text-align: left;
     border-bottom: 1px solid var(--line-soft);
     font-size: 13px;
@@ -654,7 +648,7 @@ tbody tr { transition: background 0.12s; }
 tbody tr:hover { background: var(--bg-alt); }
 tbody tr:last-child td { border-bottom: none; }
 
-/* ===== Tags / Badges — 全部统一中性 ===== */
+/* ===== Tags / Badges ===== */
 .tag, .badge {
     display: inline-block;
     padding: 1px 8px;
@@ -667,7 +661,6 @@ tbody tr:last-child td { border-bottom: none; }
     line-height: 1.6;
     letter-spacing: 0;
 }
-/* 强弱两档（不再彩虹）—— 状态靠位置/分组区分 */
 .tag.strong, .badge.strong {
     background: var(--ink);
     color: var(--bg);
@@ -678,7 +671,6 @@ tbody tr:last-child td { border-bottom: none; }
     color: var(--ink-quiet);
 }
 
-/* Legacy badge variants —— 全部映射为中性 tag（兼容） */
 .badge-cold, .badge-freeze, .badge-normal, .badge-isolation, .badge-downgrade,
 .badge-in, .badge-out, .badge-processing, .badge-error, .badge-success,
 .badge-warning, .badge-info, .badge-default {
@@ -687,7 +679,7 @@ tbody tr:last-child td { border-bottom: none; }
     border-color: var(--line);
 }
 
-/* ===== Login ===== */
+/* ===== Login —— 卡片浮起，更大圆角 ===== */
 .login-wrap {
     min-height: 100vh;
     display: flex;
@@ -700,11 +692,11 @@ tbody tr:last-child td { border-bottom: none; }
     max-width: 380px;
     width: 100%;
     margin: 0;
-    padding: 40px 32px;
+    padding: 44px 36px;
     background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
 }
 .login-box h1 {
     text-align: center;
@@ -719,7 +711,7 @@ tbody tr:last-child td { border-bottom: none; }
     margin-bottom: 28px;
 }
 .login-box .form-row { margin-bottom: 16px; }
-.login-box .btn { width: 100%; padding: 9px 14px; font-size: 14px; }
+.login-box .btn { width: 100%; padding: 10px 14px; font-size: 14px; }
 .login-hint {
     margin-top: 24px;
     padding-top: 16px;
@@ -729,17 +721,22 @@ tbody tr:last-child td { border-bottom: none; }
     text-align: center;
     line-height: 1.7;
 }
+/* login-card（snap_login 内联结构）也吃更大圆角与浮起阴影 */
+.login-card {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
 
-/* ===== Index Dashboard ===== */
+/* ===== Index Dashboard —— 松弛入口栅格 ===== */
 .entry-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
 }
 .entry-card {
     display: block;
-    padding: 20px;
+    padding: 24px;
     background: var(--bg);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -748,16 +745,16 @@ tbody tr:last-child td { border-bottom: none; }
     transition: all 0.2s;
 }
 .entry-card:hover {
-    border-color: var(--ink-faint);
+    border-color: var(--accent-fade);
     box-shadow: var(--shadow-md);
     color: var(--ink);
-    transform: translateY(-1px);
+    transform: translateY(-3px);
 }
 .entry-card h3 {
     font-size: 15px;
     font-weight: 600;
     color: var(--ink);
-    margin: 0 0 4px;
+    margin: 0 0 6px;
 }
 .entry-card p {
     font-size: 13px;
@@ -765,53 +762,56 @@ tbody tr:last-child td { border-bottom: none; }
     margin: 0;
 }
 
+/* === Stat Grid —— 仪表盘式：每块独立浮起卡片，宽松间隙 === */
 .stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0;
-    background: var(--bg);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+.stat-card {
+    padding: 22px 24px;
+    background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
 }
-.stat-card {
-    padding: 18px 20px;
-    border-right: 1px solid var(--line-soft);
-    border-bottom: 1px solid var(--line-soft);
-    transition: background 0.15s;
-}
-.stat-card:hover { background: var(--bg-alt); }
+.stat-card:hover { background: var(--bg-card); box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .stat-card .num {
     font-family: var(--font-mono);
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 28px;
+    font-weight: 700;
     color: var(--ink);
     line-height: 1.15;
     letter-spacing: -0.01em;
 }
 .stat-card .label {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--ink-quiet);
-    margin-top: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    margin-top: 8px;
+    letter-spacing: 0.02em;
     font-weight: 500;
 }
 
 /* ===== Actions cell ===== */
-.actions { display: flex; gap: 6px; }
+.actions { display: flex; gap: 8px; }
 
 /* ===== Empty state ===== */
 .empty {
     text-align: center;
-    padding: 60px 24px;
+    padding: 72px 24px;
     color: var(--ink-quiet);
     font-size: 13px;
 }
 .empty a { color: var(--accent); }
 
-/* ===== Role colors —— 弱化，仅用文字粗细区分 ===== */
+/* ===== Role colors ===== */
 .role-admin    { color: var(--ink); font-weight: 600; }
 .role-manager  { color: var(--ink-soft); font-weight: 600; }
 .role-staff    { color: var(--ink-quiet); font-weight: 500; }
@@ -826,13 +826,12 @@ tbody tr:last-child td { border-bottom: none; }
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 
-/* ===== Form subtotal cell ===== */
 .subtotal { color: var(--ink); font-weight: 600; }
 
-/* ===== Phase progress list (index) ===== */
+/* ===== Phase progress list ===== */
 .phase-list { list-style: none; margin: 0; padding: 0; }
 .phase-list li {
-    padding: 7px 0;
+    padding: 8px 0;
     font-size: 13px;
     color: var(--ink-soft);
     display: flex;
@@ -846,25 +845,25 @@ tbody tr:last-child td { border-bottom: none; }
 .phase-list .now { color: var(--accent); width: 14px; text-align: center; font-weight: 700; }
 .phase-list li.current { color: var(--ink); font-weight: 600; }
 
-/* ===== Responsive (rough) ===== */
+/* ===== Responsive ===== */
 @media (max-width: 1080px) {
     .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
     .sider { transform: translateX(-100%); }
     .main { margin-left: 0; }
-    .container { padding: 16px; }
+    .container { padding: 20px 16px; }
     .header { padding: 0 16px; }
-    .page-header { padding: 16px 16px 0; }
+    .page-header { padding: 20px 16px 0; }
 }
 
 
-/* ============ Modal（内嵌新增子表单用）============ */
+/* ============ Modal ============ */
 .modal-overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(10, 37, 64, 0.45);
+    background: rgba(16, 24, 40, 0.45);
     z-index: 1000;
     align-items: center;
     justify-content: center;
@@ -872,14 +871,14 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-overlay.open { display: flex; }
 .modal-box {
     background: var(--bg);
-    border-radius: 8px;
-    padding: 24px;
+    border-radius: var(--radius-lg);
+    padding: 28px;
     min-width: 420px;
     max-width: 80vw;
-    box-shadow: 0 12px 40px rgba(10, 37, 64, 0.25);
+    box-shadow: var(--shadow-lg);
 }
 .modal-box h3 { margin: 0 0 16px; font-size: 16px; color: var(--ink); }
-.modal-actions { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+.modal-actions { margin-top: 18px; display: flex; gap: 8px; justify-content: flex-end; }
 
 
 /* ============ 工作台 KPI 卡着色 ============ */
@@ -888,9 +887,9 @@ tbody tr:last-child td { border-bottom: none; }
 .stat-card.warn { background: var(--warn-bg); border-left: 3px solid var(--warn); }
 .stat-card.warn .num { color: var(--warn); }
 
-/* ============ v7 暖米风新增组件 ============ */
+/* ============ 暖色组件 ============ */
 
-/* 主按钮 / 次按钮 调整为方案 A 视觉 */
+/* 主按钮 = 品牌橙 */
 .btn-primary {
     background: var(--accent);
     color: #FFF;
@@ -902,10 +901,9 @@ tbody tr:last-child td { border-bottom: none; }
     color: #FFF;
 }
 
-/* 卡片改纯白（默认 body 是暖米白，卡片用纯白形成层次） */
 .card { background: var(--bg-card); }
 
-/* 输入框统一改浅米灰底（来自第二张参考图） */
+/* 输入框统一浅灰底 */
 input[type=text], input[type=email], input[type=tel],
 input[type=password], input[type=number], input[type=search],
 input[type=date], select, textarea {
@@ -918,12 +916,12 @@ input[type=date]:focus, select:focus, textarea:focus {
     background: var(--bg-input-focus);
     border-color: var(--accent);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(217, 119, 55, 0.12);
+    box-shadow: 0 0 0 3px rgba(224, 93, 28, 0.12);
 }
 
-/* sidebar active 用方案 A 风格：左侧粗橙边 + 浅橙底 */
+/* sidebar active = 浅橙底 + 圆角块（松弛风：去掉左边竖条，改填充块） */
 .nav-item.active {
-    border-left-color: var(--accent);
+    border-left-color: transparent;
 }
 .nav-item.active > .nav-label {
     background: var(--accent-soft);
@@ -936,7 +934,7 @@ input[type=date]:focus, select:focus, textarea:focus {
     font-weight: 600;
 }
 
-/* 表格 thead 浅米底（与暖米主题协调） */
+/* 表格 thead 浅灰底 */
 .table thead th, table thead th {
     background: var(--bg-alt);
     color: var(--ink-quiet);
@@ -947,7 +945,7 @@ input[type=date]:focus, select:focus, textarea:focus {
 }
 .table tbody tr:hover td, table tbody tr:hover td { background: var(--bg-alt); }
 
-/* tag 默认浅米 */
+/* tag 默认浅灰 */
 .tag {
     display: inline-block;
     padding: 2px 8px;
@@ -964,9 +962,7 @@ input[type=date]:focus, select:focus, textarea:focus {
 
 
 /* ========================================================================
- * v9 — 公共/已登录通用首页 hero 系列
- * 路由 /  双角色：未登录 → .v9-welcome-public；已登录 → .v9-welcome-authed
- * hero 大字描边/装饰用 --accent-deep（#D63A00 深一档），按钮用 --accent（#FF4500）
+ * 通用首页 hero 系列
  * ======================================================================== */
 
 .v9-hero {
@@ -1008,20 +1004,23 @@ input[type=date]:focus, select:focus, textarea:focus {
     letter-spacing: 4px;
 }
 
-/* === 已登录：包在 container 内，竖直撑满让 hero 居中显示 === */
+/* 已登录 hero —— 卡片化容器：白卡浮起在工作区上，松弛仪表盘门面 */
 .v9-welcome-authed {
-    min-height: calc(100vh - 52px - 72px);
+    min-height: calc(100vh - 60px - 92px);
     display: flex;
     align-items: center;
     justify-content: center;
     background:
-        radial-gradient(circle at 30% 30%, var(--accent-soft) 0%, var(--bg-base) 55%),
-        radial-gradient(circle at 75% 75%, var(--bg-soft) 0%, var(--bg-base) 55%);
-    margin: -24px -28px -48px;
-    padding: 40px;
+        radial-gradient(circle at 28% 28%, var(--accent-soft) 0%, rgba(255,255,255,0) 55%),
+        var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin: 0;
+    padding: 56px 40px;
 }
 
-/* === 未登录：整页布局（base.html 走 content_unauth 时无 sider/header/container） === */
+/* 未登录整页 */
 .v9-welcome-public {
     min-height: 100vh;
     display: flex;
@@ -1093,56 +1092,59 @@ input[type=date]:focus, select:focus, textarea:focus {
 
 
 /* ============================================================
- * v10 — C 风紧凑工业组件库（从 design/ui_white_c_*.html 抽取）
- * .kpi-strip / .dense-card / .dense-table / .toolbar / .tab-bar / .summary-strip / .tablefoot
- * 用法：业务列表/工作台/库存/流水按本组件库套；保持小卡片登录改密继续用 .center-card
+ * 紧凑组件库（列表/工作台/库存/流水）—— 松弛化改造
  * ============================================================ */
 
-/* 全局复选框/单选框 = 橙红主题色（一行解决浏览器默认蓝） */
 input[type="checkbox"],
 input[type="radio"] {
     accent-color: var(--accent);
 }
 
-/* 业务表单铺满 container（旧 920px → 100%；登录改密小卡片继续用 .center-card） */
 .form-wrap {
     max-width: 100%;
 }
 
-/* === 紧凑页头 === */
+/* === 页头 —— 松弛 === */
 .page-head {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 0;
+    padding: 4px 0 18px;
     border-bottom: 1px solid var(--line);
-    margin-bottom: 14px;
+    margin-bottom: 22px;
 }
-.page-head .page-title { font-size: 18px; font-weight: 700; margin-bottom: 0; }
+.page-head .page-title { font-size: 20px; font-weight: 700; margin-bottom: 0; }
 .page-head .page-sub { display: inline; font-size: 12px; color: var(--ink-quiet); margin-left: 10px; }
 
-/* === KPI strip 水平条（无背景块，6 列一栏） === */
+/* === KPI strip —— 拆成独立浮起卡片栅格（仪表盘核心改动） === */
 .kpi-strip {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--bg-card);
-    margin-bottom: 20px;
-    box-shadow: var(--shadow-sm);   /* v18 elevation */
+    gap: 18px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    margin-bottom: 26px;
+    box-shadow: none;
 }
 .kpi-strip > div {
-    padding: 20px 22px;             /* v19: 12/16 → 20/22 放宽，面板更透气 */
-    border-right: 1px solid var(--line-soft);
+    padding: 22px 24px;
+    border-right: none;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s;
 }
+.kpi-strip > div:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .kpi-strip > div:last-child { border-right: none; }
 .kpi-strip .label {
     font-size: 12px; color: var(--ink-quiet);
-    letter-spacing: 0.02em;   /* v18: 中文不做 uppercase + 大字距，避免发散 */
-    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
     font-weight: 500;
 }
 .kpi-strip .num {
     font-family: var(--font-mono);
-    font-size: 27px; font-weight: 700;   /* v19: 22 → 27 */
+    font-size: 28px; font-weight: 700;
     color: var(--ink);
     letter-spacing: -0.5px;
     font-variant-numeric: tabular-nums;
@@ -1157,18 +1159,17 @@ input[type="radio"] {
 .kpi-strip .num.ok   { color: var(--ok); }
 .kpi-strip .delta {
     font-size: 10px; color: var(--ink-quiet);
-    margin-top: 3px; font-family: var(--font-mono);
+    margin-top: 5px; font-family: var(--font-mono);
 }
 .kpi-strip .delta .up { color: var(--ok); }
 .kpi-strip .delta .down { color: var(--err); }
 
-/* 3 列网格（工作台中段：1.2:1:1） */
+/* 3 列网格 —— 间隙加大 */
 .grid-3 {
     display: grid;
     grid-template-columns: 1.2fr 1fr 1fr;
-    gap: 18px;
+    gap: 22px;
 }
-/* v18 响应式：KPI 6 列 → 中等屏 3 列 → 窄屏 2 列；三栏卡片随屏堆叠 */
 @media (max-width: 1180px) {
     .kpi-strip { grid-template-columns: repeat(3, 1fr); }
     .kpi-strip > div:nth-child(3n) { border-right: none; }
@@ -1178,29 +1179,28 @@ input[type="radio"] {
     .kpi-strip { grid-template-columns: repeat(2, 1fr); }
     .grid-3 { grid-template-columns: 1fr; }
 }
-/* 2 列网格（工作台底段：图表 + 占用率） */
 .grid-2 {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 14px;
+    gap: 22px;
 }
 
-/* === Dense Card 紧凑卡片 === */
+/* === Dense Card —— 松弛化 === */
 .dense-card {
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     overflow: hidden;
-    box-shadow: var(--shadow-sm);   /* v18 elevation */
+    box-shadow: var(--shadow-sm);
 }
 .dense-card .head {
-    padding: 14px 18px;             /* v19: 10/14 → 14/18 放宽 */
+    padding: 16px 20px;
     background: var(--bg-soft);
     border-bottom: 1px solid var(--line);
     display: flex; justify-content: space-between; align-items: center;
 }
 .dense-card .head h3 {
-    font-size: 14px; font-weight: 700;   /* v18: 去 uppercase（中文无效），略增字号 */
+    font-size: 14px; font-weight: 700;
     letter-spacing: 0.01em;
     margin: 0;
 }
@@ -1216,7 +1216,7 @@ input[type="radio"] {
     margin-left: 6px;
 }
 
-/* === Dense Table 紧凑表格 === */
+/* === Dense Table === */
 .dense-table {
     width: 100%;
     border-collapse: collapse;
@@ -1224,7 +1224,7 @@ input[type="radio"] {
 }
 .dense-table th {
     background: var(--bg-soft);
-    padding: 12px 16px;            /* v19: 9/12 → 12/16 放宽 */
+    padding: 13px 18px;
     font-size: 13px; font-weight: 600;
     letter-spacing: 0.03em;
     color: var(--ink-quiet);
@@ -1232,7 +1232,7 @@ input[type="radio"] {
     border-bottom: 1px solid var(--line);
 }
 .dense-table td {
-    padding: 12px 16px;            /* v19: 8/12 → 12/16 放宽，行更舒展 */
+    padding: 13px 18px;
     font-size: 13px;
     border-bottom: 1px solid var(--line-soft);
 }
@@ -1271,14 +1271,12 @@ input[type="radio"] {
 }
 .dense-table .delta-in { color: var(--ok); font-weight: 700; font-family: var(--font-mono); }
 .dense-table .delta-out { color: var(--err); font-weight: 700; font-family: var(--font-mono); }
-/* v18: 零值弱化——满屏 0 灰化，让非 0 数据跳出来 */
 .dense-table td.num-mono.zero { color: var(--ink-faint); font-weight: 400; }
 .dense-table td.pos-cell { color: var(--ink-quiet); font-size: 11px; }
-/* v18: 空状态——居中图标 + 引导文案，替代大片留白的“无” */
 .dense-table td.empty-cell {
     text-align: center;
     color: var(--ink-faint);
-    padding: 30px 12px 32px;
+    padding: 36px 12px 38px;
     font-size: 12px;
 }
 .dense-table td.empty-cell .ico {
@@ -1296,24 +1294,24 @@ input[type="radio"] {
 }
 .dense-table .row-actions a:hover { color: var(--accent-deep); }
 
-/* 紧凑卡内 tag 缩小 */
 .dense-table .tag,
 .dense-card .tag {
     font-size: 10px;
     padding: 1px 6px;
     line-height: 1.4;
-    border-radius: 2px;
+    border-radius: 4px;
 }
 
-/* === Toolbar 工具条（紧凑筛选区） === */
+/* === Toolbar —— 松弛卡片化 === */
 .toolbar {
-    display: flex; gap: 8px;
+    display: flex; gap: 10px;
     flex-wrap: wrap; align-items: center;
-    padding: 10px 14px;
-    background: var(--bg-soft);
+    padding: 14px 18px;
+    background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    margin-bottom: 12px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
 }
 .toolbar .field-inline {
     display: flex; align-items: center;
@@ -1327,25 +1325,25 @@ input[type="radio"] {
 }
 .toolbar input,
 .toolbar select {
-    padding: 5px 8px;
+    padding: 6px 10px;
     font-size: 12px;
     width: 140px;
-    background: var(--bg-card);
-    border-radius: 4px;
+    background: var(--bg-input);
+    border-radius: var(--radius-sm);
 }
 .toolbar input[type=search] { width: 180px; }
 .toolbar input[type=date] { width: 120px; }
-.toolbar .btn { padding: 5px 12px; font-size: 12px; }
+.toolbar .btn { padding: 6px 14px; font-size: 12px; }
 
-/* === Tab Bar 标签栏（带数字徽章） === */
+/* === Tab Bar === */
 .tab-bar {
     display: flex;
     border-bottom: 1px solid var(--line);
-    margin-bottom: 12px;
+    margin-bottom: 18px;
     gap: 0;
 }
 .tab-bar a {
-    padding: 9px 18px;
+    padding: 11px 20px;
     font-size: 13px;
     color: var(--ink-quiet);
     border-bottom: 2px solid transparent;
@@ -1366,17 +1364,18 @@ input[type="radio"] {
 }
 .tab-bar a.active .count { color: var(--accent); }
 
-/* === Summary Strip 摘要条（页眉关键指标 inline） === */
+/* === Summary Strip === */
 .summary-strip {
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 10px 14px;
-    display: flex; gap: 24px;
-    margin-bottom: 12px;
+    padding: 14px 18px;
+    display: flex; gap: 28px;
+    margin-bottom: 18px;
     font-size: 12px;
     flex-wrap: wrap;
     align-items: baseline;
+    box-shadow: var(--shadow-sm);
 }
 .summary-strip > div {
     display: flex;
@@ -1392,7 +1391,7 @@ input[type="radio"] {
 .summary-strip .num {
     font-family: var(--font-mono);
     font-weight: 700;
-    font-size: 16px;
+    font-size: 17px;
     letter-spacing: -0.5px;
 }
 .summary-strip .num.warn { color: var(--accent); }
@@ -1405,9 +1404,9 @@ input[type="radio"] {
     font-family: var(--font-mono);
 }
 
-/* === Table Foot 表脚（分页 + 计数） === */
+/* === Table Foot === */
 .tablefoot {
-    padding: 8px 14px;
+    padding: 12px 18px;
     background: var(--bg-soft);
     border-top: 1px solid var(--line);
     display: flex;
@@ -1416,11 +1415,11 @@ input[type="radio"] {
     font-size: 11px;
     color: var(--ink-quiet);
 }
-.tablefoot .pages { display: flex; gap: 3px; }
+.tablefoot .pages { display: flex; gap: 4px; }
 .tablefoot .pages a {
-    padding: 3px 8px;
+    padding: 4px 9px;
     border: 1px solid var(--line);
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     color: var(--ink);
     font-size: 11px;
     background: var(--bg-card);
@@ -1437,24 +1436,23 @@ input[type="radio"] {
     color: var(--accent);
 }
 
-/* === inv-card（紧凑表格外壳） === */
+/* === inv-card === */
 .inv-card {
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 
 /* ============================================================
- * v13 P1 — 新建单据表单（完整向导：步骤条 + 多卡分组 + sticky 底）
- * 用法：inbound_form / outbound_form / transfer_form / stocktake_form
+ * 新建单据表单（步骤条 + 多卡分组 + sticky 底）
  * ============================================================ */
 
-/* v13 页头 */
 .v13-page-head {
     display: flex; justify-content: space-between; align-items: flex-end;
-    margin-bottom: 18px;
+    margin-bottom: 22px;
 }
 .v13-page-head .page-title { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
 .v13-page-head .page-sub { font-size: 12px; color: var(--ink-quiet); }
@@ -1462,8 +1460,9 @@ input[type="radio"] {
 /* 步骤条 */
 .step-bar {
     background: var(--bg-card); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 16px 26px; margin-bottom: 16px;
+    border-radius: var(--radius); padding: 18px 28px; margin-bottom: 18px;
     display: flex; align-items: center;
+    box-shadow: var(--shadow-sm);
 }
 .step { display: flex; align-items: center; gap: 8px; color: var(--ink-faded); font-size: 13px; font-weight: 500; }
 .step .n {
@@ -1481,38 +1480,39 @@ input[type="radio"] {
 /* 多卡分组 */
 .form-card {
     background: var(--bg-card); border: 1px solid var(--line);
-    border-radius: var(--radius); margin-bottom: 16px; overflow: hidden;
+    border-radius: var(--radius); margin-bottom: 18px; overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 .form-card .head {
-    padding: 14px 22px; border-bottom: 1px solid var(--line);
+    padding: 16px 24px; border-bottom: 1px solid var(--line);
     display: flex; align-items: center; gap: 10px;
     background: var(--bg-soft);
 }
 .form-card .head .accent-bar { width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
 .form-card .head h3 { font-size: 14px; font-weight: 700; }
 .form-card .head .meta { color: var(--ink-quiet); font-size: 12px; margin-left: auto; }
-.form-card .body { padding: 22px; }
+.form-card .body { padding: 24px; }
 
 /* 2 列表单 grid */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 26px; }
 .form-grid .form-row { margin-bottom: 0; }
 .form-grid .form-row.span2 { grid-column: 1 / -1; }
 
-/* picker-btn 新视觉（替代旧 picker-label 灰底矩形） */
+/* picker-btn */
 .picker-btn {
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 12px; background: var(--bg-input);
-    border: 1px solid var(--line-input); border-radius: var(--radius);
+    border: 1px solid var(--line-input); border-radius: var(--radius-sm);
     font-size: 13px; color: var(--ink); cursor: pointer;
     width: 100%;
-    height: 38px;                /* v13 fix: 固定高度，选完不变形 */
+    height: 38px;
     box-sizing: border-box;
-    overflow: hidden;            /* 长文本不撑开外框 */
+    overflow: hidden;
 }
 .picker-btn:hover { border-color: var(--accent); background: var(--bg-input-focus); }
 .picker-btn .picker-label {
     color: var(--ink);
-    flex: 1; min-width: 0;       /* min-width:0 让 flex item 可以收缩 */
+    flex: 1; min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1521,12 +1521,12 @@ input[type="radio"] {
 .picker-btn .picker-arrow {
     color: var(--accent); font-size: 11px; font-weight: 600;
     margin-left: 8px;
-    flex-shrink: 0;              /* 箭头不被压缩 */
+    flex-shrink: 0;
 }
 
 /* 明细紧凑表 */
 .line-table { width: 100%; border-collapse: collapse; }
-.line-table th, .line-table td { padding: 9px 12px; font-size: 13px; text-align: left; vertical-align: middle; }
+.line-table th, .line-table td { padding: 11px 14px; font-size: 13px; text-align: left; vertical-align: middle; }
 .line-table th {
     background: var(--bg-soft); color: var(--ink);
     font-size: 14px; font-weight: 700; letter-spacing: 1px;
@@ -1541,8 +1541,8 @@ input[type="radio"] {
 
 /* "+ 添加一行" 虚线按钮 */
 .add-line {
-    margin-top: 12px; color: var(--accent); font-size: 13px;
-    cursor: pointer; padding: 10px;
+    margin-top: 14px; color: var(--accent); font-size: 13px;
+    cursor: pointer; padding: 12px;
     border: 1px dashed var(--accent-fade, var(--accent-soft)); border-radius: var(--radius);
     text-align: center; background: var(--accent-soft); font-weight: 600;
     display: block; width: 100%;
@@ -1550,16 +1550,15 @@ input[type="radio"] {
 }
 .add-line:hover { background: #FFE5D7; border-color: var(--accent); }
 
-/* 附件上传虚线区 — v13 fix: dashed 边框在小宽度被浏览器渲染断续不美观，
- * 改用 background-image SVG dashed 模拟，边角连续 */
+/* 附件上传虚线区 */
 .upload-zone {
-    padding: 22px;
-    border: 1px solid var(--accent-soft);    /* 实线底，配合 background dashed */
+    padding: 26px;
+    border: 1px solid var(--accent-soft);
     border-radius: var(--radius);
     text-align: center;
     color: var(--ink-quiet); font-size: 13px;
     background-color: var(--accent-soft);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'><rect width='100%25' height='100%25' fill='none' stroke='%23FF4500' stroke-width='2' stroke-dasharray='8 6' rx='8' ry='8'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'><rect width='100%25' height='100%25' fill='none' stroke='%23E05D1C' stroke-width='2' stroke-dasharray='8 6' rx='12' ry='12'/></svg>");
     position: relative; cursor: pointer;
     transition: background-color 0.15s;
 }
@@ -1571,22 +1570,21 @@ input[type="radio"] {
     opacity: 0; cursor: pointer;
 }
 
-/* line-table 内的 native select 样式（调拨明细等） */
+/* line-table 内 select */
 .line-table select {
     width: 100%;
     padding: 7px 10px;
     font-size: 13px;
     background: var(--bg-input);
     border: 1px solid var(--line-input);
-    border-radius: var(--radius);
+    border-radius: var(--radius-sm);
     color: var(--ink);
     font-family: inherit;
     cursor: pointer;
-    /* 移除浏览器默认箭头，加自定义箭头 */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23FF4500' d='M0 0l5 6 5-6z'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23E05D1C' d='M0 0l5 6 5-6z'/></svg>");
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 30px;
@@ -1607,21 +1605,22 @@ input[type="radio"] {
 .sticky-actions {
     position: sticky; bottom: 0;
     background: var(--bg-card); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 14px 22px; margin-top: 16px;
+    border-radius: var(--radius); padding: 16px 24px; margin-top: 18px;
     display: flex; justify-content: space-between; align-items: center;
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.04);
+    box-shadow: 0 -6px 18px rgba(16,24,40,0.06);
     z-index: 5;
 }
-.sticky-actions .left { display: flex; gap: 22px; font-size: 13px; color: var(--ink-quiet); }
+.sticky-actions .left { display: flex; gap: 24px; font-size: 13px; color: var(--ink-quiet); }
 .sticky-actions .left .num { color: var(--accent); font-weight: 700; font-size: 16px; font-family: var(--font-mono); }
 .sticky-actions .right { display: flex; gap: 10px; }
 
 /* 调拨方向条 */
 .wh-flow {
     display: flex; align-items: center; gap: 18px;
-    padding: 18px 22px; background: var(--bg-soft);
+    padding: 20px 24px; background: var(--bg-card);
     border: 1px solid var(--line); border-radius: var(--radius);
-    margin-bottom: 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
 }
 .wh-flow .side { flex: 1; }
 .wh-flow .side > .label {
@@ -1632,13 +1631,14 @@ input[type="radio"] {
 .wh-flow .arrow-big { font-size: 24px; color: var(--accent); font-weight: 700; }
 
 /* 盘点范围卡 */
-.scope-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.scope-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .scope-card {
-    padding: 14px; border: 1px solid var(--line);
+    padding: 16px; border: 1px solid var(--line);
     border-radius: var(--radius); cursor: pointer;
     background: var(--bg-card); transition: all 0.15s;
+    box-shadow: var(--shadow-sm);
 }
-.scope-card:hover { border-color: var(--accent); }
+.scope-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .scope-card.active { border-color: var(--accent); background: var(--accent-soft); }
 .scope-card .name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
 .scope-card.active .name { color: var(--accent-deep); }
@@ -1647,20 +1647,18 @@ input[type="radio"] {
 
 /* FIFO / 流程信息条 */
 .info-tip {
-    padding: 10px 14px; background: var(--info-bg);
+    padding: 12px 16px; background: var(--info-bg);
     border-left: 3px solid var(--info);
     border-radius: 0 var(--radius) var(--radius) 0;
-    font-size: 12px; color: var(--ink-soft); margin-bottom: 12px;
+    font-size: 12px; color: var(--ink-soft); margin-bottom: 14px;
 }
 .info-tip strong { color: var(--info); }
 
 
 /* ============================================================
- * v13 美化 — Chip 风复选框 + Toggle 开关 + 规则卡
- * 用于通知渠道与预警等需要多选 + 视觉清爽的场景
+ * Chip 风复选框 + Toggle 开关 + 规则卡
  * ============================================================ */
 
-/* Chip 风复选框 — 视觉是 pill 标签，选中橙底白字 */
 .chip-group {
     display: flex; flex-wrap: wrap; gap: 6px;
     margin-top: 6px;
@@ -1697,7 +1695,6 @@ input[type="radio"] {
 }
 .chip.checked:hover { background: var(--accent-hover, var(--accent-deep)); }
 
-/* 快捷选择按钮：全选 / 仅经理 / 全不选 */
 .chip-quick {
     display: inline-flex;
     padding: 4px 12px;
@@ -1716,7 +1713,7 @@ input[type="radio"] {
     color: #FFF;
 }
 
-/* iOS 风 toggle 开关 — 用于"启用"等二态 */
+/* iOS 风 toggle */
 .toggle {
     position: relative;
     display: inline-block;
@@ -1763,13 +1760,14 @@ input[type="radio"] {
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    margin-bottom: 14px;
+    margin-bottom: 16px;
     overflow: hidden;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, box-shadow 0.2s;
+    box-shadow: var(--shadow-sm);
 }
 .rule-card.is-disabled { opacity: 0.55; }
 .rule-card .rule-head {
-    padding: 14px 20px;
+    padding: 16px 22px;
     background: var(--bg-soft);
     border-bottom: 1px solid var(--line);
     display: flex; align-items: center; gap: 14px;
@@ -1794,9 +1792,9 @@ input[type="radio"] {
     display: flex; gap: 10px; align-items: center;
 }
 .rule-card .rule-body {
-    padding: 18px 20px;
+    padding: 20px 22px;
 }
-.rule-card .section { margin-bottom: 16px; }
+.rule-card .section { margin-bottom: 18px; }
 .rule-card .section:last-child { margin-bottom: 0; }
 .section-label {
     font-size: 11px;
@@ -1817,7 +1815,7 @@ input[type="radio"] {
 
 /* inapp 渠道选中时禁用收件人区 */
 .recipient-mask {
-    padding: 14px;
+    padding: 16px;
     background: var(--info-bg);
     color: var(--info);
     border-radius: var(--radius);
@@ -1826,3 +1824,305 @@ input[type="radio"] {
     border: 1px dashed var(--info);
 }
 .recipient-mask strong { font-weight: 700; }
+
+
+/* ============================================================================
+ * ===== 覆盖层：字体 font-3「等宽科技数据风」 =====
+ * 靠 CSS 后置覆盖，让 font-3 字体方案盖过基底 layout-2 自带的字体设置。
+ * 只保留"和 layout-2 不同、需要覆盖"的部分：字体族变量 + 字号/字重阶梯
+ * + body 渲染优化 + 数字等宽基石 + 文件末尾完整"字体补强层"。
+ * （间距 / 布局 / 色彩 / 阴影 一律不动，仍归基底与立体层负责）
+ * ============================================================================ */
+
+/* —— 字体族变量：本融合文件字体维度的"负责方"，覆盖基底 :root 的 --font-* —— */
+:root {
+    /* --font-sans : 拉丁 Inter + 中文 Noto Sans SC，正文/标题；末尾系统兜底 */
+    --font-sans: "Inter", "Noto Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+    /* --font-mono : JetBrains Mono，编号/数字/表格数据/标签，等宽列对齐 */
+    --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, Monaco, "Noto Sans SC", monospace;
+    /* --font-cn   : 纯中文正文（单位/夹注中文不被等宽拉宽），系统兜底 */
+    --font-cn: "Noto Sans SC", system-ui, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+}
+
+/* —— body 渲染优化：抗锯齿 + 连字/字距优化（Inter 受益，中文不受影响）—— */
+body {
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv01", "cv03", "ss01";
+}
+
+/* —— 等宽数字基石：.mono/.num 全站数字/编号统一出口，tnum + 斜杠零 —— */
+.mono, .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;   /* 等宽数字 + 斜杠零，0/O 不混淆 */
+    letter-spacing: 0;
+}
+
+/* —— 标题字重阶梯：font-3 用 600（Inter 现代克制），收紧字距 —— */
+h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.015em; }
+h1 { font-size: 26px; }
+
+/* —— 全局：正文里混排数字按比例对齐 —— */
+body { font-variant-numeric: proportional-nums; }
+
+/* —— 表格：数据后台主战场，整张表等宽数字 —— */
+table, .dense-table, .line-table {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}
+/* 表头：拉丁字段名走 sans */
+thead th, .dense-table th, .line-table th {
+    font-family: var(--font-sans);
+}
+/* 右对齐列通常是数字，强制等宽对齐小数点/千分位 */
+td.text-right, .dense-table .text-right, .line-table td.text-right {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* —— 编号 / 代码类：等宽，科技感最强的点 —— */
+.dense-table .id-cell,
+.dense-table .sku-code,
+.tablefoot .pages a,
+.kpi-strip .num,
+.summary-strip .num,
+.sticky-actions .left .num,
+.dense-table .num-mono,
+.dense-table .qty,
+.dense-table .delta-in,
+.dense-table .delta-out {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* —— 单位（个/件/箱 等中文）用 --font-cn，避免等宽中文过宽 —— */
+.kpi-strip .num .unit,
+.dense-table .qty .unit { font-family: var(--font-cn); }
+
+/* —— KPI / 摘要 / 统计大数字：加重 + 收紧字距，账本式硬朗 —— */
+.kpi-strip .num,
+.summary-strip .num,
+.stat-card .num {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* —— 品牌 / hero 大字 —— */
+.sider-brand { letter-spacing: 0.12em; }
+.sider-brand small { font-family: var(--font-mono); letter-spacing: 0.02em; }
+.v9-hero-pre, .v9-hero-meta {
+    font-family: var(--font-mono);
+    font-feature-settings: "tnum" 1, "zero" 1;
+    letter-spacing: 0.5em;
+}
+.v9-hero-meta { letter-spacing: 0.25em; }
+/* 欢迎大字：Inter 重体大字最显"科技后台"质感（中文 name 仍走 sans） */
+.v9-hero-main { font-family: var(--font-sans); font-weight: 800; }
+
+/* —— 标签 / chip / tag：编号化小标签用等宽数字更精确 —— */
+.tag, .badge, .chip { font-feature-settings: "tnum" 1; }
+
+/* —— 步骤条序号、分页页码、计数等小数字：等宽 —— */
+.step .n, .tab-bar a .count, .dense-card .head .count, .pager-btns a {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* —— 标题轻微收紧，配合 Inter 现代感 —— */
+.page-head .page-title,
+.v13-page-head .page-title,
+.dense-card .head h3,
+.form-card .head h3 {
+    letter-spacing: -0.01em;
+}
+
+/* —— 行内代码 / kbd 等统一等宽（防御性）—— */
+code, kbd, samp, pre {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+.dense-table .id-cell { letter-spacing: 0.02em; }
+
+
+/* ============================================================================
+ * ===== 覆盖层：立体 depth-1「Material 软立体」 =====
+ * 靠 CSS 后置覆盖，让 depth-1 的立体方案盖过基底 layout-2 自带阴影。
+ * 只保留"和 layout-2 不同、需要覆盖"的部分：
+ *   · :root 的 --shadow-*/--radius* 变量（立体维度负责方）
+ *   · body 渐变底（让白卡更有"光照下"的层次）
+ *   · 侧栏/顶栏/卡片/dense-card/scope-card/rule-card 的阴影 + hover 悬浮抬升
+ *   · 主按钮暖橙浮起光晕、模态 dp16 + 弹出动画、sticky 底向上柔影
+ * （字体 / 间距 / 布局 / 色彩 一律不动）
+ * ============================================================================ */
+
+/* —— 阴影 / 圆角变量：本融合文件立体维度的"负责方"，覆盖基底 :root —— */
+:root {
+    /* 圆角：depth-1 方案（sm 更小一档，配合多层柔影显"悬浮"而非"贴纸"）。
+     * 注意保留基底的 --radius-lg（layout-2 登录卡/模态用，depth-1 无此变量）。 */
+    --radius: 12px;
+    --radius-sm: 6px;
+
+    /* === Material 风多层 elevation：贴地接触 + 中景柔光 + 远景漫射 三层叠加 === */
+    /* dp1：表格行 / 输入框 / 按钮等贴近底面的元素 */
+    --shadow-xs: 0 1px 2px rgba(28,30,40,0.06), 0 1px 1px rgba(28,30,40,0.04);
+    /* dp2：常驻卡片静止态 */
+    --shadow-sm: 0 1px 2px rgba(28,30,40,0.05),
+                 0 3px 6px rgba(28,30,40,0.06),
+                 0 6px 14px rgba(28,30,40,0.05);
+    /* dp4：卡片 hover / 工具条 / KPI 抬升态 */
+    --shadow-md: 0 2px 4px rgba(28,30,40,0.06),
+                 0 6px 14px rgba(28,30,40,0.08),
+                 0 14px 30px rgba(28,30,40,0.08);
+    /* dp8：悬浮菜单 / Toast / 弹层 */
+    --shadow-lg: 0 4px 8px rgba(28,30,40,0.07),
+                 0 12px 28px rgba(28,30,40,0.12),
+                 0 28px 56px rgba(28,30,40,0.12);
+    /* dp16：模态对话框，最高层级 */
+    --shadow-xl: 0 8px 16px rgba(28,30,40,0.10),
+                 0 24px 48px rgba(28,30,40,0.16),
+                 0 48px 88px rgba(28,30,40,0.18);
+    /* 暖橙浮起光晕：主操作 hover 叠加，强化品牌 + 立体 */
+    --shadow-accent: 0 6px 18px rgba(224,93,28,0.28), 0 2px 6px rgba(224,93,28,0.20);
+}
+
+/* —— body：底色叠极淡冷暖渐变，避免大面积纯灰发闷，让悬浮卡片更有光照层次 —— */
+body {
+    background:
+        radial-gradient(1200px 600px at 12% -8%, #F4F1EE 0%, rgba(244,241,238,0) 60%),
+        radial-gradient(1000px 700px at 110% 10%, #EAEEF6 0%, rgba(234,238,246,0) 55%),
+        var(--bg-soft);
+    background-attachment: fixed;
+}
+
+/* —— 侧栏：作为高一层"面板"，向右投柔影压住工作区 —— */
+.sider {
+    box-shadow: 4px 0 24px rgba(28,30,40,0.06), 1px 0 0 rgba(28,30,40,0.02);
+}
+
+/* —— 顶栏：毛玻璃 + 吸顶柔影，与下方内容拉开层级 —— */
+.header {
+    background: rgba(255,255,255,0.82);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    backdrop-filter: saturate(180%) blur(10px);
+    box-shadow: 0 2px 12px rgba(28,30,40,0.05);
+}
+
+/* —— 卡片：边框淡化（靠投影分层），hover 抬升 + 升一级阴影 —— */
+.card {
+    border-color: rgba(28,30,40,0.06);
+    transition: box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.25s cubic-bezier(.4,0,.2,1);
+}
+.card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
+}
+
+/* —— 按钮：默认贴地接触阴影，hover 微抬，active 回落 —— */
+.btn {
+    transition: all 0.18s cubic-bezier(.4,0,.2,1);
+    box-shadow: var(--shadow-xs);
+}
+.btn:hover {
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+}
+.btn:active { transform: translateY(0); box-shadow: var(--shadow-xs); }
+
+/* —— 主按钮：暖橙渐变 + 浮起光晕 + hover 抬升（保留品牌橙）—— */
+.btn-primary {
+    background: linear-gradient(180deg, var(--accent-light) 0%, var(--accent) 60%, var(--accent) 100%);
+    color: #FFF;
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(224,93,28,0.22), 0 1px 2px rgba(224,93,28,0.18);
+}
+.btn-primary:hover {
+    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-hover) 100%);
+    border-color: var(--accent-hover);
+    color: #FFF;
+    box-shadow: var(--shadow-accent);
+    transform: translateY(-2px);
+}
+.btn-primary:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(224,93,28,0.25); }
+
+/* —— 入口卡：边框淡化 + hover 抬升更高一档 —— */
+.entry-card {
+    border-color: rgba(28,30,40,0.06);
+    transition: box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.25s cubic-bezier(.4,0,.2,1), border-color 0.2s;
+}
+.entry-card:hover {
+    border-color: var(--accent-fade);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
+}
+
+/* —— 登录卡：页面主角，给 dp8 级悬浮投影 —— */
+.login-box {
+    border-color: rgba(28,30,40,0.05);
+    box-shadow: var(--shadow-lg);
+}
+
+/* —— 模态：最高层级 dp16 + 遮罩毛玻璃 + 弹出动画 —— */
+.modal-overlay {
+    background: rgba(16, 18, 27, 0.48);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+.modal-box {
+    box-shadow: var(--shadow-xl);
+    animation: modalPop 0.22s cubic-bezier(.34,1.4,.64,1);
+}
+@keyframes modalPop {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* —— KPI 卡：基底已是独立浮起栅格，这里把每格静止/hover 阴影提升为多层柔影 —— */
+.kpi-strip > div { box-shadow: var(--shadow-sm); }
+.kpi-strip > div:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+/* —— Dense Card：边框淡化 + 静止 dp2 + hover dp4 抬升 —— */
+.dense-card {
+    border-color: rgba(28,30,40,0.06);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.25s cubic-bezier(.4,0,.2,1);
+}
+.dense-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
+}
+
+/* —— 工具条 / 摘要条 / 表格外壳 / 步骤条 / 表单卡 / 规则卡：边框淡化 + dp2 浮起 —— */
+.toolbar,
+.summary-strip,
+.inv-card,
+.step-bar,
+.form-card {
+    border-color: rgba(28,30,40,0.06);
+    box-shadow: var(--shadow-sm);
+}
+
+/* —— 规则卡：dp2 静止 + hover dp4 抬升 —— */
+.rule-card {
+    border-color: rgba(28,30,40,0.06);
+    box-shadow: var(--shadow-sm);
+    transition: opacity 0.2s, box-shadow 0.25s, transform 0.25s;
+}
+.rule-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+/* —— 盘点范围卡：默认 dp1，hover 抬升 dp4，选中加内描边强化 —— */
+.scope-card {
+    border-color: rgba(28,30,40,0.06);
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.15s, background 0.15s;
+}
+.scope-card:hover { border-color: var(--accent-fade); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.scope-card.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: var(--shadow-md), 0 0 0 1px var(--accent) inset; }
+
+/* —— sticky 底部操作栏：向上投柔影，吸底时与内容明显分层 —— */
+.sticky-actions {
+    border-color: rgba(28,30,40,0.06);
+    box-shadow: 0 -2px 6px rgba(28,30,40,0.05), 0 -10px 28px rgba(28,30,40,0.08);
+}

@@ -1092,6 +1092,12 @@ input[type=date]:focus, select:focus, textarea:focus {
  * 紧凑组件库（列表/工作台/库存/流水）—— 松弛化改造
  * ============================================================ */
 
+/* 密码掩码圆点调小(● 视觉大小由 font-size 决定) */
+input[type=password] {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+}
+
 input[type="checkbox"],
 input[type="radio"] {
     accent-color: var(--accent);

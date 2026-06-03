@@ -28,7 +28,7 @@
                     </td>
                     <td class="mono">{{ o.line_count }}</td>
                     <td class="mono">{{ o.counted_count }} / {{ o.line_count }}</td>
-                    <td class="mono">{% if o.diff_count > 0 %}<strong style="color:var(--color-out);">{{ o.diff_count }}</strong>{% else %}{{ o.diff_count }}{% endif %}</td>
+                    <td class="mono">{% if o.diff_count > 0 %}<strong style="color:var(--err);">{{ o.diff_count }}</strong>{% else %}{{ o.diff_count }}{% endif %}</td>
                     <td style="font-size:12px;">{{ o.note or '-' }}</td>
                     <td>{{ o.creator_name }}</td>
                     <td class="mono" style="font-size:12px;">{{ o.created_at }}</td>
@@ -42,7 +42,7 @@
     </div>
     {{ pager(pg) }}
 </div>
-<div style="margin-top:12px; font-size:12px; color:var(--color-text-soft);">
+<div style="margin-top:12px; font-size:12px; color:var(--ink-quiet);">
     盘点流程：创建单（自动快照所有 on_hand > 0 的批次×库位） → 逐行录入实物数量 → 关闭单（差异自动生成 adjust 流水）。
 </div>
 

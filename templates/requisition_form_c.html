@@ -23,10 +23,10 @@
 .ta-menu {
     position: absolute; left: 0; right: 0; top: calc(100% + 4px);
     z-index: 30;
-    background: var(--bg-card, #fff);
+    background: var(--bg-card);
     border: 1px solid var(--line-input);
     border-radius: var(--radius);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+    box-shadow: var(--shadow-lg);
     max-height: 260px; overflow-y: auto;
     display: none;
 }
@@ -52,7 +52,7 @@
 /* 右栏摘要卡片 sticky */
 .summary-card {
     position: sticky; top: 16px;
-    background: var(--bg-card, #fff);
+    background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     overflow: hidden;

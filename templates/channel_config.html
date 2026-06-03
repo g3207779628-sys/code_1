@@ -195,7 +195,7 @@ document.querySelectorAll('.rule-card').forEach(card => syncInappMask(card));
                     </select>
                 </div>
                 <div class="form-row"><label>Body Template（JSON，<code>{subject}</code>/<code>{body}</code> 会被替换）</label>
-                    <textarea name="cfg_body_template" rows="3" style="width:100%;font-family:monospace;font-size:12px;">{{ c.config.get('body_template','') }}</textarea>
+                    <textarea name="cfg_body_template" rows="3" style="width:100%;font-family:var(--font-mono);font-size:12px;">{{ c.config.get('body_template','') }}</textarea>
                 </div>
 
                 {% elif c.code == 'inapp' %}

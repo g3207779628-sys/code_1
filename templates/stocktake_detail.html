@@ -30,7 +30,7 @@
     </div>
     <div class="card-body">
         {% if order.title %}<div style="font-size:18px; font-weight:600; margin-bottom:8px;">{{ order.title }}</div>{% endif %}
-        <div style="margin-bottom:8px; font-size:13px; color:var(--color-text-soft);">
+        <div style="margin-bottom:8px; font-size:13px; color:var(--ink-quiet);">
             创建：{{ order.creator_name }} · <span class="mono">{{ order.created_at }}</span>
             {% if order.closer_name %} | 关闭：{{ order.closer_name }} · <span class="mono">{{ order.closed_at }}</span>{% endif %}
             {% if order.note %} | 备注：{{ order.note }}{% endif %}
@@ -59,7 +59,7 @@
                 <tbody>
                     {% for it in items %}
                     {% set diff = (it.actual_qty - it.expected_qty) if it.actual_qty is not none else None %}
-                    <tr {% if diff is not none and diff != 0 %}style="background:#FBE9D0;"{% endif %}>
+                    <tr {% if diff is not none and diff != 0 %}style="background:var(--accent-soft);"{% endif %}>
                         <td class="mono">{{ it.location_code }}</td>
                         <td>{{ it.sku_name }} <span class="text-tertiary mono" style="font-size:11px;">{{ it.sku_code }}</span></td>
                         <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
@@ -73,10 +73,10 @@
                             {% endif %}
                         </td>
                         <td class="mono">
-                            {% if diff is none %}<span style="color:var(--color-text-soft);">-</span>
-                            {% elif diff > 0 %}<strong style="color:var(--color-in);">+{{ diff }}</strong>
-                            {% elif diff < 0 %}<strong style="color:var(--color-out);">{{ diff }}</strong>
-                            {% else %}<span style="color:var(--color-text-soft);">0</span>
+                            {% if diff is none %}<span style="color:var(--ink-quiet);">-</span>
+                            {% elif diff > 0 %}<strong style="color:var(--ok);">+{{ diff }}</strong>
+                            {% elif diff < 0 %}<strong style="color:var(--err);">{{ diff }}</strong>
+                            {% else %}<span style="color:var(--ink-quiet);">0</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -84,9 +84,9 @@
                 </tbody>
             </table>
 
-            <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+            <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);">
                 {% if order.status == 'open' %}
-                <button class="btn" type="submit">保存盘点数据（不关闭）</button>
+                <button class="btn btn-primary" type="submit">保存盘点数据（不关闭）</button>
                 {% endif %}
             </div>
         </form>
@@ -94,7 +94,7 @@
         {% if order.status == 'open' and session.role in ['admin', 'manager'] %}
         <form method="post" action="{{ url_for('stocktake_close', order_no=order.order_no) }}" style="margin-top:12px;" onsubmit="return confirm('关闭盘点后，所有差异会生成调整流水并更新库存，不可撤销。确认？');">
             <button class="btn btn-danger" type="submit">✓ 关闭盘点（差异自动调账）</button>
-            <span style="margin-left:12px;font-size:12px;color:var(--color-text-soft);">未录的行视为账实一致，不调整。</span>
+            <span style="margin-left:12px;font-size:12px;color:var(--ink-quiet);">未录的行视为账实一致，不调整。</span>
         </form>
         {% endif %}
 

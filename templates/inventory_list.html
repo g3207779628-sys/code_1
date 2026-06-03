@@ -21,13 +21,6 @@
 .field .picker .ar { color: var(--accent); font-size: 10px; flex-shrink: 0; margin-left: 8px; }
 .field .picker .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .field .picker .lbl.empty { color: var(--ink-faded); }
-.btn-apply {
-    background: var(--accent); color: #FFF;
-    border: 1px solid var(--accent); border-radius: 4px;
-    padding: 7px 14px; font-size: 13px; font-weight: 500;
-    cursor: pointer; height: 34px;
-}
-.btn-apply:hover { background: var(--accent-deep); }
 
 .filter-row1 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
 
@@ -121,7 +114,7 @@
                     <span class="ar">选 →</span>
                 </div>
             </div>
-            <button class="btn-apply" type="submit">应用</button>
+            <button class="btn btn-primary" type="submit">应用</button>
             <a class="btn btn-secondary" href="{{ url_for('inventory_list') }}" style="height:34px;">重置</a>
         </div>
 

@@ -34,7 +34,7 @@
         </div>
         {% endif %}
 
-        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px;">调拨明细</h3>
+        <h3 style="color:var(--accent); border-left:3px solid var(--accent); padding-left:10px;">调拨明细</h3>
         <table>
             <thead><tr><th>物品</th><th>规格</th><th>批次</th><th>数量</th></tr></thead>
             <tbody>
@@ -49,7 +49,7 @@
             </tbody>
         </table>
 
-        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);">
             {% if order.status == 'draft' %}
             <form method="post" action="{{ url_for('transfer_complete', order_no=order.order_no) }}" style="display:inline;"
                   onsubmit="return confirm('执行调拨会实际搬动库存（调出 - N，调入 + N）。确认？');">

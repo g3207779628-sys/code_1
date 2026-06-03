@@ -12,7 +12,7 @@
         </span>
     </div>
     <div class="card-body">
-        <div style="margin-bottom:16px; padding:12px; background:var(--color-bg-alt); border-left:3px solid var(--color-primary);">
+        <div style="margin-bottom:16px; padding:12px; background:var(--bg-alt); border-left:3px solid var(--accent);">
             <strong>收件方：</strong>{{ ob.receiver_desc or '-' }}<br>
             {% if ob.note %}<strong>备注：</strong>{{ ob.note }}<br>{% endif %}
             {% set atts = ob.attachments | attachments_list %}
@@ -24,7 +24,7 @@
             {% endif %}
         </div>
 
-        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-accent); padding-left:10px;">
+        <h3 style="color:var(--accent); border-left:3px solid var(--accent); padding-left:10px;">
             按 FIFO 派的批次
         </h3>
         <table>
@@ -41,25 +41,25 @@
                 {% for it in items %}
                 <tr>
                     <td class="mono"><strong>{{ it.location_code }}</strong></td>
-                    <td>{{ it.sku_name }} {% if it.sku_spec %}<span style="color:var(--color-text-soft);font-size:12px;">{{ it.sku_spec }}</span>{% endif %}</td>
+                    <td>{{ it.sku_name }} {% if it.sku_spec %}<span style="color:var(--ink-quiet);font-size:12px;">{{ it.sku_spec }}</span>{% endif %}</td>
                     <td class="mono" style="font-size:12px;">{{ it.batch_no }}</td>
-                    <td class="mono"><strong style="font-size:16px;color:var(--color-out);">{{ it.quantity }}</strong></td>
+                    <td class="mono"><strong style="font-size:16px;color:var(--err);">{{ it.quantity }}</strong></td>
                     <td class="mono">{{ it.reversed_qty or 0 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);">
             {% if ob.status == 'pending' %}
             <form method="post" action="{{ url_for('pick_complete', order_no=ob.order_no) }}" onsubmit="return confirm('确认所有物品已按上表出库？提交后会实扣库存。');">
-                <button class="btn" type="submit">✓ 已出库（实扣库存）</button>
+                <button class="btn btn-primary" type="submit">✓ 已出库（实扣库存）</button>
             </form>
-            <div style="margin-top:8px; font-size:12px; color:var(--color-text-soft);">
+            <div style="margin-top:8px; font-size:12px; color:var(--ink-quiet);">
                 完成时系统会做：①写出库流水（每行一条） ②实扣 inventory.on_hand 同时释放 reserved ③出库单转为"已完成"。
             </div>
             {% else %}
-            <div style="color:var(--color-text-soft);">
+            <div style="color:var(--ink-quiet);">
                 出库员：{{ ob.picker_name or '-' }} · 完成时间：<span class="mono">{{ ob.completed_at }}</span>
             </div>
             {% endif %}
@@ -93,7 +93,7 @@
                             {% if remaining > 0 %}
                             <input type="number" name="reverse_qty_{{ it.id }}" min="0" max="{{ remaining }}" style="width:80px;" placeholder="0">
                             {% else %}
-                            <span style="color:var(--color-text-soft);">已全撤</span>
+                            <span style="color:var(--ink-quiet);">已全撤</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -102,7 +102,7 @@
             </table>
             <div style="margin-top:12px;">
                 <button class="btn btn-secondary" type="submit">提交撤销</button>
-                <span style="font-size:12px; color:var(--color-text-soft); margin-left:12px;">
+                <span style="font-size:12px; color:var(--ink-quiet); margin-left:12px;">
                     每行可多次撤销，累计不超过原数量。
                 </span>
             </div>

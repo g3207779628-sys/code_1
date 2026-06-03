@@ -15,16 +15,16 @@
     <div class="card-body">
         <table style="margin-bottom:24px;">
             <tbody>
-                <tr><th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">入库员工</th><td>{{ order.operator_name or '-' }}</td>
-                    <th style="background:var(--color-bg-alt);color:var(--color-text);width:120px;">创建人</th><td>{{ order.creator_name }}</td></tr>
-                <tr><th style="background:var(--color-bg-alt);color:var(--color-text);">创建时间</th><td class="mono">{{ order.created_at }}</td>
-                    <th style="background:var(--color-bg-alt);color:var(--color-text);">审核人</th><td>{{ order.approver_name or '-' }}</td></tr>
-                <tr><th style="background:var(--color-bg-alt);color:var(--color-text);">审核时间</th><td class="mono">{{ order.approved_at or '-' }}</td>
-                    <th style="background:var(--color-bg-alt);color:var(--color-text);">备注</th><td>{{ order.note or '-' }}</td></tr>
+                <tr><th style="background:var(--bg-alt);color:var(--ink);width:120px;">入库员工</th><td>{{ order.operator_name or '-' }}</td>
+                    <th style="background:var(--bg-alt);color:var(--ink);width:120px;">创建人</th><td>{{ order.creator_name }}</td></tr>
+                <tr><th style="background:var(--bg-alt);color:var(--ink);">创建时间</th><td class="mono">{{ order.created_at }}</td>
+                    <th style="background:var(--bg-alt);color:var(--ink);">审核人</th><td>{{ order.approver_name or '-' }}</td></tr>
+                <tr><th style="background:var(--bg-alt);color:var(--ink);">审核时间</th><td class="mono">{{ order.approved_at or '-' }}</td>
+                    <th style="background:var(--bg-alt);color:var(--ink);">备注</th><td>{{ order.note or '-' }}</td></tr>
             </tbody>
         </table>
 
-        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px;">入库明细</h3>
+        <h3 style="color:var(--accent); border-left:3px solid var(--accent); padding-left:10px;">入库明细</h3>
         <table>
             <thead><tr><th>物品</th><th>批次号</th><th>入库位</th><th>数量</th></tr></thead>
             <tbody>
@@ -41,7 +41,7 @@
 
         {% set atts = order.attachments | attachments_list %}
         {% if atts %}
-        <h3 style="color:var(--color-primary); border-left:3px solid var(--color-primary); padding-left:10px; margin-top:24px;">附件（{{ atts|length }} 个）</h3>
+        <h3 style="color:var(--accent); border-left:3px solid var(--accent); padding-left:10px; margin-top:24px;">附件（{{ atts|length }} 个）</h3>
         <ul style="list-style:none; padding:0;">
             {% for path in atts %}
             <li style="margin-bottom:6px;">
@@ -53,9 +53,9 @@
         {% endif %}
 
         {% if order.status == 'draft' and session.role in ['admin', 'manager'] %}
-        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border);">
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--line);">
             <form method="post" action="{{ url_for('inbound_approve', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('审核通过后将更新库存，无法撤销。确认？');">
-                <button class="btn" type="submit">审核通过</button>
+                <button class="btn btn-primary" type="submit">审核通过</button>
             </form>
             <form method="post" action="{{ url_for('inbound_reject', order_no=order.order_no) }}" style="display:inline;" onsubmit="return confirm('确认驳回该入库单？');">
                 <button class="btn btn-danger" type="submit">驳回</button>

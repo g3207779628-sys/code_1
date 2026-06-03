@@ -26,7 +26,6 @@ body { padding: 24px 32px; background: var(--bg-soft); }
 .field .picker .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .field .picker .lbl.empty { color: var(--ink-faded); }
 .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
-.btn-apply { background: var(--accent); color: #FFF; border: 1px solid var(--accent); border-radius: 4px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; height: 34px; }
 
 .loc-card {
     background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -41,12 +40,6 @@ body { padding: 24px 32px; background: var(--bg-soft); }
 .loc-card .stock { font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: right; }
 .loc-card .stock.has { color: var(--accent-deep); }
 .loc-card .stock.empty { color: var(--ink-faded); }
-.loc-card .pick {
-    background: var(--accent); color: #FFF; padding: 7px 16px;
-    border-radius: 4px; font-size: 13px; font-weight: 500;
-    text-align: center; text-decoration: none;
-}
-.loc-card .pick:hover { background: var(--accent-deep); }
 
 .summary-strip { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 16px; display: flex; gap: 22px; margin-bottom: 12px; }
 .summary-strip .stat { font-size: 11px; color: var(--ink-quiet); }
@@ -99,7 +92,7 @@ body { padding: 24px 32px; background: var(--bg-soft); }
                     <span class="ar">选 →</span>
                 </div>
             </div>
-            <button class="btn-apply" type="submit">应用</button>
+            <button class="btn btn-primary" type="submit">应用</button>
             <a class="btn btn-secondary" href="?return={{ return_path }}&target={{ target }}{% if require_stock %}&require_stock=1{% endif %}" style="height:34px;">重置</a>
         </div>
     </div>
@@ -139,7 +132,7 @@ body { padding: 24px 32px; background: var(--bg-soft); }
         </div>
         <div class="meta" style="text-align:right;">在仓</div>
     </div>
-    <a class="pick" href="{{ return_path }}{{ '&' if '?' in return_path else '?' }}picker_target={{ target }}&picker_id={{ l.id }}&picker_label={{ (l.code + ' (' + (l.wh_name or '') + ')')|urlencode }}">选定 →</a>
+    <a class="btn btn-primary" href="{{ return_path }}{{ '&' if '?' in return_path else '?' }}picker_target={{ target }}&picker_id={{ l.id }}&picker_label={{ (l.code + ' (' + (l.wh_name or '') + ')')|urlencode }}">选定 →</a>
 </div>
 {% endfor %}
 {% else %}

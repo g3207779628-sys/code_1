@@ -190,7 +190,7 @@ function updateSelectedDisplay() {
         const names = locLbl.textContent.split(',').map(s => s.trim()).filter(s => s);
         document.getElementById('scope-location-count').textContent = ids.length;
         const chipsHtml = names.map(n =>
-            `<span style="display:inline-block; padding:4px 10px; background:#fff; border:1px solid var(--accent); border-radius:3px; font-size:12px; color:var(--accent-deep); font-weight:500;">${n}</span>`
+            `<span style="display:inline-block; padding:4px 10px; background:var(--bg-card); border:1px solid var(--accent); border-radius:3px; font-size:12px; color:var(--accent-deep); font-weight:500;">${n}</span>`
         ).join('');
         document.getElementById('scope-location-chips').innerHTML = chipsHtml;
         locBox.style.display = '';

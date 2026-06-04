@@ -1,209 +1,155 @@
+{# =============================================================================
+   金山仓储 WMS · base.html  (生产版 · 替换 templates/base.html)
+
+   说明：
+   - 侧边栏导航分层：概览 / 日常操作 / 查询分析 / 主数据 / 基础字典(低频折叠) / 系统
+   - 当前项高亮按 request.endpoint 自动判断（无需子模板手动指定）
+   - 已确认存在的路由直接用 url_for；不确定的标了 TODO 并用 "#" 占位，
+     请按你的实际路由名替换（搜索 TODO 即可）。
+   ============================================================================= #}
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}code_1{% endblock %} · KClaw 仓储</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ css_version }}">
-    <style>
-    /* v11 hard override：确保列表页一定铺满工作区，不被任何浏览器/代理缓存的旧 CSS 卡死 */
-    .container { max-width: none !important; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}金山仓储{% endblock %} · 金山仓储</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ css_version }}">
 </head>
 <body>
-{% if session.user_id %}
+{% if session.role %}
+{# ============ 已登录：完整应用外壳 ============ #}
+{% set ep = request.endpoint or '' %}
+{% macro nav(endpoint, label, icon, badge=None, match=None) %}
+  {% set keys = match or [endpoint] %}
+  {% set is_active = ep in keys or (keys|length==1 and ep.startswith(keys[0].rsplit('_',1)[0])) %}
+  <a class="nav-item {{ 'active' if is_active }}" href="{{ url_for(endpoint) if endpoint != '#' else '#' }}">
+    {{ icon|safe }}<span class="label">{{ label }}</span>
+    {% if badge is not none %}<span class="nav-badge {{ 'zero' if badge==0 }}">{{ badge }}</span>{% endif %}
+  </a>
+{% endmacro %}
+
 <div class="app">
-
-    <aside class="sider">
-        <div class="sider-brand">
-            金山仓储
-        </div>
-
-        <ul class="nav">
-            {% for group in nav_tree %}
-                {% set ns = namespace(visible=[]) %}
-                {% for it in group['items'] %}
-                    {% if it.get('divider') %}
-                        {% if ns.visible and not ns.visible[-1].get('divider') %}
-                            {% set _ = ns.visible.append(it) %}
-                        {% endif %}
-                    {% elif it.get('children') %}
-                        {% set cns = namespace(kids=[]) %}
-                        {% for ch in it['children'] %}
-                            {% if ch.key in menus and ch.endpoint in available_endpoints %}
-                                {% set _ = cns.kids.append(ch) %}
-                            {% endif %}
-                        {% endfor %}
-                        {% if cns.kids %}
-                            {% set _ = ns.visible.append({'label': it.label, 'children': cns.kids}) %}
-                        {% endif %}
-                    {% elif it.key in menus and it.endpoint in available_endpoints %}
-                        {% set _ = ns.visible.append(it) %}
-                    {% endif %}
-                {% endfor %}
-                {% if ns.visible and ns.visible[-1].get('divider') %}
-                    {% set _ = ns.visible.pop() %}
-                {% endif %}
-                {% if ns.visible %}
-                    {% set act = namespace(group=false) %}
-                    {% for it in ns.visible %}
-                        {% if it.get('children') %}
-                            {% for ch in it['children'] %}
-                                {% if request.endpoint == ch.endpoint or (request.endpoint and request.endpoint.startswith(ch.endpoint ~ '_')) %}
-                                    {% set act.group = true %}
-                                {% endif %}
-                            {% endfor %}
-                        {% elif not it.get('divider') and (request.endpoint == it.endpoint or (request.endpoint and request.endpoint.startswith(it.endpoint ~ '_'))) %}
-                            {% set act.group = true %}
-                        {% endif %}
-                    {% endfor %}
-                    <li class="nav-item {% if act.group %}active{% endif %}">
-                        <span class="nav-label">{{ group.label }}<span class="nav-caret">›</span></span>
-                        <ul class="submenu">
-                            {% for it in ns.visible %}
-                                {% if it.get('divider') %}
-                                    <li class="submenu-divider"></li>
-                                {% elif it.get('children') %}
-                                    {% set sact = namespace(on=false) %}
-                                    {% for ch in it['children'] %}
-                                        {% if request.endpoint == ch.endpoint or (request.endpoint and request.endpoint.startswith(ch.endpoint ~ '_')) %}
-                                            {% set sact.on = true %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    <li class="submenu-parent {% if sact.on %}active{% endif %}">
-                                        <span class="submenu-parent-label">{{ it.label }}<span class="nav-caret">›</span></span>
-                                        <ul class="submenu submenu-child">
-                                            {% for ch in it['children'] %}
-                                                {% set is_current = request.endpoint == ch.endpoint or (request.endpoint and request.endpoint.startswith(ch.endpoint ~ '_')) %}
-                                                <li><a href="{{ url_for(ch.endpoint) }}" class="{% if is_current %}active{% endif %}">{{ ch.label }}</a></li>
-                                            {% endfor %}
-                                        </ul>
-                                    </li>
-                                {% else %}
-                                    {% set is_current = request.endpoint == it.endpoint or (request.endpoint and request.endpoint.startswith(it.endpoint ~ '_')) %}
-                                    <li><a href="{{ url_for(it.endpoint) }}" class="{% if is_current %}active{% endif %}">{{ it.label }}</a></li>
-                                {% endif %}
-                            {% endfor %}
-                        </ul>
-                    </li>
-                {% endif %}
-            {% endfor %}
-        </ul>
-    </aside>
-
-    <div class="main">
-        <header class="header">
-            <div class="crumb">
-                <span><a href="{{ url_for('welcome') }}">首页</a></span>
-                {% block crumb %}{% endblock %}
-            </div>
-            <div class="header-right">
-                <div class="header-user">
-                    <span class="name">{{ session.display_name }}</span>
-                    <span class="role">{{ session.position_label or session.role }}</span>
-                    {% if 'password' in menus and 'password_change' in available_endpoints %}
-                    <a href="{{ url_for('password_change') }}">改密</a>
-                    {% endif %}
-                    <a href="{{ url_for('logout') }}">退出</a>
-                </div>
-            </div>
-        </header>
-
-        <div class="container">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                {# 成功消息 → Toast 浮窗（方案 2，3 秒自动消失）；其他 → 顶部横幅（方案 1） #}
-                {% set banner_msgs = [] %}
-                {% set toast_msgs = [] %}
-                {% for category, msg in messages %}
-                    {% if category == 'success' %}{% set _ = toast_msgs.append((category, msg)) %}
-                    {% else %}{% set _ = banner_msgs.append((category, msg)) %}{% endif %}
-                {% endfor %}
-                {% if banner_msgs %}
-                <div class="flash-list">
-                    {% for category, msg in banner_msgs %}
-                    <div class="flash {{ category }}">{{ msg }}</div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% if toast_msgs %}
-                <script>
-                window.__pendingToasts = (window.__pendingToasts || []).concat([
-                    {% for category, msg in toast_msgs %}
-                    {category: "{{ category }}", msg: {{ msg|tojson }}},
-                    {% endfor %}
-                ]);
-                </script>
-                {% endif %}
-                {% endif %}
-            {% endwith %}
-
-            {% block content %}{% endblock %}
-        </div>
+  <aside class="sider">
+    <div class="sider-brand">
+      <div class="name"><span class="dot"></span>金山<span class="accent">仓储</span></div>
+      <div class="tag">KINGSOFT · WMS · V9</div>
     </div>
+    <div class="sider-scroll">
 
+      <div class="nav-group">
+        <div class="group-label">概览</div>
+        {# TODO: 把 '#' 换成你的工作台/首页路由名，如 index / home / workbench / dashboard #}
+        <a class="nav-item {{ 'active' if ep in ['index','home','workbench','dashboard'] }}" href="{{ url_for('index') }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          <span class="label">工作台</span>
+        </a>
+        {{ nav('pending_approvals_list', '待审批中心',
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>',
+          badge=(pending_total if pending_total is defined else 0)) }}
+      </div>
+
+      <div class="nav-group">
+        <div class="group-label">日常操作</div>
+        {{ nav('inbound_list', '入库', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9m0 0 3-3m-3 3-3-3"/><rect x="4" y="14" width="16" height="6" rx="1.5"/></svg>', match=['inbound_list','inbound_new','inbound_detail','inbound_edit']) }}
+        {{ nav('pick_list', '出库管理', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12V3m0 0 3 3m-3-3-3 3"/><rect x="4" y="14" width="16" height="6" rx="1.5"/></svg>', match=['pick_list','pick_detail','outbound_new']) }}
+        {{ nav('transfer_list', '调拨', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h13l-3-3m3 3-3 3"/><path d="M17 16H4l3-3m-3 3 3 3"/></svg>', match=['transfer_list','transfer_detail','transfer_new']) }}
+        {{ nav('damage_list', '报损', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.3 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/></svg>', match=['damage_list','damage_new']) }}
+        {{ nav('stocktake_list', '盘点', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>', match=['stocktake_list','stocktake_detail','stocktake_new']) }}
+      </div>
+
+      <div class="nav-group">
+        <div class="group-label">查询分析</div>
+        {{ nav('inventory_list', '库存查询', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 3-3 3 2 4-5"/></svg>') }}
+        {{ nav('stock_log_view', '出入库流水', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>') }}
+      </div>
+
+      <div class="nav-group">
+        <div class="group-label">主数据</div>
+        {{ nav('sku_list', '物品', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="m3 8 9 5 9-5M3 16l9 5 9-5M3 12l9 5 9-5"/></svg>', match=['sku_list','sku_new','sku_edit','sku_detail']) }}
+        {{ nav('location_list', '库位', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>', match=['location_list','location_new','location_edit']) }}
+        {{ nav('warehouse_list', '仓库', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18M9 21v-6h6v6"/></svg>', match=['warehouse_list','warehouse_new','warehouse_edit']) }}
+      </div>
+
+      {# ===== 基础字典：低频，弱化 + 折叠 ===== #}
+      <div class="nav-dict">
+        <div class="group-label">基础字典 <span class="lf">低频 · 设置后少改</span></div>
+        <button class="dict-toggle" id="dictToggle" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6M12 4v16"/><rect x="3" y="7" width="18" height="13" rx="1.5"/></svg>
+          <span>展开数据字典</span>
+          <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span>
+        </button>
+        <div class="dict-list" id="dictList">
+          {# TODO: 把 href 换成你的字典维护路由名 #}
+          <a class="dict-pill" href="#">物品大类</a>
+          <a class="dict-pill" href="#">物品类别</a>
+          <a class="dict-pill" href="#">物品所属方</a>
+          <a class="dict-pill" href="#">物品管理方</a>
+          <a class="dict-pill" href="#">仓库类型</a>
+          <a class="dict-pill" href="#">责任人</a>
+          <a class="dict-pill" href="#">使用部门</a>
+          <a class="dict-pill" href="#">分配部门</a>
+        </div>
+      </div>
+
+      {% if session.role in ['admin','manager'] %}
+      <div class="nav-group">
+        <div class="group-label">系统</div>
+        {{ nav('user_admin', '用户与权限', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>', match=['user_admin','user_new','user_perms','position_admin']) }}
+      </div>
+      {% endif %}
+
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">
+        <span class="home">首页</span>{% block crumb %}<span class="sep">/</span><span class="current">{{ self.title() }}</span>{% endblock %}
+      </div>
+      <div class="topbar-right">
+        <span class="tb-clock" id="wmsClock">--:--:--</span>
+        <div class="tb-user">
+          <div class="tb-ava">{{ (session.display_name or session.username or 'U')[0] }}</div>
+          <div class="tb-uinfo">
+            <div class="nm">{{ session.display_name or session.username }}</div>
+            <div class="rl">{{ {'admin':'管理员','manager':'仓库经理','staff':'仓管员'}.get(session.role, session.role) }}</div>
+          </div>
+        </div>
+        <div class="tb-links">
+          <a href="{{ url_for('password_change') }}">改密</a>
+          <a href="{{ url_for('logout') }}">退出</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+        {% endfor %}{% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 </div>
 
-<!-- Toast 容器（方案 2 浮窗） -->
-<div id="toast-stack"></div>
-
-{% else %}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="flash-list" style="position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:200;min-width:320px;max-width:480px;">
-            {% for category, msg in messages %}
-            <div class="flash {{ category }}">{{ msg }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    {% endwith %}
-    {% block content_unauth %}{% endblock %}
-{% endif %}
-
 <script>
-// Toast 渲染 + 3 秒自动消失
-(function () {
-    var stack = document.getElementById('toast-stack');
-    if (!stack) return;
-
-    function icon(cat) {
-        if (cat === 'success') return '✓';
-        if (cat === 'error') return '!';
-        if (cat === 'warn' || cat === 'warning') return '!';
-        return 'i';
-    }
-    function clsType(cat) {
-        if (cat === 'success') return 'toast-success';
-        if (cat === 'error') return 'toast-error';
-        if (cat === 'warn' || cat === 'warning') return 'toast-warn';
-        return '';
-    }
-    window.showToast = function (cat, msg, opts) {
-        opts = opts || {};
-        var el = document.createElement('div');
-        el.className = 'toast ' + clsType(cat);
-        el.innerHTML =
-            '<span class="ico">' + icon(cat) + '</span>' +
-            '<div class="body">' + msg + '</div>' +
-            '<button class="close" type="button">×</button>';
-        stack.appendChild(el);
-        var close = el.querySelector('.close');
-        function dismiss() {
-            el.classList.add('fade-out');
-            setTimeout(function () { el.remove(); }, 250);
-        }
-        close.addEventListener('click', dismiss);
-        var duration = (cat === 'error') ? 0 : (opts.duration || 3000);
-        if (duration > 0) setTimeout(dismiss, duration);
-        return el;
-    };
-
-    var pending = window.__pendingToasts || [];
-    pending.forEach(function (t) { window.showToast(t.category, t.msg); });
-    window.__pendingToasts = [];
+(function(){
+  function pad(n){return n<10?'0'+n:n;}
+  function tick(){var d=new Date(),el=document.getElementById('wmsClock');if(el)el.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+  tick();setInterval(tick,1000);
+  var dt=document.getElementById('dictToggle');
+  if(dt)dt.addEventListener('click',function(){
+    this.classList.toggle('open');
+    var l=document.getElementById('dictList');l.classList.toggle('open');
+    this.querySelector('span').textContent=l.classList.contains('open')?'收起数据字典':'展开数据字典';
+  });
 })();
 </script>
 
-<script src="{{ url_for('static', filename='js/picker.js') }}"></script>
+{% else %}
+{# ============ 未登录：访客整页（welcome 等用 content_unauth） ============ #}
+{% block content_unauth %}{% endblock %}
+{% endif %}
 </body>
 </html>

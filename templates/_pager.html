@@ -1,20 +1,40 @@
-{# 通用分页控件。用法：{% from "_pager.html" import pager %} 然后 {{ pager(pg) }}。
-   pg 由后端 _pagination() 提供。链接保留当前所有筛选 query string，只改 page。 #}
+{# =============================================================================
+   _pager.html  ·  分页宏（替换 templates/_pager.html）
+   用法： {% from "_pager.html" import pager %}  …  {{ pager(pg) }}
+   兼容 Flask-SQLAlchemy Pagination：pg.page / pg.pages / pg.total /
+   pg.has_prev / pg.has_next / pg.prev_num / pg.next_num / pg.iter_pages()
+   会自动保留当前查询参数（筛选条件）。
+   ============================================================================= #}
 {% macro pager(pg) %}
-{% if pg and pg.total_pages > 1 %}
-{% set qa = request.args.to_dict() %}{% set _ = qa.pop('page', None) %}
+{% if pg and pg.pages and pg.pages > 1 %}
+{% set args = request.args.to_dict() %}
 <div class="pager">
-  <span class="pager-info">共 {{ pg.total }} 条 · 第 {{ pg.page }} / {{ pg.total_pages }} 页</span>
-  <span class="pager-btns">
+  <div class="pg-info">
+    第 <b>{{ pg.page }}</b> / <b>{{ pg.pages }}</b> 页 · 共 <b>{{ pg.total }}</b> 条
+  </div>
+  <div class="pg-btns">
     {% if pg.has_prev %}
-      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=1, **qa) }}">« 首页</a>
-      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=pg.page-1, **qa) }}">‹ 上一页</a>
+      <a href="{{ url_for(request.endpoint, **dict(args, page=pg.prev_num)) }}">‹</a>
+    {% else %}
+      <span class="pg-btn" style="opacity:.4;">‹</span>
     {% endif %}
+    {% for p in pg.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+      {% if p %}
+        {% if p == pg.page %}
+          <a class="current" href="#">{{ p }}</a>
+        {% else %}
+          <a href="{{ url_for(request.endpoint, **dict(args, page=p)) }}">{{ p }}</a>
+        {% endif %}
+      {% else %}
+        <span class="pg-btn" style="border:none;background:none;">…</span>
+      {% endif %}
+    {% endfor %}
     {% if pg.has_next %}
-      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=pg.page+1, **qa) }}">下一页 ›</a>
-      <a class="btn btn-sm btn-secondary" href="{{ url_for(request.endpoint, page=pg.total_pages, **qa) }}">末页 »</a>
+      <a href="{{ url_for(request.endpoint, **dict(args, page=pg.next_num)) }}">›</a>
+    {% else %}
+      <span class="pg-btn" style="opacity:.4;">›</span>
     {% endif %}
-  </span>
+  </div>
 </div>
 {% endif %}
 {% endmacro %}

@@ -18,44 +18,155 @@ document.getElementById('v9-today').textContent = new Date().toISOString().slice
 </script>
 {% endblock %}
 
-{# === 未登录访客：base.html 走 content_unauth 分支，整页结构由本块控制 === #}
+{# === 未登录访客：base.html 走 content_unauth 分支，整页结构由本块控制 ===
+   橙色全屏 + 衬线 WELCOME + 右侧金山真 Logo（白色三笔画）Canvas 粒子爆散/拼合无缝循环 #}
 {% block content_unauth %}
-<div class="v9-welcome-public">
-    <div class="v9-top">
-        <div class="v9-brand">金山<span class="accent">仓储</span></div>
-        <div class="v9-meta" id="v9-now"></div>
-    </div>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+.wlc-stage{--o1:#EA6A24;--o2:#DD5A1C;--o3:#C24D17;--o4:#A8410F;
+  position:fixed;inset:0;overflow:hidden;color:#fff;
+  font-family:'Inter',system-ui,-apple-system,'Microsoft YaHei',sans-serif;background:#A8410F;z-index:1}
+.wlc-stage *{box-sizing:border-box}
+.wlc-stage h1,.wlc-stage .cn,.wlc-stage .en,.wlc-subcn,.wlc-subline,.wlc-clock,.wlc-lang{color:#fff}
+.wlc-stage::before{content:"";position:absolute;inset:0;z-index:0;
+  background:radial-gradient(130% 120% at 16% 8%,var(--o1) 0%,var(--o2) 34%,var(--o3) 68%,var(--o4) 100%)}
+.wlc-grid{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:54px 54px;
+  -webkit-mask-image:radial-gradient(130% 100% at 30% 30%,#000 30%,transparent 92%);mask-image:radial-gradient(130% 100% at 30% 30%,#000 30%,transparent 92%)}
+.wlc-stage::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;box-shadow:inset 0 0 240px 60px rgba(80,28,4,.45)}
+#wlcFx{position:absolute;inset:0;z-index:1}
+.wlc-content{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:34px 46px}
+.wlc-content a{pointer-events:auto}
+.wlc-top{display:flex;align-items:center;justify-content:space-between}
+.wlc-brand{display:flex;align-items:center;gap:14px}
+.wlc-brand .tile{width:46px;height:46px;border-radius:13px;overflow:hidden;display:block;
+  box-shadow:0 4px 16px rgba(60,18,2,.3)}
+.wlc-brand .tile img{width:100%;height:100%;display:block;object-fit:cover}
+.wlc-brand .cn{font-size:21px;font-weight:700;letter-spacing:.04em}
+.wlc-brand .en{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.32em;opacity:.72;margin-top:3px}
+.wlc-tr{display:flex;align-items:center;gap:20px}
+.wlc-lang{display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:12.5px;
+  padding:8px 15px;border-radius:999px;cursor:pointer;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
+.wlc-lang svg{width:14px;height:14px;opacity:.85}
+.wlc-clock{font-family:'JetBrains Mono',monospace;font-size:13.5px;letter-spacing:.16em;opacity:.9}
+.wlc-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:translateY(-12px)}
+.wlc-hero h1{margin:0;font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:800;
+  font-size:clamp(72px,13vw,200px);line-height:.96;letter-spacing:.01em;text-shadow:0 6px 40px rgba(60,18,2,.35)}
+.wlc-subcn{margin-top:24px;font-size:21px;letter-spacing:.55em;font-weight:500;opacity:.96;padding-left:.55em}
+.wlc-subline{margin-top:18px;font-size:15px;line-height:2;opacity:.82;font-weight:400}
+.wlc-enter{margin-top:40px;display:inline-flex;align-items:center;gap:14px;background:#fff;color:var(--o3);
+  font-weight:700;font-size:16px;padding:17px 34px;border-radius:4px;text-decoration:none;
+  box-shadow:0 10px 30px rgba(60,18,2,.28);transition:transform .25s,box-shadow .25s}
+.wlc-enter:hover{transform:translateY(-2px);box-shadow:0 16px 38px rgba(60,18,2,.36)}
+.wlc-enter svg{width:18px;height:18px}
+.wlc-foot{display:flex;justify-content:space-between;align-items:flex-end;
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.16em;opacity:.7}
+@media(max-width:680px){
+  .wlc-content{padding:22px 22px}
+  .wlc-subcn{font-size:15px;letter-spacing:.4em}
+  .wlc-foot{font-size:9.5px;letter-spacing:.1em}
+}
+</style>
 
-    <div class="v9-main">
-        <div class="v9-hero">
-            <div class="v9-hero-pre">KINGSOFT WAREHOUSE</div>
-            <div class="v9-hero-main">
-                <span class="fill">WEL</span><span class="stroke">COME</span>
-            </div>
-            <div class="v9-hero-sub">金山仓库管理</div>
-            <div class="v9-hero-meta">// V9 · BUILD 20260521</div>
+<div class="wlc-stage">
+  <div class="wlc-grid"></div>
+  <canvas id="wlcFx"></canvas>
+  <div class="wlc-content">
+    <div class="wlc-top">
+      <div class="wlc-brand">
+        <span class="tile"><img src="{{ url_for('static', filename='kingsoft-logo.png') }}" alt="金山仓储"></span>
+        <div>
+          <div class="cn">金山仓储</div>
+          <div class="en">KINGSOFT · WMS</div>
         </div>
-        <a href="{{ url_for('login') }}" class="v9-btn-enter">进入管理系统 →</a>
+      </div>
+      <div class="wlc-tr">
+        <div class="wlc-lang"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg>中 / EN</div>
+        <div class="wlc-clock" id="wlcClock">--:--:--</div>
+      </div>
     </div>
-
-    <div class="v9-foot">
-        <div>KINGSOFT-WMS · V9 · 内部办公仓储系统</div>
-        <div class="v9-foot-link">不对外开放</div>
+    <div class="wlc-hero">
+      <h1>WELCOME</h1>
+      <div class="wlc-subcn">金山仓库管理</div>
+      <div class="wlc-subline">入库 · 出库 · 调拨 · 盘点，一处掌控。<br>欢迎回到金山仓储。</div>
+      <a class="wlc-enter" href="{{ url_for('login') }}">进入管理系统 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
+    <div class="wlc-foot">
+      <div>KINGSOFT-WMS · BUILD 20260605</div>
+      <div>内部办公 · 不对外开放</div>
+    </div>
+  </div>
 </div>
+
+<script src="{{ url_for('static', filename='welcome_marks.js') }}?v={{ css_version }}"></script>
 <script>
-(function () {
-    function pad(n) { return n < 10 ? '0' + n : n; }
-    function tick() {
-        var d = new Date();
-        var el = document.getElementById('v9-now');
-        if (!el) return;
-        el.textContent =
-            d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
-            ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+(function(){
+  function pad(n){return n<10?'0'+n:n}
+  function tick(){var d=new Date(),el=document.getElementById('wlcClock');if(!el)return;
+    el.textContent=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' · '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+  tick();setInterval(tick,1000);
+
+  var CFG={T:9000, stride:6, regionFx:0.78, regionFy:0.52, regionScale:0.62, scatter:0.95, swirlTurns:1, dotMin:1.1, dotMax:2.7};
+  var cvs=document.getElementById('wlcFx'); if(!cvs) return;
+  var ctx=cvs.getContext('2d');
+  var W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2),parts=[];
+
+  // 采样金山真 Logo 的 3 条白色书法笔画(welcome_marks.js) -> 粒子 home 点
+  function buildLogoPoints(){
+    var S=744,oc=document.createElement('canvas');oc.width=S;oc.height=S;var x=oc.getContext('2d');
+    x.clearRect(0,0,S,S);
+    x.save(); x.translate(0,744); x.scale(0.1,-0.1); x.fillStyle='#fff';
+    var paths=window.MARK_PATHS||[];
+    for(var pi=0;pi<paths.length;pi++){ try{ x.fill(new Path2D(paths[pi])); }catch(e){} }
+    x.restore();
+    var img=x.getImageData(0,0,S,S).data, raw=[];
+    for(var yy=0;yy<S;yy+=CFG.stride)for(var xx=0;xx<S;xx+=CFG.stride) if(img[(yy*S+xx)*4+3]>128) raw.push([xx,yy]);
+    if(!raw.length) return [];
+    var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+    for(var i=0;i<raw.length;i++){var p=raw[i];if(p[0]<minX)minX=p[0];if(p[0]>maxX)maxX=p[0];if(p[1]<minY)minY=p[1];if(p[1]>maxY)maxY=p[1];}
+    var cxr=(minX+maxX)/2,cyr=(minY+maxY)/2,m=Math.max(maxX-minX,maxY-minY)||1;
+    return raw.map(function(p){return {nx:(p[0]-cxr)/m, ny:(p[1]-cyr)/m};});
+  }
+  function rand(a,b){return a+Math.random()*(b-a)}
+  function build(){
+    W=cvs.width=Math.floor(innerWidth*DPR);H=cvs.height=Math.floor(innerHeight*DPR);
+    cvs.style.width=innerWidth+'px';cvs.style.height=innerHeight+'px';
+    var pts=buildLogoPoints();
+    var size=Math.min(innerWidth,innerHeight)*CFG.regionScale*DPR;
+    var cx=innerWidth*CFG.regionFx*DPR, cy=innerHeight*CFG.regionFy*DPR;
+    parts=pts.map(function(p){
+      var ang=Math.random()*Math.PI*2, rad=rand(0.25,1)*size*CFG.scatter;
+      return {hx:cx+p.nx*size, hy:cy+p.ny*size, ox:Math.cos(ang)*rad, oy:Math.sin(ang)*rad,
+        ph:Math.random()*Math.PI*2, wf:(2+(Math.random()*3|0)), wamp:rand(2,9)*DPR,
+        sz:rand(CFG.dotMin,CFG.dotMax)*DPR, warm:Math.random()};
+    });
+  }
+  function smooth(t){return t*t*(3-2*t)}
+  function render(phi){
+    var k0=(1-Math.cos(phi*Math.PI*2))/2, k=smooth(k0);
+    var th=phi*Math.PI*2*CFG.swirlTurns, cosT=Math.cos(th), sinT=Math.sin(th);
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<parts.length;i++){var p=parts[i];
+      var rx=p.ox*cosT-p.oy*sinT, ry=p.ox*sinT+p.oy*cosT;
+      var wob=Math.sin(phi*Math.PI*2*p.wf+p.ph)*p.wamp;
+      var x=p.hx+k*rx+k*wob, y=p.hy+k*ry+k*wob*0.6;
+      var r=255,g=Math.round(250-78*k*p.warm),b=Math.round(244-150*k*p.warm),a=0.92-0.30*k;
+      ctx.fillStyle='rgba('+r+','+g+','+b+','+a+')';
+      var s=p.sz*(1-0.25*k);
+      ctx.fillRect(x-s/2,y-s/2,s,s);
     }
-    tick();
-    setInterval(tick, 30000);
+  }
+  var t0=null,paused=false;
+  function frame(ts){if(paused)return;if(t0===null)t0=ts;render(((ts-t0)%CFG.T)/CFG.T);requestAnimationFrame(frame);}
+  function init(){build();requestAnimationFrame(frame);}
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(init);}else{init();}
+  var rt;addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){t0=null;build();},180);});
+  // 复验钩子(无害)
+  window.__freeze=function(phi){paused=true;render(phi);};
+  window.__renderAtPhi=function(phi){render(phi);};
 })();
 </script>
 {% endblock %}

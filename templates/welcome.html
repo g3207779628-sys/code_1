@@ -29,6 +29,7 @@ document.getElementById('v9-today').textContent = new Date().toISOString().slice
   font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
   background:linear-gradient(150deg,var(--abright),var(--adeep) 82%);z-index:1}
 .wlcc *{box-sizing:border-box}
+@view-transition{navigation:auto}  /* WELCOME 接力：与登录页共享元素过渡 */
 .wlcc .texgrid{position:absolute;inset:0;z-index:0;pointer-events:none;
   background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
   background-size:46px 46px}
@@ -48,7 +49,7 @@ document.getElementById('v9-today').textContent = new Date().toISOString().slice
 .wlcc .chip svg{width:14px;height:14px}
 .wlcc .clock{font-family:var(--mono);font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.66)}
 .wlcc .hero{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-bottom:14px}
-.wlcc .mega{font-weight:800;letter-spacing:6px;line-height:.92;font-size:clamp(66px,11.5vw,158px);text-shadow:0 8px 44px rgba(60,18,2,.30)}
+.wlcc .mega{font-weight:800;letter-spacing:6px;line-height:.92;font-size:clamp(66px,11.5vw,158px);text-shadow:0 8px 44px rgba(60,18,2,.30);view-transition-name:ks-mega}
 .wlcc .mega .fill{color:#fff}
 .wlcc .mega .stroke{color:transparent;-webkit-text-stroke:1.8px rgba(255,255,255,.6)}
 .wlcc .subcn{font-size:20px;letter-spacing:6px;color:rgba(255,255,255,.88);margin-top:20px;padding-left:6px}

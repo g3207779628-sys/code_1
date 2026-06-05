@@ -1,42 +1,102 @@
 {% extends "base.html" %}
 {% block title %}待审批中心{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">待审批中心</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">
-        <span>待审批中心（共 {{ items|length }} 项）</span>
-    </div>
-    <div style="padding:8px 20px 0; border-bottom:1px solid var(--line);">
-        {% set tabs = [('all','全部'), ('damage','报损'), ('inbound','入库'), ('outbound','出库'), ('requisition','申领'), ('transfer','调拨'), ('stocktake','盘点')] %}
-        {% for code, label in tabs %}
-        <a href="?type={{ code }}" class="btn btn-sm {% if biz == code %}btn-primary{% else %}btn-secondary{% endif %}">
-            {{ label }} {% if counts.get(code, 0) %}({{ counts[code] }}){% endif %}
-        </a>
-        {% endfor %}
-    </div>
-    <div class="card-body" style="padding:0;">
-        {% if items %}
-        <div class="table-scroll">
-        <table class="data-table">
-            <thead><tr><th>业务</th><th>单号</th><th>摘要</th><th>申请人/创建人</th><th>时间</th><th>操作</th></tr></thead>
-            <tbody>
-                {% for it in items %}
-                <tr>
-                    <td><span class="badge">{{ it.biz }}</span></td>
-                    <td class="mono"><a href="{{ it.url }}">{{ it.id }}</a></td>
-                    <td>{{ it.title }}</td>
-                    <td>{{ it.by or '-' }}</td>
-                    <td class="mono" style="font-size:12px;">{{ it.at }}</td>
-                    <td><a class="btn btn-sm btn-primary" href="{{ it.url }}">处理</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-        {% else %}
-        <div class="empty">{% if biz == 'all' %}没有任何待审批事项{% else %}该业务类型无待审批事项{% endif %}</div>
-        {% endif %}
-    </div>
+<div class="v13-page-head">
+  <div>
+    <div class="page-title">待审批中心</div>
+    <div class="page-sub">共 <strong style="color:var(--accent-deep);">{{ items|length }}</strong> 项待办 · 点业务类型筛选,滑块跟随</div>
+  </div>
 </div>
 
+<div class="form-card">
+  <div class="appro-filter">
+    <div class="f-bar f-seg" id="barSeg"></div>
+    <div class="ft-spacer"></div>
+    <div class="ft-hint">显示 <span class="mono" id="shownCount">{{ items|length }}</span> 条</div>
+  </div>
+
+  <div class="body" style="padding:0;">
+    <div class="table-scroll">
+      <table class="dense-table data-table">
+        <thead>
+          <tr>
+            <th style="width:120px;">业务</th>
+            <th style="width:160px;">单号</th>
+            <th>摘要</th>
+            <th style="width:130px;">申请人 / 创建人</th>
+            <th style="width:150px;">提交时间</th>
+            <th class="text-right" style="width:90px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="approBody"></tbody>
+      </table>
+    </div>
+    <div class="appro-empty" id="approEmpty" style="display:none;">
+      <span class="e-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span>
+      <div class="e-title" id="emptyTitle">没有任何待审批事项</div>
+      <div class="e-sub">该业务类型当前没有待办,切换其他类型查看。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ITEMS = {{ items|tojson }};
+const CT = {{ counts|tojson }};
+const TYPES = [
+  {code:'all',label:'全部'},{code:'damage',label:'报损'},{code:'inbound',label:'入库'},
+  {code:'outbound',label:'出库'},{code:'requisition',label:'申领'},{code:'transfer',label:'调拨'},{code:'stocktake',label:'盘点'}
+];
+const TAGCLS = {damage:'tag-error',inbound:'tag-success',outbound:'tag-warn',requisition:'tag',transfer:'tag-default',stocktake:'tag-default',all:'tag-default'};
+let activeBiz = 'all';
+function ctBadge(n){ return '<span class="ct'+(!n?' zero':'')+'">'+(n||0)+'</span>'; }
+function buildBars(){
+  document.getElementById('barSeg').innerHTML =
+    '<span class="seg-thumb" id="segThumb"></span>' +
+    TYPES.map(t=>'<button class="seg'+(t.code===activeBiz?' active':'')+'" data-biz="'+t.code+'">'+t.label+' '+ctBadge(CT[t.code]||0)+'</button>').join('');
+  document.querySelectorAll('[data-biz]').forEach(el=> el.addEventListener('click', ()=> setActive(el.dataset.biz)));
+}
+function setActive(biz){
+  activeBiz = biz;
+  document.querySelectorAll('[data-biz]').forEach(el=> el.classList.toggle('active', el.dataset.biz===biz));
+  positionThumb(true);
+  renderTable();
+}
+function positionThumb(animate){
+  const bar=document.getElementById('barSeg'), thumb=document.getElementById('segThumb'), seg=bar.querySelector('.seg.active');
+  if(!seg) return;
+  const cr=bar.getBoundingClientRect(); if(cr.width===0) return;
+  const sr=seg.getBoundingClientRect();
+  if(!animate) thumb.style.transition='none';
+  thumb.style.width=sr.width+'px'; thumb.style.height=sr.height+'px';
+  thumb.style.transform='translate('+(sr.left-cr.left-bar.clientLeft)+'px,'+(sr.top-cr.top-bar.clientTop)+'px)';
+  if(!animate){ void thumb.offsetWidth; thumb.style.transition=''; }
+}
+function renderTable(){
+  const rows = activeBiz==='all' ? ITEMS : ITEMS.filter(i=>i.biz_code===activeBiz);
+  const body=document.getElementById('approBody'), empty=document.getElementById('approEmpty');
+  document.getElementById('shownCount').textContent = rows.length;
+  if(!rows.length){
+    body.innerHTML=''; empty.style.display='flex';
+    document.getElementById('emptyTitle').textContent = activeBiz==='all' ? '没有任何待审批事项' : '该业务类型暂无待审批事项';
+    return;
+  }
+  empty.style.display='none';
+  body.innerHTML = rows.map(it=>
+    '<tr>'+
+    '<td><span class="biz-cell"><span class="biz-dot dot-'+it.biz_code+'"></span><span class="tag '+(TAGCLS[it.biz_code]||'tag-default')+'">'+it.biz+'</span></span></td>'+
+    '<td class="mono"><a href="'+it.url+'">'+it.id+'</a></td>'+
+    '<td>'+it.title+'</td>'+
+    '<td>'+(it.by||'-')+'</td>'+
+    '<td class="mono" style="font-size:11.5px;color:var(--ink-quiet);">'+(it.at||'')+'</td>'+
+    '<td class="text-right"><a class="btn btn-sm btn-primary" href="'+it.url+'">处理 <span class="arr">&rarr;</span></a></td>'+
+    '</tr>').join('');
+}
+buildBars();
+renderTable();
+requestAnimationFrame(()=> positionThumb(false));
+window.addEventListener('load', ()=> positionThumb(false));
+window.addEventListener('resize', ()=> positionThumb(false));
+</script>
 {% endblock %}

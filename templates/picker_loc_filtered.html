@@ -4,49 +4,9 @@
 <meta charset="UTF-8">
 <title>选择库位 · 金山仓储</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ css_version }}">
-<style>
-body { padding: 24px 32px; background: var(--bg-soft); }
-.page { max-width: 1280px; margin: 0 auto; }
-.back { display: inline-block; padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; text-decoration: none; color: var(--ink); font-size: 12px; margin-bottom: 14px; }
-.back:hover { border-color: var(--accent); color: var(--accent); }
-.page-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
-.page-head .page-title { font-size: 20px; font-weight: 700; }
-.page-head .page-sub { font-size: 12px; color: var(--ink-quiet); margin-left: 8px; }
 
-.field { display: flex; flex-direction: column; gap: 4px; }
-.field label { font-size: 12px; color: var(--ink-quiet); }
-.field input, .field select, .field .picker {
-    padding: 7px 10px; font-size: 13px; background: var(--bg-input);
-    border: 1px solid var(--line-input); border-radius: 4px;
-    height: 34px; box-sizing: border-box; width: 100%;
-}
-.field .picker { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-.field .picker.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); }
-.field .picker .ar { color: var(--accent); font-size: 10px; margin-left: 8px; flex-shrink: 0; }
-.field .picker .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.field .picker .lbl.empty { color: var(--ink-faded); }
-.filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
-
-.loc-card {
-    background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 12px 16px; margin-bottom: 8px;
-    display: grid; grid-template-columns: 1.3fr 1fr 1fr 1.3fr 90px 90px; gap: 16px;
-    align-items: center; transition: all 0.15s;
-}
-.loc-card:hover { border-color: var(--accent); background: var(--bg-input-focus); }
-.loc-card .code { font-size: 15px; font-weight: 700; color: var(--accent-deep); }
-.loc-card .meta { font-size: 12px; color: var(--ink-quiet); }
-.loc-card .meta strong { color: var(--ink); }
-.loc-card .stock { font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: right; }
-.loc-card .stock.has { color: var(--accent-deep); }
-.loc-card .stock.empty { color: var(--ink-faded); }
-
-.summary-strip { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 16px; display: flex; gap: 22px; margin-bottom: 12px; }
-.summary-strip .stat { font-size: 11px; color: var(--ink-quiet); }
-.summary-strip .stat .num { font-size: 16px; font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; }
-</style>
 </head>
-<body>
+<body class="picker-loc-page">
 
 <div class="page">
 

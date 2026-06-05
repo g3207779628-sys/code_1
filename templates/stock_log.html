@@ -4,28 +4,7 @@
 {% block content %}
 {% from "_pager.html" import pager %}
 
-<style>
-/* 本页专属布局：标签页/筛选行/高级展开/汇总条。控件外观(.field 输入框/.picker)统一走全局 style.css。 */
-.field { display: flex; flex-direction: column; gap: 4px; }
-.field label { font-size: 12px; color: var(--ink-quiet); }
-
-.filter-row1 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
-.more-toggle { margin-top: 12px; padding: 8px 14px; background: var(--accent-soft); border: 1px dashed var(--accent); border-radius: var(--radius-sm); color: var(--accent-deep); font-size: 12px; cursor: pointer; text-align: center; font-weight: 600; }
-.advanced-grid { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-
-.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
-.tab-link {
-    padding: 10px 18px; font-size: 14px; cursor: pointer; color: var(--ink-quiet);
-    border-bottom: 2px solid transparent; text-decoration: none;
-}
-.tab-link.active { color: var(--accent-deep); border-bottom-color: var(--accent); font-weight: 700; }
-.tab-link .count { margin-left: 4px; font-size: 10px; padding: 1px 6px; background: var(--bg-input); color: var(--ink-quiet); border-radius: 10px; }
-.tab-link.active .count { background: var(--accent); color: #FFF; }
-
-.summary-strip { background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 18px; display: flex; gap: 28px; margin-bottom: 14px; flex-wrap: wrap; }
-.summary-strip .stat { font-size: 11px; color: var(--ink-quiet); }
-.summary-strip .stat .num { font-size: 16px; font-family: var(--font-mono); color: var(--accent-deep); font-weight: 700; display: block; margin-top: 2px; }
-</style>
+<div class="stock-log-page">
 
 <div class="v13-page-head">
     <div>
@@ -240,4 +219,5 @@ document.addEventListener('change', e => {
 });
 </script>
 
+</div>
 {% endblock %}

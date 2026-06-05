@@ -6,7 +6,7 @@
 <div class="wb">
 
   {# ===== 页头 ===== #}
-  <div class="page-head anim" style="animation-delay:.02s">
+  <div class="page-head anim delay-02">
     <div>
       <div class="ph-pre">// DASHBOARD</div>
       <h1>工作台</h1>
@@ -21,10 +21,10 @@
 
   {# ===== KPI 行 ===== #}
   <div class="kpi-row">
-    <div class="card hov kpi-hero anim" style="animation-delay:.06s">
+    <div class="card hov kpi-hero anim delay-06">
       <div class="k-top">
         <div class="k-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="m3 8 9 5 9-5M3 16l9 5 9-5M3 12l9 5 9-5"/></svg></span>在仓总数</div>
-        <span class="delta up">▲ 2.1% <span style="opacity:.7">较上周</span></span>
+        <span class="delta up">▲ 2.1% <span class="muted">较上周</span></span>
       </div>
       <div class="k-num"><span class="count" data-to="{{ stats.total_on_hand }}">0</span><span class="u">件</span></div>
       <div class="k-subs">
@@ -35,19 +35,19 @@
       <svg class="spark" id="heroSpark" viewBox="0 0 420 54" preserveAspectRatio="none"></svg>
     </div>
 
-    <div class="card hov kpi anim" style="animation-delay:.1s">
+    <div class="card hov kpi anim delay-10">
       <div class="k-label"><span class="ic ink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>物品种类</div>
       <div class="k-num"><span class="count" data-to="{{ stats.sku }}">0</span><span class="u">种</span></div>
       <div class="k-foot"><span class="meta">{{ stats.batch }} 个批次</span></div>
     </div>
 
-    <div class="card hov kpi anim" style="animation-delay:.14s">
+    <div class="card hov kpi anim delay-14">
       <div class="k-label"><span class="ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v9m0 0 3-3m-3 3-3-3"/><rect x="4" y="14" width="16" height="6" rx="1.5"/></svg></span>本月入库</div>
       <div class="k-num"><span class="count" data-to="{{ stats.month_inbound }}">0</span><span class="u">单</span></div>
       <div class="k-foot"><span class="meta">已审核 {{ stats.month_inbound }}</span><div class="minibars" id="inBars"></div></div>
     </div>
 
-    <div class="card hov kpi anim" style="animation-delay:.18s">
+    <div class="card hov kpi anim delay-18">
       <div class="k-label"><span class="ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12V3m0 0 3 3m-3-3-3 3"/><rect x="4" y="14" width="16" height="6" rx="1.5"/></svg></span>本月出库</div>
       <div class="k-num"><span class="count" data-to="{{ stats.month_outbound }}">0</span><span class="u">单</span></div>
       <div class="k-foot"><span class="meta">已完成 {{ stats.month_outbound }}</span><svg class="minispark" id="outSpark" viewBox="0 0 64 26" preserveAspectRatio="none"></svg></div>
@@ -56,12 +56,12 @@
 
   {# ===== 需处理 ===== #}
   <div class="alert-row">
-    <div class="alert warn anim {% if not stats.low_stock_count %}zero{% endif %}" style="animation-delay:.2s">
+    <div class="alert warn anim delay-20 {% if not stats.low_stock_count %}zero{% endif %}">
       <div class="a-ic {% if stats.low_stock_count %}pulse{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.3 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/></svg></div>
       <div class="a-body"><div class="t">低库存物品 · 需补货</div><div class="v"><span class="count" data-to="{{ stats.low_stock_count }}">0</span><span class="u">项</span></div></div>
       <a class="a-cta" href="{{ url_for('inbound_new') }}">去补货 →</a>
     </div>
-    <div class="alert info {% if not stats.draft_inbound %}zero{% endif %} anim" style="animation-delay:.24s">
+    <div class="alert info {% if not stats.draft_inbound %}zero{% endif %} anim delay-24">
       <div class="a-ic {% if stats.draft_inbound %}pulse{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
       <div class="a-body"><div class="t">待审批单据 {% if stats.draft_inbound %}· 待处理{% else %}· 已清空{% endif %}</div><div class="v"><span class="count" data-to="{{ stats.draft_inbound }}">0</span><span class="u">单</span></div></div>
       <a class="a-cta" href="{{ url_for('pending_approvals_list') }}">查看中心 →</a>
@@ -70,19 +70,19 @@
 
   {# ===== 可视化（趋势线 / 环图为装饰性示例数据） ===== #}
   <div class="viz-row">
-    <div class="panel anim" style="animation-delay:.26s">
+    <div class="panel anim delay-26">
       <div class="panel-head">
         <div class="ph-l"><span class="bar"></span><h3>出入库趋势</h3><span class="cnt">近 14 天</span></div>
         <div class="legend">
-          <span class="li"><span class="sw" style="background:var(--accent)"></span>入库</span>
-          <span class="li"><span class="sw" style="background:var(--blue)"></span>出库</span>
+          <span class="li"><span class="sw sw-accent"></span>入库</span>
+          <span class="li"><span class="sw sw-blue"></span>出库</span>
         </div>
       </div>
       <div class="panel-body"><svg class="linechart" id="lineChart" viewBox="0 0 720 208"></svg></div>
     </div>
-    <div class="panel anim" style="animation-delay:.3s">
+    <div class="panel anim delay-30">
       <div class="panel-head">
-        <div class="ph-l"><span class="bar" style="background:var(--blue)"></span><h3>物品大类占比</h3></div>
+        <div class="ph-l"><span class="bar blu"></span><h3>物品大类占比</h3></div>
         <a class="link-mini" href="{{ url_for('item_category_major_admin') }}">明细 ›</a>
       </div>
       <div class="panel-body">
@@ -98,9 +98,9 @@
   <div class="list-row">
 
     {# 待审入库单 #}
-    <div class="list-card anim" style="animation-delay:.32s">
+    <div class="list-card anim delay-32">
       <div class="lc-head"><div class="l"><span class="bar org"></span><h3>待审入库单</h3></div><span class="cnt gray">{{ stats.draft_inbound }}</span></div>
-      <div class="lc-body"{% if pending_approvals|selectattr('type','equalto','入库')|list %} style="padding-top:0;"{% endif %}>
+      <div class="lc-body {% if pending_approvals|selectattr('type','equalto','入库')|list %}flush-top{% endif %}">
         {% set inbound_pending = pending_approvals|selectattr('type','equalto','入库')|list %}
         {% if inbound_pending %}
           <table class="mtab">
@@ -111,8 +111,8 @@
               {% endfor %}
             </tbody>
           </table>
-          <div style="padding:14px 17px;text-align:center;">
-            <a class="link-mini" style="justify-content:center;" href="{{ url_for('pending_approvals_list') }}">查看全部待审 →</a>
+          <div class="list-cta">
+            <a class="link-mini center" href="{{ url_for('pending_approvals_list') }}">查看全部待审 →</a>
           </div>
         {% else %}
           <div class="empty-st">
@@ -125,9 +125,9 @@
     </div>
 
     {# 低库存物品 #}
-    <div class="list-card anim" style="animation-delay:.36s">
+    <div class="list-card anim delay-36">
       <div class="lc-head"><div class="l"><span class="bar org"></span><h3>低库存物品</h3></div><span class="cnt org">{{ stats.low_stock_count }}</span></div>
-      <div class="lc-body"{% if low_stock_top3 %} style="padding-top:0;"{% endif %}>
+      <div class="lc-body {% if low_stock_top3 %}flush-top{% endif %}">
         {% if low_stock_top3 %}
           {% for s in low_stock_top3 %}
           {% set ratio = ((s.on_hand / s.safety_stock * 100) if s.safety_stock else 0)|round(0, 'floor')|int %}
@@ -137,8 +137,8 @@
             <div class="low-bar"><i data-w="{{ ratio }}"></i></div>
           </div>
           {% endfor %}
-          <div style="padding:16px 17px;text-align:center;">
-            <a class="link-mini" style="justify-content:center;" href="{{ url_for('inventory_list') }}">查看全部低库存 →</a>
+          <div class="list-cta roomy">
+            <a class="link-mini center" href="{{ url_for('inventory_list') }}">查看全部低库存 →</a>
           </div>
         {% else %}
           <div class="empty-st">
@@ -151,9 +151,9 @@
     </div>
 
     {# 最近出入库 #}
-    <div class="list-card anim" style="animation-delay:.4s">
+    <div class="list-card anim delay-40">
       <div class="lc-head"><div class="l"><span class="bar blu"></span><h3>最近出入库</h3></div><a class="link-mini" href="{{ url_for('stock_log_view') }}">流水 ›</a></div>
-      <div class="lc-body" style="padding-top:2px;">
+      <div class="lc-body compact-top">
         <table class="mtab">
           <thead><tr><th>时间</th><th>物品</th><th class="r">变动</th></tr></thead>
           <tbody id="moveBody">

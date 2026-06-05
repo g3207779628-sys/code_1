@@ -4,107 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>领用申请</title>
-<style>
-:root{
-  --brand:#E05D1C; --brand-d:#BE4A12; --brand-soft:#FFF1E8;
-  --ink:#1f2933; --soft:#52606d; --muted:#8a94a0; --faded:#aab2bd;
-  --line:#e4e8ec; --line-in:#cdd4db; --bg:#eef1f4; --card:#fff;
-  --ok:#15803d; --err:#dc2626; --radius:12px; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  font-size:15px;line-height:1.5;padding-bottom:96px;}
-.wrap{max-width:560px;margin:0 auto;padding:0 14px;}
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ css_version }}">
 
-.topbar{position:sticky;top:0;z-index:40;background:var(--brand);color:#fff;
-  padding:16px 18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.12);}
-.topbar h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.5px;}
-.topbar p{margin:4px 0 0;font-size:12px;opacity:.92;}
-
-.steps{display:flex;align-items:center;justify-content:center;gap:6px;
-  padding:14px 0 4px;font-size:12px;color:var(--muted);}
-.steps .s{display:flex;align-items:center;gap:5px;font-weight:600;}
-.steps .s .n{width:20px;height:20px;border-radius:50%;background:var(--line-in);color:#fff;
-  display:flex;align-items:center;justify-content:center;font-size:11px;}
-.steps .s.on .n{background:var(--brand);}
-.steps .s.on{color:var(--brand-d);}
-.steps .bar{flex:0 0 22px;height:2px;background:var(--line-in);}
-
-.card{background:var(--card);border-radius:var(--radius);margin:12px 0;
-  box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;}
-.card>.hd{display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid var(--line);}
-.card>.hd .no{width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;
-  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.card>.hd h2{margin:0;font-size:15px;font-weight:700;}
-.card>.hd .sub{margin-left:auto;font-size:11px;color:var(--muted);}
-.card>.bd{padding:16px;}
-
-.field{margin-bottom:18px;}
-.field:last-child{margin-bottom:0;}
-.field label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;}
-.field label .req{color:var(--brand);}
-.field .help{margin-top:6px;font-size:11px;color:var(--muted);line-height:1.5;}
-.sample{display:inline-block;margin-left:6px;padding:1px 7px;font-size:10px;font-weight:600;
-  border-radius:999px;color:var(--brand-d);background:var(--brand-soft);}
-
-input,select,textarea{width:100%;font-size:16px;color:var(--ink);background:#fff;
-  border:1px solid var(--line-in);border-radius:10px;padding:11px 13px;font-family:inherit;
-  -webkit-appearance:none;appearance:none;}
-input:focus,select,textarea:focus{outline:none;border-color:var(--brand);}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a94a0' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
-textarea{resize:vertical;min-height:84px;line-height:1.55;}
-.field.err input,.field.err select,.field.err .ta-input{border-color:var(--err);}
-.field .errmsg{display:none;margin-top:6px;font-size:11px;color:var(--err);font-weight:600;}
-.field.err .errmsg{display:block;}
-
-/* inline 搜索下拉 */
-.typeahead{position:relative;}
-.ta-menu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;max-height:240px;
-  overflow-y:auto;background:#fff;border:1px solid var(--line-in);border-radius:10px;
-  box-shadow:0 8px 24px rgba(0,0,0,.12);display:none;}
-.typeahead.open .ta-menu{display:block;}
-.ta-item{padding:11px 13px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--line);
-  display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
-.ta-item:last-child{border-bottom:none;}
-.ta-item.active,.ta-item:active{background:var(--brand-soft);}
-.ta-item .m{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.ta-item .s{color:var(--muted);font-size:11px;font-family:var(--mono);flex-shrink:0;}
-.ta-empty{padding:12px 13px;font-size:13px;color:var(--faded);}
-
-/* 物品明细：移动端卡片式 */
-.item-card{border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:12px;background:#fcfdfe;}
-.item-card .ih{display:flex;align-items:center;margin-bottom:10px;}
-.item-card .ih .t{font-size:13px;font-weight:700;color:var(--soft);}
-.item-card .ih .del{margin-left:auto;border:none;background:transparent;color:var(--err);
-  font-size:13px;font-weight:600;cursor:pointer;padding:4px 6px;}
-.item-meta{display:none;flex-wrap:wrap;gap:6px;margin-top:9px;font-size:12px;color:var(--soft);}
-.item-card.picked .item-meta{display:flex;}
-.item-meta .chip{background:#fff;border:1px solid var(--line);border-radius:7px;padding:3px 8px;}
-.item-meta .chip b{font-family:var(--mono);color:var(--ink);font-weight:600;}
-.item-meta .chip.oh b{color:var(--brand-d);}
-.qty-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
-.qty-row label{font-size:13px;font-weight:600;flex-shrink:0;margin:0;}
-.qty-row input{text-align:right;max-width:120px;}
-.qty-row input.over{border-color:var(--err);color:var(--err);}
-.add-item{width:100%;border:1.5px dashed var(--brand);background:var(--brand-soft);color:var(--brand-d);
-  border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;}
-
-.alert{background:#fef2f2;border:1px solid #fecaca;color:var(--err);border-radius:10px;
-  padding:11px 14px;font-size:13px;margin:12px 0;}
-
-.sticky{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;
-  border-top:1px solid var(--line);box-shadow:0 -2px 12px rgba(0,0,0,.08);}
-.sticky .inner{max-width:560px;margin:0 auto;padding:11px 14px;display:flex;align-items:center;gap:12px;}
-.sticky .stat{font-size:12px;color:var(--soft);}
-.sticky .stat b{color:var(--brand-d);font-size:15px;}
-.btn{flex:1;border:none;border-radius:11px;padding:14px;font-size:16px;font-weight:700;
-  cursor:pointer;background:var(--brand);color:#fff;}
-.btn:active{background:var(--brand-d);}
-</style>
 </head>
-<body>
+<body class="apply-page">
 
 <div class="topbar">
   <h1>领用申请单</h1>

@@ -2,17 +2,7 @@
 {% block title %}预设角色管理{% endblock %}
 {% block content %}
 
-<style>
-/* 预设角色专属：两列预设卡网格 + 卡内排版（全局无对应；配色走全局变量） */
-.preset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
-.preset-card-mgmt{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow-sm);padding:16px 18px;}
-.preset-card-mgmt h3{font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
-.preset-card-mgmt .desc{font-size:12px;color:var(--ink-quiet);margin:6px 0 10px;}
-.preset-card-mgmt .keys{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
-.preset-card-mgmt .actions{display:flex;gap:6px;justify-content:flex-end;
-    border-top:1px solid var(--line-soft);padding-top:10px;}
-</style>
+
 
 <div class="card">
     <div class="card-header">

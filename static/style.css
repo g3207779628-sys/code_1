@@ -587,11 +587,15 @@ tbody tr{animation:fadein .4s ease both;}
 .wb .ph-sub{font-size:12.5px;color:var(--ink-quiet);margin-top:7px;}
 .wb .ph-sub b{color:var(--ink-strong);font-weight:600;}
 
-/* segmented control */
-.wb .seg{display:inline-flex;background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius-sm);padding:3px;flex-shrink:0;}
-.wb .seg button{font-family:var(--font-sans);font-size:12px;font-weight:600;color:var(--ink-quiet);background:none;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;transition:all .14s;}
+/* segmented control —— 内凹底槽 + 白色滑块平滑跟随 */
+.wb .seg{position:relative;display:inline-flex;background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius-sm);padding:3px;flex-shrink:0;
+  box-shadow:inset 0 1.5px 3px rgba(20,18,15,.11),inset 0 -1px 0 rgba(255,255,255,.5);}
+.wb .seg .seg-thumb{position:absolute;left:0;top:0;width:0;height:0;background:var(--bg-card);border-radius:5px;
+  box-shadow:0 1px 2px rgba(20,18,15,.18),0 0 0 1px rgba(20,18,15,.04);pointer-events:none;z-index:0;
+  transition:transform .34s cubic-bezier(.34,1.45,.5,1),width .34s cubic-bezier(.34,1.45,.5,1),height .2s ease;}
+.wb .seg button{position:relative;z-index:1;font-family:var(--font-sans);font-size:12px;font-weight:600;color:var(--ink-quiet);background:none;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;transition:color .16s;}
 .wb .seg button:hover{color:var(--ink);}
-.wb .seg button.on{background:var(--bg-card);color:var(--ink-strong);box-shadow:var(--shadow-sm);}
+.wb .seg button.on{color:var(--ink-strong);}
 
 /* ---- shared card surface ---- */
 .wb .card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);}

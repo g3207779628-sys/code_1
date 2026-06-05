@@ -139,12 +139,24 @@
   function pad(n){return n<10?'0'+n:n;}
   function tick(){var d=new Date(),el=document.getElementById('wmsClock');if(el)el.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
   tick();setInterval(tick,1000);
-  var dt=document.getElementById('dictToggle');
-  if(dt)dt.addEventListener('click',function(){
-    this.classList.toggle('open');
-    var l=document.getElementById('dictList');l.classList.toggle('open');
-    this.querySelector('span').textContent=l.classList.contains('open')?'收起数据字典':'展开数据字典';
-  });
+  // 数据字典下拉：状态回填（不再"跳转即塌"）
+  // 1) 当前在字典页 → 由路由派生强制展开（最稳）；2) 否则按 localStorage 记忆；3) 用户开合即持久化
+  var dt=document.getElementById('dictToggle'), dl=document.getElementById('dictList');
+  if(dt&&dl){
+    function setDict(open,save){
+      dt.classList.toggle('open',open);
+      dl.classList.toggle('open',open);
+      var s=dt.querySelector('span'); if(s)s.textContent=open?'收起数据字典':'展开数据字典';
+      if(save){try{localStorage.setItem('wms_dict_open',open?'1':'0');}catch(e){}}
+    }
+    var onDictPage=!!dl.querySelector('.dict-pill.active');
+    var saved=null; try{saved=localStorage.getItem('wms_dict_open');}catch(e){}
+    // 初始恢复时禁用动画，避免每次导航都"重新展开"的闪动
+    var prev=dl.style.transition; dl.style.transition='none';
+    setDict(onDictPage || saved==='1', false);
+    void dl.offsetWidth; dl.style.transition=prev;
+    dt.addEventListener('click',function(){ setDict(!dl.classList.contains('open'), true); });
+  }
 })();
 </script>
 

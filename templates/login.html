@@ -5,41 +5,181 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>登录 · 金山仓储</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ css_version }}">
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+.lga{--abright:#E86A28;--adeep:#B8480F;--accent:#E05D1C;--blue:#1F5FD6;--ink:#1B1815;--ink-strong:#0C0B09;--ink-quiet:#6E6760;--ink-faded:#A9A39A;
+  --line:#E7E1D8;--line-input:#DED7CC;--bg-base:#F1EEE9;--bg-card:#fff;--bg-alt:#F5F2ED;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  position:fixed;inset:0;display:flex;overflow:hidden;
+  font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif}
+.lga *{box-sizing:border-box}
+/* 左：工业暗色分屏 */
+.lga .left{position:relative;overflow:hidden;flex:1.12;color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:44px 52px;
+  background:radial-gradient(120% 90% at 18% 12%,#2a221d 0%,#15110e 46%,#0b0908 100%)}
+.lga .left .texgrid{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:46px 46px}
+.lga .left .glow{position:absolute;width:460px;height:460px;border-radius:50%;filter:blur(80px);background:rgba(224,93,28,.22);right:-120px;bottom:-140px;pointer-events:none;z-index:0}
+.lga #lgMark{position:absolute;inset:0;z-index:0}
+.lga .left>*{position:relative;z-index:1}
+.lga .lbrand{display:flex;align-items:center;gap:13px}
+.lga .lbrand .tile{width:42px;height:42px;border-radius:11px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.lga .lbrand .tile img{width:100%;height:100%;display:block;object-fit:cover}
+.lga .lbrand .cn{font-size:18px;font-weight:700;letter-spacing:1px;color:#fff}
+.lga .lbrand .en{font-family:var(--mono);font-size:9px;letter-spacing:2.4px;color:rgba(255,255,255,.55);margin-top:3px}
+.lga .lmid{display:flex;flex-direction:column}
+.lga .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.55);text-transform:uppercase}
+.lga .mega{font-weight:800;letter-spacing:5px;line-height:.92;font-size:clamp(56px,7vw,104px);margin-top:14px}
+.lga .mega .fill{color:#fff}
+.lga .mega .stroke{color:transparent;-webkit-text-stroke:1.6px rgba(255,255,255,.55)}
+.lga .lsub{font-size:14.5px;color:rgba(255,255,255,.7);margin-top:18px;max-width:440px;line-height:1.7}
+.lga .feats{margin-top:26px;display:flex;flex-direction:column;gap:15px}
+.lga .feat{display:flex;align-items:flex-start;gap:12px}
+.lga .feat .d{width:7px;height:7px;border-radius:2px;margin-top:6px;flex-shrink:0}
+.lga .feat .cn{font-size:13.5px;color:rgba(255,255,255,.9)}
+.lga .feat .en{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.4);margin-top:2px}
+.lga .lver{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;color:rgba(255,255,255,.45)}
+/* 右：浅色表单 */
+.lga .right{flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg-base);padding:40px}
+.lga .card{width:100%;max-width:380px;display:flex;flex-direction:column;gap:18px}
+.lga .card h1{margin:0;font-size:26px;font-weight:700;color:var(--ink-strong)}
+.lga .field{display:flex;flex-direction:column;gap:7px}
+.lga .field label{font-size:11.5px;color:var(--ink-quiet);font-weight:500;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.lga .field label .en{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink-faded);text-transform:uppercase}
+.lga .input{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line-input);border-radius:7px;padding:0 13px;height:46px;transition:.15s}
+.lga .input .ico{color:var(--ink-faded);display:flex;flex-shrink:0}
+.lga .input .ico svg{width:17px;height:17px}
+.lga .input input{flex:1;min-width:0;border:0;background:none;outline:none;font-family:inherit;font-size:14px;color:var(--ink);height:100%}
+.lga .input input::placeholder{color:var(--ink-faded)}
+.lga .input .eye{color:var(--ink-faded);cursor:pointer;display:flex;flex-shrink:0}
+.lga .input .eye svg{width:17px;height:17px}
+.lga .input:focus-within{border-color:var(--accent);background:#FFFDFB;box-shadow:0 0 0 3px rgba(224,93,28,.10)}
+.lga .input:focus-within .ico{color:var(--accent)}
+.lga .check{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-quiet);cursor:pointer;user-select:none}
+.lga .check .box{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line-input);display:flex;align-items:center;justify-content:center;color:#fff;transition:.14s;flex-shrink:0}
+.lga .check .box svg{width:11px;height:11px;opacity:0;transition:opacity .14s}
+.lga .check.on .box{background:var(--accent);border-color:var(--accent)}
+.lga .check.on .box svg{opacity:1}
+.lga .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;height:50px;font-family:inherit;font-weight:600;font-size:15px;letter-spacing:1px;
+  border-radius:7px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff;transition:.16s}
+.lga .btn:hover{background:var(--adeep);border-color:var(--adeep);transform:translateY(-1px);box-shadow:0 8px 22px -8px rgba(20,18,15,.4)}
+.lga .btn svg{width:18px;height:18px}
+.lga .flash{display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:7px;font-size:12.5px;background:rgba(210,63,63,.1);border:1px solid rgba(210,63,63,.3);color:#D23F3F}
+.lga .hint{background:var(--bg-alt);border:1px dashed var(--line-input);border-radius:7px;padding:11px 14px;font-size:12px;color:var(--ink-quiet);line-height:1.7}
+.lga .hint strong{color:var(--ink);font-weight:600}
+.lga .hint .mono{font-family:var(--mono);color:var(--adeep);font-size:11.5px}
+@media(max-width:860px){.lga{flex-direction:column}.lga .left{flex:none;min-height:38vh;padding:30px}.lga .right{flex:1}}
+</style>
 </head>
-<body class="login-body">
-<div class="login-page">
-  <div class="login-split anim login-delay">
-    <div class="login-aside">
-      <div class="glow"></div><div class="glow2"></div>
-      <div class="brand">
-        <div class="dotline">// KINGSOFT · WMS</div>
-        <div class="cn">金山<span class="o">仓储</span></div>
-      </div>
-      <div class="feat">
-        <div class="f"><span class="d"></span>入库 / 出库 / 调拨 / 盘点 全流程</div>
-        <div class="f"><span class="d"></span>库存实时查询与低库存预警</div>
-        <div class="f"><span class="d"></span>单据审批与操作留痕</div>
-      </div>
-      <div class="ver">V9 · BUILD 20260604 · 内部办公仓储系统</div>
+<body>
+<div class="lga">
+  <div class="left">
+    <div class="texgrid"></div>
+    <div class="glow"></div>
+    <canvas id="lgMark"></canvas>
+
+    <div class="lbrand">
+      <span class="tile"><img src="{{ url_for('static', filename='kingsoft-logo.png') }}" alt="金山仓储"></span>
+      <div><div class="cn">金山仓储</div><div class="en">KINGSOFT · WMS</div></div>
     </div>
-    <div class="login-main">
-      <div class="mega-brand login-mega-brand">
-        <div class="pre">// WELCOME BACK</div>
-        <div class="mega login-mega-title"><span class="fill">WEL</span><span class="stroke">COME</span></div>
-        <div class="name login-mega-name">登录管理系统</div>
+
+    <div class="lmid">
+      <div class="eyebrow">// KINGSOFT · WMS · 内部办公仓储系统</div>
+      <div class="mega"><span class="fill">WEL</span><span class="stroke">COME</span></div>
+      <div class="lsub">金山仓库管理系统 · 一处入口，掌控入库到出库的每一步。</div>
+      <div class="feats">
+        <div class="feat"><span class="d" style="background:var(--accent)"></span><div><div class="cn">入库 · 出库 · 调拨 · 盘点 全流程</div><div class="en">Inbound / Outbound / Transfer / Count</div></div></div>
+        <div class="feat"><span class="d" style="background:var(--blue)"></span><div><div class="cn">库存实时查询与低库存预警</div><div class="en">Live stock &amp; low-stock alerts</div></div></div>
+        <div class="feat"><span class="d" style="background:var(--accent)"></span><div><div class="cn">单据审批与全程操作留痕</div><div class="en">Approvals with full audit trail</div></div></div>
       </div>
+    </div>
+
+    <div class="lver">V9 · BUILD 20260605 · 不对外开放</div>
+  </div>
+
+  <div class="right">
+    <form class="card" method="post">
+      <h1>登录管理系统</h1>
       {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}{% for cat, msg in messages %}<div class="login-flash">{{ msg }}</div>{% endfor %}{% endif %}
+        {% if messages %}{% for cat, msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}{% endif %}
       {% endwith %}
-      <form class="login-form" method="post">
-        <div class="form-row"><label>用户名</label><input type="text" name="username" placeholder="请输入用户名" required autofocus autocomplete="username"></div>
-        <div class="form-row"><label>密码</label><input type="password" name="password" placeholder="请输入密码" required autocomplete="current-password"></div>
-        <button type="submit">登 录</button>
-      </form>
-      <div class="login-hint"><strong>测试账号</strong><br>admin / admin123 · manager / manager123 · staff / staff123</div>
-    </div>
+      <div class="field">
+        <label>用户名 <span class="en">USERNAME</span></label>
+        <div class="input">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg></span>
+          <input type="text" name="username" placeholder="请输入用户名" required autofocus autocomplete="username">
+        </div>
+      </div>
+      <div class="field">
+        <label>密码 <span class="en">PASSWORD</span></label>
+        <div class="input">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+          <input type="password" name="password" id="lgPwd" placeholder="请输入密码" required autocomplete="current-password">
+          <span class="eye" id="lgEye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
+        </div>
+      </div>
+      <label class="check on" id="lgRemember"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg></span>记住登录状态<input type="checkbox" name="remember" checked hidden></label>
+      <button type="submit" class="btn">登 录 · LOGIN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12 6l6 6-6 6"/></svg></button>
+      <div class="hint"><strong>测试账号 · Demo</strong><br><span class="mono">admin / admin123 · manager / manager123 · staff / staff123</span></div>
+    </form>
   </div>
 </div>
+
+<script src="{{ url_for('static', filename='welcome_marks.js') }}?v={{ css_version }}"></script>
+<script>
+(function(){
+  // 密码可见切换
+  var pwd=document.getElementById('lgPwd'), eye=document.getElementById('lgEye');
+  if(eye&&pwd)eye.addEventListener('click',function(){pwd.type=pwd.type==='password'?'text':'password';});
+  // 记住登录状态
+  var rem=document.getElementById('lgRemember');
+  if(rem){var cb=rem.querySelector('input');rem.addEventListener('click',function(e){e.preventDefault();var on=!rem.classList.contains('on');rem.classList.toggle('on',on);cb.checked=on;});}
+
+  // 左侧真·金山 Logo 粒子动效水印（碎裂↔拼合，无缝；按 canvas 容器尺寸定位）
+  var CFG={T:9000, stride:7, fx:0.5, fy:0.52, scale:0.7, scatter:0.9, dotMin:1.0, dotMax:2.4, baseAlpha:0.26};
+  var cvs=document.getElementById('lgMark'); if(!cvs) return;
+  var ctx=cvs.getContext('2d'), W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2),parts=[];
+  function pts744(){
+    var S=744,oc=document.createElement('canvas');oc.width=S;oc.height=S;var x=oc.getContext('2d');
+    x.clearRect(0,0,S,S);x.save();x.translate(0,744);x.scale(0.1,-0.1);x.fillStyle='#fff';
+    (window.MARK_PATHS||[]).forEach(function(d){try{x.fill(new Path2D(d));}catch(e){}});
+    x.restore();
+    var img=x.getImageData(0,0,S,S).data,raw=[];
+    for(var yy=0;yy<S;yy+=CFG.stride)for(var xx=0;xx<S;xx+=CFG.stride)if(img[(yy*S+xx)*4+3]>128)raw.push([xx,yy]);
+    if(!raw.length)return[];
+    var a=1e9,b=1e9,c=-1e9,d=-1e9;
+    raw.forEach(function(p){if(p[0]<a)a=p[0];if(p[0]>c)c=p[0];if(p[1]<b)b=p[1];if(p[1]>d)d=p[1];});
+    var cx=(a+c)/2,cy=(b+d)/2,m=Math.max(c-a,d-b)||1;
+    return raw.map(function(p){return{nx:(p[0]-cx)/m,ny:(p[1]-cy)/m};});
+  }
+  function rand(a,b){return a+Math.random()*(b-a)}
+  function build(){
+    var cw=cvs.clientWidth||cvs.parentNode.clientWidth, ch=cvs.clientHeight||cvs.parentNode.clientHeight;
+    W=cvs.width=Math.floor(cw*DPR);H=cvs.height=Math.floor(ch*DPR);
+    var pts=pts744(), size=Math.min(cw,ch)*CFG.scale*DPR, cx=cw*CFG.fx*DPR, cy=ch*CFG.fy*DPR;
+    parts=pts.map(function(p){var ang=Math.random()*Math.PI*2,rad=rand(0.25,1)*size*CFG.scatter;
+      return{hx:cx+p.nx*size,hy:cy+p.ny*size,ox:Math.cos(ang)*rad,oy:Math.sin(ang)*rad,
+        ph:Math.random()*Math.PI*2,wf:(2+(Math.random()*3|0)),wamp:rand(2,7)*DPR,sz:rand(CFG.dotMin,CFG.dotMax)*DPR};});
+  }
+  function smooth(t){return t*t*(3-2*t)}
+  function render(phi){
+    var k=smooth((1-Math.cos(phi*Math.PI*2))/2), th=phi*Math.PI*2, cs=Math.cos(th), sn=Math.sin(th);
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<parts.length;i++){var p=parts[i];
+      var rx=p.ox*cs-p.oy*sn, ry=p.ox*sn+p.oy*cs, wob=Math.sin(phi*Math.PI*2*p.wf+p.ph)*p.wamp;
+      var x=p.hx+k*rx+k*wob, y=p.hy+k*ry+k*wob*0.6, s=p.sz*(1-0.25*k);
+      ctx.fillStyle='rgba(255,250,244,'+(CFG.baseAlpha-0.10*k)+')';
+      ctx.fillRect(x-s/2,y-s/2,s,s);
+    }
+  }
+  var t0=null,paused=false;
+  function frame(ts){if(paused)return;if(t0===null)t0=ts;render(((ts-t0)%CFG.T)/CFG.T);requestAnimationFrame(frame);}
+  function init(){build();requestAnimationFrame(frame);}
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(init);}else{init();}
+  var rt;addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){t0=null;build();},180);});
+  window.__freeze=function(phi){paused=true;render(phi);};
+  window.__renderAtPhi=function(phi){render(phi);};
+})();
+</script>
 </body>
 </html>

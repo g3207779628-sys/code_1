@@ -12,10 +12,11 @@
       <h1>工作台</h1>
       <div class="ph-sub">早上好，<b>{{ session.display_name or session.username }}</b> · 今天有 <b>{{ stats.low_stock_count }}</b> 项物品需补货，<b>{{ stats.draft_inbound }}</b> 项待你审批 · <span id="todayStr"></span></div>
     </div>
-    <div class="seg">
-      <button class="on">本月</button>
-      <button>本周</button>
-      <button>今日</button>
+    <div class="seg" id="wbSeg">
+      <span class="seg-thumb" id="wbSegThumb"></span>
+      <button class="on" data-seg="month">本月</button>
+      <button data-seg="week">本周</button>
+      <button data-seg="day">今日</button>
     </div>
   </div>
 
@@ -262,6 +263,30 @@
   function fillLowBar(){document.querySelectorAll('.wb .low-bar i').forEach(i=>setTimeout(()=>i.style.width=Math.min(i.dataset.w,100)+'%',500));}
 
   window.addEventListener('load',()=>{runCounts();drawHeroSpark();drawInBars();drawOutSpark();drawLineChart();drawDonut();fillLowBar();});
+})();
+</script>
+
+<script>
+/* 右上角分段控件：白色滑块在内凹槽里平滑跟随 */
+(function(){
+  var seg=document.getElementById('wbSeg'), thumb=document.getElementById('wbSegThumb');
+  if(!seg||!thumb)return;
+  var btns=[].slice.call(seg.querySelectorAll('button'));
+  function place(animate){
+    var on=seg.querySelector('button.on')||btns[0]; if(!on)return;
+    if(!animate)thumb.style.transition='none';
+    thumb.style.width=on.offsetWidth+'px';
+    thumb.style.height=on.offsetHeight+'px';
+    thumb.style.transform='translate('+on.offsetLeft+'px,'+on.offsetTop+'px)';
+    if(!animate){void thumb.offsetWidth; thumb.style.transition='';}
+  }
+  btns.forEach(function(b){ b.addEventListener('click',function(){
+    btns.forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on'); place(true);
+  });});
+  requestAnimationFrame(function(){place(false);});
+  window.addEventListener('load',function(){place(false);});
+  window.addEventListener('resize',function(){place(false);});
 })();
 </script>
 

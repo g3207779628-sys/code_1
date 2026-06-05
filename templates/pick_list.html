@@ -96,7 +96,7 @@
                     <td>{{ o.picker_name or '—' }}</td>
                     <td class="mono" style="font-size:11px; color:var(--ink-quiet);">{{ (o.created_at or '')[:16] }}</td>
                     <td class="text-right">
-                        <a class="btn btn-sm btn-link" href="{{ url_for('pick_detail', order_no=o.order_no) }}">
+                        <a class="btn btn-sm {% if o.status == 'pending' %}btn-primary{% else %}btn-secondary{% endif %}" href="{{ url_for('pick_detail', order_no=o.order_no) }}">
                             {% if o.status == 'pending' %}去出库{% else %}查看{% endif %}
                         </a>
                     </td>

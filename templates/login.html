@@ -1,164 +1,82 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 · 金山仓储</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-    body {
-        background:
-            radial-gradient(circle at 30% 25%, var(--accent-soft) 0%, var(--bg-base) 50%),
-            radial-gradient(circle at 80% 75%, var(--bg-soft) 0%, var(--bg-base) 60%);
-        min-height: 100vh;
-        font-size: 13px;
-    }
-    .login-page {
-        min-height: 100vh;
-        display: flex; align-items: center; justify-content: center;
-        padding: 32px;
-    }
-
-    /* 小卡片居中：max-width 400px + margin auto */
-    .login-card {
-        background: var(--bg-card);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        padding: 40px 44px;
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
-        box-shadow: var(--shadow-md);
-    }
-
-    .login-brand {
-        text-align: center;
-        margin-bottom: 28px;
-    }
-    .login-brand .pre {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        color: var(--accent);
-        letter-spacing: 4px;
-        margin-bottom: 12px;
-    }
-    .login-brand .mega {
-        font-size: 52px;
-        font-weight: 800;
-        letter-spacing: 8px;
-        line-height: 1;
-        margin-bottom: 10px;
-    }
-    .login-brand .mega .fill { color: var(--accent); }
-    .login-brand .mega .stroke { color: transparent; -webkit-text-stroke: 1.5px var(--accent); }
-    .login-brand .name {
-        font-size: 15px;
-        font-weight: 500;
-        letter-spacing: 4px;
-        color: var(--ink);
-        margin-top: 8px;
-    }
-
-    .login-form .form-row { margin-bottom: 14px; }
-    .login-form .form-row label {
-        display: block;
-        font-size: 12px;
-        color: var(--ink-quiet);
-        margin-bottom: 6px;
-        font-weight: 500;
-        letter-spacing: 0.5px;
-    }
-    .login-form input[type=text],
-    .login-form input[type=password] {
-        width: 100%;
-        background: var(--bg-input);
-        border: 1px solid var(--line-input);
-        border-radius: var(--radius);
-        padding: 10px 12px;
-        font-size: 14px;
-        color: var(--ink);
-        font-family: inherit;
-    }
-    .login-form input[type=password] {
-        font-size: 12px;
-    }
-    .login-form input:focus {
-        outline: none;
-        background: var(--bg-input-focus);
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(224, 93, 28, 0.10);
-    }
-    .login-form button[type=submit] {
-        width: 100%;
-        margin-top: 12px;
-        background: var(--accent);
-        color: #FFF;
-        border: 1px solid var(--accent);
-        padding: 11px 0;
-        font-size: 15px;
-        font-weight: 600;
-        letter-spacing: 4px;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        transition: background 0.15s;
-        font-family: inherit;
-    }
-    .login-form button[type=submit]:hover { background: var(--accent-hover); }
-
-    .login-hint {
-        margin-top: 22px;
-        padding: 12px 14px;
-        background: var(--bg-soft);
-        border: 1px solid var(--line-soft);
-        border-radius: var(--radius-sm);
-        font-family: var(--font-mono);
-        font-size: 11px;
-        color: var(--ink-quiet);
-        line-height: 1.8;
-    }
-    .login-hint strong { color: var(--ink); font-weight: 600; }
-
-    .login-flash { margin-bottom: 16px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · 金山仓储</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ css_version }}">
+<style>
+body{min-height:100vh;background:
+  radial-gradient(circle at 28% 22%, var(--accent-softer) 0%, var(--bg-base) 46%),
+  radial-gradient(circle at 82% 80%, var(--blue-softer) 0%, var(--bg-base) 55%);}
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;}
+.login-split{display:flex;width:100%;max-width:860px;background:var(--bg-card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden;}
+.login-aside{width:300px;flex-shrink:0;background:var(--ink-strong);color:#fff;padding:38px 32px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
+.login-aside .glow{position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(224,93,28,.5),transparent 70%);top:-90px;right:-90px;filter:blur(6px);}
+.login-aside .glow2{position:absolute;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(31,95,214,.45),transparent 70%);bottom:-80px;left:-70px;}
+.login-aside .brand{position:relative;z-index:1;}
+.login-aside .brand .dotline{font-family:var(--font-mono);font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.55);margin-bottom:14px;}
+.login-aside .brand .cn{font-size:30px;font-weight:800;letter-spacing:2px;}
+.login-aside .brand .cn .o{color:var(--accent);}
+.login-aside .feat{position:relative;z-index:1;display:flex;flex-direction:column;gap:13px;}
+.login-aside .feat .f{display:flex;align-items:center;gap:10px;font-size:12.5px;color:rgba(255,255,255,.78);}
+.login-aside .feat .f .d{width:6px;height:6px;border-radius:2px;background:var(--accent);}
+.login-aside .feat .f:nth-child(2) .d{background:var(--blue);}
+.login-aside .feat .f:nth-child(3) .d{background:#c9a23f;}
+.login-aside .ver{position:relative;z-index:1;font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:rgba(255,255,255,.4);}
+.login-main{flex:1;padding:46px 50px;}
+.login-form .form-row{margin-bottom:16px;}
+.login-form label{display:block;font-size:12px;color:var(--ink-quiet);margin-bottom:7px;font-weight:500;letter-spacing:.3px;}
+.login-form input{width:100%;background:var(--bg-input);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px;font-size:14px;color:var(--ink);font-family:inherit;transition:all .15s;}
+.login-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+.login-form button{width:100%;margin-top:8px;background:var(--accent);color:#fff;border:none;padding:12px 0;font-size:15px;font-weight:700;letter-spacing:6px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;font-family:inherit;}
+.login-form button:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.login-hint{margin-top:22px;padding:13px 15px;background:var(--bg-soft);border:1px solid var(--line-soft);border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:11px;color:var(--ink-quiet);line-height:1.9;}
+.login-hint strong{color:var(--ink);}
+@keyframes wmsFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.login-split.anim{opacity:0;animation:wmsFadeUp .55s cubic-bezier(.4,0,.2,1) forwards;}
+.mega-brand .pre{font-family:var(--font-mono);font-size:10px;letter-spacing:3px;color:var(--accent);margin-bottom:6px;}
+.mega-brand .mega{font-weight:800;line-height:1;color:var(--ink-strong);}
+.mega-brand .mega .fill{color:var(--accent);}
+.mega-brand .mega .stroke{color:transparent;-webkit-text-stroke:1.5px var(--accent);}
+.mega-brand .name{font-size:14px;color:var(--ink-quiet);font-weight:500;}
+.login-flash{margin-bottom:14px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--red-soft);color:var(--red);font-size:13px;font-weight:500;}
+@media(max-width:680px){.login-split{flex-direction:column;max-width:420px;}.login-aside{width:auto;}}
+</style>
 </head>
 <body>
-
 <div class="login-page">
-    <div class="login-card">
-        <div class="login-brand">
-            <div class="pre">// KINGSOFT · WMS</div>
-            <div class="mega"><span class="fill">WEL</span><span class="stroke">COME</span></div>
-            <div class="name">金山仓储</div>
-        </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="login-flash">
-                {% for category, msg in messages %}
-                <div class="flash {{ category }}">{{ msg }}</div>
-                {% endfor %}
-            </div>
-            {% endif %}
-        {% endwith %}
-
-        <form method="post" class="login-form">
-            <div class="form-row">
-                <label>用户名</label>
-                <input type="text" name="username" required autofocus autocomplete="username">
-            </div>
-            <div class="form-row">
-                <label>密码</label>
-                <input type="password" name="password" required autocomplete="current-password">
-            </div>
-            <button type="submit">登 录</button>
-        </form>
-
-        <div class="login-hint">
-            <strong>测试账号</strong><br>
-            admin / admin123 · manager / manager123 · staff / staff123
-        </div>
+  <div class="login-split anim" style="animation-delay:.04s">
+    <div class="login-aside">
+      <div class="glow"></div><div class="glow2"></div>
+      <div class="brand">
+        <div class="dotline">// KINGSOFT · WMS</div>
+        <div class="cn">金山<span class="o">仓储</span></div>
+      </div>
+      <div class="feat">
+        <div class="f"><span class="d"></span>入库 / 出库 / 调拨 / 盘点 全流程</div>
+        <div class="f"><span class="d"></span>库存实时查询与低库存预警</div>
+        <div class="f"><span class="d"></span>单据审批与操作留痕</div>
+      </div>
+      <div class="ver">V9 · BUILD 20260604 · 内部办公仓储系统</div>
     </div>
+    <div class="login-main">
+      <div class="mega-brand" style="text-align:left;margin-bottom:30px;">
+        <div class="pre">// WELCOME BACK</div>
+        <div class="mega" style="font-size:46px;letter-spacing:6px;"><span class="fill">WEL</span><span class="stroke">COME</span></div>
+        <div class="name" style="margin-top:8px;">登录管理系统</div>
+      </div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for cat, msg in messages %}<div class="login-flash">{{ msg }}</div>{% endfor %}{% endif %}
+      {% endwith %}
+      <form class="login-form" method="post">
+        <div class="form-row"><label>用户名</label><input type="text" name="username" placeholder="请输入用户名" required autofocus autocomplete="username"></div>
+        <div class="form-row"><label>密码</label><input type="password" name="password" placeholder="请输入密码" required autocomplete="current-password"></div>
+        <button type="submit">登 录</button>
+      </form>
+      <div class="login-hint"><strong>测试账号</strong><br>admin / admin123 · manager / manager123 · staff / staff123</div>
+    </div>
+  </div>
 </div>
-
 </body>
 </html>

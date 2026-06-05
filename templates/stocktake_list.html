@@ -13,7 +13,8 @@
 
     <div class="card-body" style="padding:0;">
         {% if orders %}
-        <table>
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr><th>单号</th><th>盘点主题</th><th>状态</th><th>盘点行</th><th>已盘</th><th>差异</th><th>备注</th><th>创建人</th><th>创建时间</th></tr>
             </thead>
@@ -36,6 +37,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <div class="empty">还没有盘点单。点 "新建全仓盘点" 开始。</div>
         {% endif %}

@@ -10,7 +10,8 @@
     </div>
     <div class="card-body" style="padding:0;">
         {% if rows %}
-        <table>
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr><th>#</th><th>状态</th><th>物品名称</th><th>批次</th><th>库位</th><th>数量</th><th>原因</th><th>说明</th><th>附件</th><th>申请人</th><th>申请时间</th><th>操作</th></tr>
             </thead>
@@ -55,6 +56,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <div class="empty">还没有报损记录。<br>发现损耗时点 <a href="{{ url_for('damage_new') }}">提交报损</a>。</div>
         {% endif %}

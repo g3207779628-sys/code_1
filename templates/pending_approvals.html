@@ -16,7 +16,8 @@
     </div>
     <div class="card-body" style="padding:0;">
         {% if items %}
-        <table>
+        <div class="table-scroll">
+        <table class="data-table">
             <thead><tr><th>业务</th><th>单号</th><th>摘要</th><th>申请人/创建人</th><th>时间</th><th>操作</th></tr></thead>
             <tbody>
                 {% for it in items %}
@@ -31,6 +32,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <div class="empty">{% if biz == 'all' %}没有任何待审批事项{% else %}该业务类型无待审批事项{% endif %}</div>
         {% endif %}

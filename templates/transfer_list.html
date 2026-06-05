@@ -55,12 +55,14 @@
                     <td class="num-mono text-right"><strong>{{ o.total_qty }}</strong></td>
                     <td>{{ o.creator_name or '—' }}</td>
                     <td class="text-right">
-                        <a class="btn btn-sm btn-link" href="{{ url_for('transfer_detail', order_no=o.order_no) }}">查看</a>
+                        <div class="actions" style="justify-content:flex-end;">
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('transfer_detail', order_no=o.order_no) }}">查看</a>
                         {% if o.status == 'draft' %}
                         <form method="post" action="{{ url_for('transfer_cancel', order_no=o.order_no) }}" style="display:inline;" onsubmit="return confirm('撤销该调拨单？');">
                             <button class="btn btn-sm btn-danger" type="submit">撤销</button>
                         </form>
                         {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

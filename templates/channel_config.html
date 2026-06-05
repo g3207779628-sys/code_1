@@ -2,6 +2,56 @@
 {% block title %}通知渠道与预警{% endblock %}
 {% block content %}
 
+<style>
+/* ── 本页专属（全局 style.css 未提供这些组件类）：预警规则卡 + 可勾选 chip 标签。
+       颜色/形状/间距一律走全局变量；页头、表单、表格、按钮、徽章、toggle、chip-group/chip-quick
+       等均复用全局 class。 ── */
+
+/* 预警规则卡：复用全局卡片外壳令牌（bg-card/line/radius/shadow），与 .form-card 同源观感 */
+.rule-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: opacity .15s, border-color .15s;
+}
+.rule-card:last-child { margin-bottom: 0; }
+.rule-card.is-disabled { opacity: .58; }
+.rule-card.is-disabled .rule-body { filter: grayscale(.4); }
+
+/* 可勾选 chip 标签（隐藏原生 checkbox，整块标签即点选区域） */
+.chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 500;
+    padding: 5px 11px; border-radius: 16px;
+    background: var(--bg-soft); border: 1px solid var(--line);
+    color: var(--ink); cursor: pointer;
+    transition: all .14s; user-select: none;
+}
+.chip input { opacity: 0; width: 0; height: 0; margin: 0; }
+.chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-softer); }
+.chip.checked {
+    background: var(--accent-soft); border-color: var(--accent);
+    color: var(--accent-deep); font-weight: 600;
+}
+
+/* 渠道折叠卡（<details>）：复用全局卡片令牌 */
+.channel-acc {
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    background: var(--bg-card);
+}
+.channel-acc > summary { cursor: pointer; font-weight: 600; }
+/* 凭证录入：两列网格（窄屏自动单列） */
+.cfg-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.cfg-grid .span2 { grid-column: 1 / -1; }
+@media (max-width: 720px) { .cfg-grid { grid-template-columns: 1fr; } }
+</style>
+
 <div class="page-head">
     <div>
         <span class="page-title">通知渠道与预警</span>
@@ -141,11 +191,11 @@ document.querySelectorAll('.rule-card').forEach(card => syncInappMask(card));
         </div>
 
         {% for c in channels %}
-        <details {% if c.enabled %}open{% endif %} style="margin-bottom:12px; border:1px solid var(--line); border-radius:6px; padding:12px;">
-            <summary style="cursor:pointer; font-weight:600;">
-                {{ c.name }} <span class="badge" style="margin-left:8px;">{{ c.code }}</span>
-                {% if c.enabled %}<span class="badge" style="margin-left:4px;color:var(--ok);">已启用</span>
-                {% else %}<span class="badge" style="margin-left:4px;color:var(--ink-quiet);">未启用</span>{% endif %}
+        <details class="channel-acc" {% if c.enabled %}open{% endif %}>
+            <summary>
+                {{ c.name }} <span class="badge badge-info" style="margin-left:8px;">{{ c.code }}</span>
+                {% if c.enabled %}<span class="badge badge-in" style="margin-left:4px;">已启用</span>
+                {% else %}<span class="badge" style="margin-left:4px;">未启用</span>{% endif %}
             </summary>
             <form method="post" style="margin-top:12px;">
                 <input type="hidden" name="action" value="save_channel">
@@ -153,18 +203,18 @@ document.querySelectorAll('.rule-card').forEach(card => syncInappMask(card));
                 <div class="form-row"><label><input type="checkbox" name="enabled" {% if c.enabled %}checked{% endif %}> 启用此渠道</label></div>
 
                 {% if c.code == 'email' %}
-                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+                <div class="cfg-grid">
                     <div class="form-row"><label>SMTP 服务器</label><input type="text" name="cfg_smtp_server" value="{{ c.config.get('smtp_server','') }}" placeholder="如 smtp.qq.com"></div>
                     <div class="form-row"><label>端口</label><input type="text" name="cfg_smtp_port" value="{{ c.config.get('smtp_port','465') }}"></div>
                     <div class="form-row"><label>用户名（邮箱）</label><input type="text" name="cfg_smtp_user" value="{{ c.config.get('smtp_user','') }}"></div>
                     <div class="form-row"><label>密码 / 授权码</label><input type="password" name="cfg_smtp_password" value="{{ c.config.get('smtp_password','') }}"></div>
                     <div class="form-row"><label>From 地址</label><input type="text" name="cfg_from_addr" value="{{ c.config.get('from_addr','') }}"></div>
                     <div class="form-row"><label>SSL（1 或 0）</label><input type="text" name="cfg_use_ssl" value="{{ c.config.get('use_ssl','1') }}"></div>
-                    <div class="form-row" style="grid-column:1/-1;"><label>默认收件人</label><input type="text" name="cfg_default_recipient" value="{{ c.config.get('default_recipient','') }}" placeholder="多个用逗号分隔"></div>
+                    <div class="form-row span2"><label>默认收件人</label><input type="text" name="cfg_default_recipient" value="{{ c.config.get('default_recipient','') }}" placeholder="多个用逗号分隔"></div>
                 </div>
 
                 {% elif c.code == 'sms' %}
-                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+                <div class="cfg-grid">
                     <div class="form-row"><label>AccessKeyId</label><input type="text" name="cfg_access_key_id" value="{{ c.config.get('access_key_id','') }}"></div>
                     <div class="form-row"><label>AccessKeySecret</label><input type="password" name="cfg_access_key_secret" value="{{ c.config.get('access_key_secret','') }}"></div>
                     <div class="form-row"><label>签名名称（SignName）</label><input type="text" name="cfg_sign_name" value="{{ c.config.get('sign_name','') }}"></div>

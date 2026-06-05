@@ -5,21 +5,12 @@
 {% from "_pager.html" import pager %}
 
 <style>
+/* 本页专属布局：标签页/筛选行/高级展开/汇总条。控件外观(.field 输入框/.picker)统一走全局 style.css。 */
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 12px; color: var(--ink-quiet); }
-.field input, .field .picker, .field select {
-    padding: 7px 10px; font-size: 12px; background: var(--bg-input);
-    border: 1px solid var(--line-input); border-radius: 4px;
-    height: 34px; box-sizing: border-box; width: 100%;
-}
-.field .picker { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-.field .picker.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); }
-.field .picker .ar { color: var(--accent); font-size: 10px; margin-left: 8px; flex-shrink: 0; }
-.field .picker .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.field .picker .lbl.empty { color: var(--ink-faded); }
 
 .filter-row1 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
-.more-toggle { margin-top: 12px; padding: 8px 14px; background: var(--accent-soft); border: 1px dashed var(--accent); border-radius: 4px; color: var(--accent-deep); font-size: 12px; cursor: pointer; text-align: center; font-weight: 600; }
+.more-toggle { margin-top: 12px; padding: 8px 14px; background: var(--accent-soft); border: 1px dashed var(--accent); border-radius: var(--radius-sm); color: var(--accent-deep); font-size: 12px; cursor: pointer; text-align: center; font-weight: 600; }
 .advanced-grid { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
 .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
@@ -39,7 +30,7 @@
 <div class="v13-page-head">
     <div>
         <div class="page-title">库存流水</div>
-        <div class="page-sub">共 {{ total_count }} 条 · 显示前 500 条</div>
+        <div class="page-sub">共 {{ total_count }} 条 · 分页显示</div>
     </div>
 </div>
 
@@ -91,9 +82,10 @@
             <a class="btn btn-secondary" href="{{ url_for('stock_log_view') }}" style="height:34px;">重置</a>
         </div>
 
-        <div class="more-toggle" onclick="toggleAdvanced(this)">↑ 收起高级筛选 (8 项)</div>
+        {% set advanced_has = f.sku_code or f.storage_area or f.storage_position or f.location_id or f.operator_id or f.owner_user_id or f.alloc_dept_id or f.use_dept_id %}
+        <div class="more-toggle" onclick="toggleAdvanced(this)">{{ '↑ 收起高级筛选 (8 项)' if advanced_has else '+ 高级筛选 (8 项)' }}</div>
 
-        <div class="advanced-grid" id="advanced">
+        <div class="advanced-grid" id="advanced" style="display:{{ 'grid' if advanced_has else 'none' }};">
             <div class="field">
                 <label>物品编号</label>
                 <input type="text" name="sku_code" value="{{ f.sku_code }}" placeholder="SP000001">
@@ -162,7 +154,8 @@
     <div class="head"><span class="accent-bar"></span><h3>流水明细</h3><span class="meta">{{ rows|length }} 条</span></div>
     <div class="body" style="padding:0;">
         {% if rows %}
-        <table class="dense-table">
+        <div class="table-scroll table-scroll--log">
+        <table class="dense-table scroll-table">
             <thead>
                 <tr>
                     <th>时间</th>
@@ -215,6 +208,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {{ pager(pg) }}
         {% else %}
         <div style="padding:32px; text-align:center; color:var(--ink-quiet);">无匹配流水。</div>
@@ -223,12 +217,18 @@
 </div>
 
 <script>
-let advancedOpen = true;
+let advancedOpen = {{ 'true' if advanced_has else 'false' }};
 function toggleAdvanced(btn) {
     advancedOpen = !advancedOpen;
-    document.getElementById('advanced').style.display = advancedOpen ? 'grid' : 'none';
-    btn.textContent = advancedOpen ? '↑ 收起高级筛选 (8 项)' : '+ 高级筛选 (8 项)';
+    syncAdvanced(btn);
 }
+function syncAdvanced(btn) {
+    const adv = document.getElementById('advanced');
+    if (!adv) return;
+    adv.style.display = advancedOpen ? 'grid' : 'none';
+    if (btn) btn.textContent = advancedOpen ? '↑ 收起高级筛选 (8 项)' : '+ 高级筛选 (8 项)';
+}
+syncAdvanced(document.querySelector('.more-toggle'));
 
 document.addEventListener('change', e => {
     if (e.target.type === 'hidden' && e.target.id) {

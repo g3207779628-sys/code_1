@@ -6,10 +6,11 @@
 {% block content %}
 
 <style>
-/* 本方案专属样式：尽量复用现有 CSS 变量，不硬编码颜色/间距 */
+/* 本页专属最小样式：仅保留全局 style.css 没有的组件（inline typeahead 下拉 / 分步引导说明文案 / 步骤序号徽标）。
+   卡片、表单网格、明细行表、按钮、步骤条、徽章等一律复用全局 class；配色统一走全局橙+蓝变量。 */
 .req-b .v13-page-head { margin-bottom: 16px; }
 
-/* inline typeahead 输入即筛下拉 */
+/* inline typeahead 输入即筛下拉（全局只有跳转式 .picker-btn，无此组件） */
 .req-b .typeahead { position: relative; }
 .req-b .typeahead .ta-input { width: 100%; }
 .req-b .typeahead .ta-menu {
@@ -26,18 +27,18 @@
     display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
 }
 .req-b .ta-item:last-child { border-bottom: none; }
-.req-b .ta-item.active, .req-b .ta-item:hover { background: var(--bg-accent-soft); }
+.req-b .ta-item.active, .req-b .ta-item:hover { background: var(--accent-soft); }
 .req-b .ta-item .ta-sub { color: var(--ink-quiet); font-size: 11px; font-family: var(--font-mono); flex-shrink: 0; }
 .req-b .ta-item .ta-main { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .req-b .ta-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-faded); }
 
-/* 字段说明文案 —— 分步引导的关键 */
+/* 字段说明文案 / 行内校验提示 —— 分步引导的关键，全局无对应组件 */
 .req-b .field-help { display: block; margin-top: 5px; font-size: 11px; color: var(--ink-quiet); line-height: 1.45; }
-.req-b .field-err { display: none; margin-top: 5px; font-size: 11px; color: var(--err); font-weight: 500; }
+.req-b .field-err { display: none; margin-top: 5px; font-size: 11px; color: var(--red); font-weight: 500; }
 .req-b .form-row.has-error .field-err { display: block; }
 .req-b .form-row.has-error input,
 .req-b .form-row.has-error select,
-.req-b .form-row.has-error .ta-input { border-color: var(--err); }
+.req-b .form-row.has-error .ta-input { border-color: var(--red); }
 
 .req-b .sample-tag {
     display: inline-block; margin-left: 6px; padding: 1px 7px;
@@ -46,23 +47,20 @@
     vertical-align: middle;
 }
 
-/* 分步卡片：默认展示全部，但视觉上用步骤序号引导 */
+/* 分步卡片：复用全局 .form-card，仅追加步骤序号徽标 + 宽松留白（本方案面向新人的差异化诉求） */
 .req-b .form-card .head .step-no {
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--accent); color: #FFF; font-size: 12px; font-weight: 700;
+    background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
     display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .req-b .form-card .head h3 { margin: 0; }
 .req-b .form-card .body { padding: 26px 24px; }
 .req-b .form-grid { gap: 22px 28px; }
 
-.req-b .ro-cell {
-    background: var(--bg-soft); font-size: 12px; color: var(--ink-soft);
-}
-.req-b .ro-cell.mono { font-family: var(--font-mono); }
+/* 只读回填单元格（这里是 <input readonly>，全局 .line-table input[readonly] 已给底色，此处补现库存强调色 + 数量右对齐/超量提醒） */
 .req-b .onhand-cell { text-align: right; color: var(--accent-deep); font-family: var(--font-mono); }
 .req-b .qty-input { text-align: right; }
-.req-b .qty-input.over { border-color: var(--err); color: var(--err); }
+.req-b .qty-input.over { border-color: var(--red); color: var(--red); }
 
 .req-b .line-help {
     margin: 10px 2px 0; font-size: 11px; color: var(--ink-quiet); line-height: 1.5;

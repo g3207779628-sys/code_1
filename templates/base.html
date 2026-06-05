@@ -67,7 +67,6 @@
         <div class="group-label">主数据</div>
         {{ nav('sku_list', '物品', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="m3 8 9 5 9-5M3 16l9 5 9-5M3 12l9 5 9-5"/></svg>', match=['sku_list','sku_new','sku_edit','sku_detail']) }}
         {{ nav('location_list', '库位', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>', match=['location_list','location_new','location_edit']) }}
-        {{ nav('warehouse_list', '仓库', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18M9 21v-6h6v6"/></svg>', match=['warehouse_list','warehouse_new','warehouse_edit']) }}
       </div>
 
       {# ===== 基础字典：低频，弱化 + 折叠 ===== #}
@@ -79,15 +78,17 @@
           <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span>
         </button>
         <div class="dict-list" id="dictList">
+          {# 仓库归入基础字典（低频 · 设置后少改）#}
+          <a class="dict-pill {{ 'active' if (request.endpoint or '') in ['warehouse_list','warehouse_new','warehouse_edit'] }}" href="{{ url_for('warehouse_list') }}">仓库</a>
           {# TODO: 把 href 换成你的字典维护路由名 #}
-          <a class="dict-pill" href="#">物品大类</a>
-          <a class="dict-pill" href="#">物品类别</a>
-          <a class="dict-pill" href="#">物品所属方</a>
-          <a class="dict-pill" href="#">物品管理方</a>
-          <a class="dict-pill" href="#">仓库类型</a>
-          <a class="dict-pill" href="#">责任人</a>
-          <a class="dict-pill" href="#">使用部门</a>
-          <a class="dict-pill" href="#">分配部门</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='item_category_major_admin' }}" href="{{ url_for('item_category_major_admin') }}">物品大类</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='item_category_admin' }}" href="{{ url_for('item_category_admin') }}">物品类别</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='owner_party_admin' }}" href="{{ url_for('owner_party_admin') }}">物品所属方</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='owner_admin_admin' }}" href="{{ url_for('owner_admin_admin') }}">物品管理方</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='wh_type_admin' }}" href="{{ url_for('wh_type_admin') }}">仓库类型</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='wh_owner_admin' }}" href="{{ url_for('wh_owner_admin') }}">责任人</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='wh_use_dept_admin' }}" href="{{ url_for('wh_use_dept_admin') }}">使用部门</a>
+          <a class="dict-pill {{ 'active' if (request.endpoint or '')=='wh_alloc_dept_admin' }}" href="{{ url_for('wh_alloc_dept_admin') }}">分配部门</a>
         </div>
       </div>
 

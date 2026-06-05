@@ -3,47 +3,15 @@
 {% block content %}
 
 <style>
-.preset-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-.preset-card-mgmt {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 14px;
-}
-.preset-card-mgmt h3 {
-    font-size: 15px;
-    font-weight: 600;
-    display: flex; justify-content: space-between; align-items: center;
-}
-.preset-card-mgmt .code-badge {
-    font-family: var(--font-mono); font-size: 11px;
-    color: var(--ink-quiet);
-    padding: 2px 6px; background: var(--bg-alt); border-radius: 3px;
-}
-.preset-card-mgmt .desc {
-    font-size: 12px; color: var(--ink-quiet);
-    margin: 6px 0 10px;
-}
-.preset-card-mgmt .keys {
-    display: flex; flex-wrap: wrap; gap: 4px;
-    margin-bottom: 10px;
-}
-.preset-card-mgmt .key-tag {
-    font-size: 11px;
-    padding: 2px 8px;
-    background: var(--ok-bg); color: var(--ok);
-    border-radius: 10px;
-    border: 1px solid var(--ok);
-}
-.preset-card-mgmt .actions {
-    display: flex; gap: 6px; justify-content: flex-end;
-    border-top: 1px solid var(--line);
-    padding-top: 10px;
-}
+/* 预设角色专属：两列预设卡网格 + 卡内排版（全局无对应；配色走全局变量） */
+.preset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.preset-card-mgmt{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);padding:16px 18px;}
+.preset-card-mgmt h3{font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+.preset-card-mgmt .desc{font-size:12px;color:var(--ink-quiet);margin:6px 0 10px;}
+.preset-card-mgmt .keys{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.preset-card-mgmt .actions{display:flex;gap:6px;justify-content:flex-end;
+    border-top:1px solid var(--line-soft);padding-top:10px;}
 </style>
 
 <div class="card">
@@ -62,7 +30,7 @@
             <div class="preset-card-mgmt">
                 <h3>
                     {{ p.name }}
-                    <span class="code-badge">{{ p.code }}</span>
+                    <span class="tag gray-tag mono">{{ p.code }}</span>
                 </h3>
                 <div class="desc">{{ p.description or '无描述' }}</div>
                 <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">
@@ -70,7 +38,7 @@
                 </div>
                 <div class="keys">
                     {% for k in p.menu_keys %}
-                    <span class="key-tag">{{ k }}</span>
+                    <span class="badge badge-in">{{ k }}</span>
                     {% endfor %}
                     {% if not p.menu_keys %}<span class="text-tertiary">（无）</span>{% endif %}
                 </div>
@@ -97,7 +65,7 @@
                     </div>
                     <div class="form-row">
                         <label>菜单权限（勾选）</label>
-                        <div style="background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:10px;">
+                        <div style="background:var(--bg-soft); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px;">
                             {% for group in nav_tree %}
                             <div style="margin-bottom:8px;">
                                 <div style="font-size:11px; color:var(--ink-quiet); text-transform:uppercase; margin-bottom:4px;">{{ group.label }}</div>
@@ -151,7 +119,7 @@
             </div>
             <div class="form-row">
                 <label>菜单权限（勾选）</label>
-                <div style="background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:10px;">
+                <div style="background:var(--bg-soft); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px;">
                     {% for group in nav_tree %}
                     <div style="margin-bottom:8px;">
                         <div style="font-size:11px; color:var(--ink-quiet); text-transform:uppercase; margin-bottom:4px;">{{ group.label }}</div>

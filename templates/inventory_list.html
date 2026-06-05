@@ -5,29 +5,16 @@
 {% from "_pager.html" import pager %}
 
 <style>
+/* 本页专属布局：筛选行/高级展开/汇总条。控件外观(.field 输入框/.picker)统一走全局 style.css。 */
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 12px; color: var(--ink-quiet); }
-.field input, .field .picker {
-    padding: 7px 10px; font-size: 12px; background: var(--bg-input);
-    border: 1px solid var(--line-input); border-radius: 4px;
-    height: 34px; box-sizing: border-box; width: 100%;
-}
-.field .picker {
-    display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer; user-select: none;
-}
-.field .picker:hover { border-color: var(--accent); }
-.field .picker.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-deep); }
-.field .picker .ar { color: var(--accent); font-size: 10px; flex-shrink: 0; margin-left: 8px; }
-.field .picker .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.field .picker .lbl.empty { color: var(--ink-faded); }
 
 .filter-row1 { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 90px 70px; gap: 10px; align-items: end; }
 
 .more-toggle {
     margin-top: 12px; padding: 8px 14px;
     background: var(--accent-soft); border: 1px dashed var(--accent);
-    border-radius: 4px; color: var(--accent-deep);
+    border-radius: var(--radius-sm); color: var(--accent-deep);
     font-size: 12px; cursor: pointer; text-align: center; font-weight: 600;
     user-select: none;
 }
@@ -43,20 +30,11 @@
     margin-bottom: 10px;
     display: flex; align-items: center; gap: 6px;
 }
-.adv-col.items h4 { color: var(--info); }
+.adv-col.items h4 { color: var(--blue); }
 .adv-col.wh h4 { color: var(--accent-deep); }
 .adv-row { display: grid; gap: 10px; align-items: end; margin-bottom: 10px; }
 .adv-col.items .adv-row { grid-template-columns: 1fr 1fr 1fr; }
 .adv-col.wh .adv-row { grid-template-columns: 1fr 1fr 1fr; }
-
-.active-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.filter-chip {
-    background: var(--accent-soft); color: var(--accent-deep);
-    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
-    display: inline-flex; align-items: center; gap: 6px;
-}
-.filter-chip.item { background: var(--info-bg); color: var(--info); }
-.filter-chip .x { cursor: pointer; opacity: 0.6; text-decoration: none; color: inherit; }
 
 .summary-strip {
     background: var(--bg-card); border: 1px solid var(--line);
@@ -69,7 +47,7 @@
     color: var(--accent-deep); font-weight: 700;
     display: block; margin-top: 2px;
 }
-.summary-strip .stat.danger .num { color: var(--err); }
+.summary-strip .stat.danger .num { color: var(--red); }
 </style>
 
 <div class="v13-page-head">
@@ -118,11 +96,12 @@
             <a class="btn btn-secondary" href="{{ url_for('inventory_list') }}" style="height:34px;">重置</a>
         </div>
 
+        {% set advanced_has = f.sku_code or f.brand or f.usage_purpose or f.category_id or f.owner_admin_id or f.storage_area or f.storage_position or f.location_id or f.alloc_dept_id or f.wh_type_id or f.owner_user_id %}
         <div class="more-toggle" onclick="toggleAdvanced(this)">
-            ↑ 收起高级筛选 (12 项)
+            {{ '↑ 收起高级筛选 (12 项)' if advanced_has else '+ 高级筛选 (12 项)' }}
         </div>
 
-        <div class="advanced-grid" id="advanced">
+        <div class="advanced-grid" id="advanced" style="display:{{ 'grid' if advanced_has else 'none' }};">
             <div class="adv-col items">
                 <h4>🛍 物品高级筛选</h4>
                 <div class="adv-row">
@@ -229,7 +208,8 @@
     <div class="head"><span class="accent-bar"></span><h3>查询结果</h3><span class="meta">{{ summary.row_count }} 条命中</span></div>
     <div class="body" style="padding:0;">
         {% if rows %}
-        <table class="dense-table">
+        <div class="table-scroll">
+        <table class="dense-table data-table">
             <thead>
                 <tr>
                     <th>物品</th>
@@ -261,6 +241,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {{ pager(pg) }}
         {% else %}
         <div style="padding:48px; text-align:center; color:var(--ink-quiet);">
@@ -271,13 +252,18 @@
 </div>
 
 <script>
-let advancedOpen = true;
+let advancedOpen = {{ 'true' if advanced_has else 'false' }};
 function toggleAdvanced(btn) {
     advancedOpen = !advancedOpen;
-    const adv = document.getElementById('advanced');
-    adv.style.display = advancedOpen ? 'grid' : 'none';
-    btn.textContent = advancedOpen ? '↑ 收起高级筛选 (12 项)' : '+ 高级筛选 (12 项)';
+    syncAdvanced(btn);
 }
+function syncAdvanced(btn) {
+    const adv = document.getElementById('advanced');
+    if (!adv) return;
+    adv.style.display = advancedOpen ? 'grid' : 'none';
+    if (btn) btn.textContent = advancedOpen ? '↑ 收起高级筛选 (12 项)' : '+ 高级筛选 (12 项)';
+}
+syncAdvanced(document.querySelector('.more-toggle'));
 
 // picker 回填后同步 label
 document.addEventListener('change', e => {

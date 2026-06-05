@@ -1,18 +1,23 @@
 {% extends "base.html" %}
 {% from "_pager.html" import pager %}
 {% block title %}物品列表{% endblock %}
+{% block crumb %}<span class="sep">/</span><span class="current">物品</span>{% endblock %}
 {% block content %}
 
-<div class="card">
-    <div class="card-header">
-        <span>物品列表（共 {{ pg.total }} 个）</span>
-        {% if session.role in ['admin', 'manager'] %}
-        <a class="btn btn-primary" href="{{ url_for('sku_new') }}">新增物品</a>
-        {% endif %}
+<div class="v13-page-head">
+    <div>
+        <div class="page-title">物品</div>
+        <div class="page-sub">共 {{ pg.total }} 个物品 · 名称 / 编号 / 品牌均可搜</div>
     </div>
-    <div class="card-body">
-        <form method="get" style="display:flex; gap:10px; align-items:end;">
-            <div class="form-row" style="margin-bottom:0; flex:1; max-width:340px;">
+    {% if session.role in ['admin', 'manager'] %}
+    <a class="btn btn-primary" href="{{ url_for('sku_new') }}">+ 新增物品</a>
+    {% endif %}
+</div>
+
+<div class="form-card" style="margin-bottom:14px;">
+    <div class="body">
+        <form method="get" style="display:flex; gap:12px; align-items:end;">
+            <div class="form-row" style="margin-bottom:0; flex:1; max-width:360px;">
                 <label>搜索物品</label>
                 <input type="text" name="q" value="{{ q }}" placeholder="名称 / 编号 / 品牌">
             </div>
@@ -20,18 +25,21 @@
             {% if q %}<a class="btn btn-secondary" href="{{ url_for('sku_list') }}">重置</a>{% endif %}
         </form>
     </div>
-    <div class="card-body" style="padding:0;">
+</div>
+
+<div class="form-card">
+    <div class="head"><span class="accent-bar"></span><h3>物品列表</h3><span class="meta">{{ pg.total }} 个</span></div>
+    <div class="body" style="padding:0;">
         {% if skus %}
-        <table>
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width:60px;">图片</th>
-                    <th>物品名</th>
-                    <th>规格</th>
-                    <th>单位</th>
-                    <th>安全库存</th>
+                    <th style="width:64px;">图片</th>
+                    <th>物品（名称 · 规格）</th>
                     <th>编号</th>
-                    {% if session.role in ['admin', 'manager'] %}<th>操作</th>{% endif %}
+                    <th class="text-right">单位</th>
+                    <th class="text-right">安全库存</th>
+                    {% if session.role in ['admin', 'manager'] %}<th class="text-right" style="width:170px;">操作</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -39,27 +47,31 @@
                 <tr>
                     <td>
                         {% if s.image_path %}
-                        <img src="{{ url_for('download_attachment', filepath=s.image_path) }}" style="width:40px; height:40px; object-fit:cover; border:1px solid var(--line); border-radius:4px;" alt="">
+                        <img class="thumb" src="{{ url_for('download_attachment', filepath=s.image_path) }}" alt="">
                         {% else %}
-                        <span style="display:inline-block; width:40px; height:40px; line-height:40px; text-align:center; color:var(--ink-faded); border:1px dashed var(--line); border-radius:4px; font-size:10px;">—</span>
+                        <span class="thumb-empty">—</span>
                         {% endif %}
                     </td>
-                    <td><strong>{{ s.name }}</strong></td>
-                    <td>{{ s.spec or '-' }}</td>
-                    <td>{{ s.unit }}</td>
-                    <td class="mono">{{ s.safety_stock }}</td>
-                    <td class="mono text-tertiary" style="font-size:11px;">{{ s.code }}</td>
+                    <td>
+                        <div class="cell-strong">{{ s.name }}</div>
+                        {% if s.spec %}<div class="cell-sub">{{ s.spec }}</div>{% endif %}
+                    </td>
+                    <td><span class="tag gray-tag mono">{{ s.code }}</span></td>
+                    <td class="text-right text-tertiary">{{ s.unit }}</td>
+                    <td class="num-mono text-right"><strong>{{ s.safety_stock }}</strong></td>
                     {% if session.role in ['admin', 'manager'] %}
-                    <td class="actions">
-                        {% if 'sku_detail' in available_endpoints %}
-                        <a class="btn btn-sm btn-secondary" href="{{ url_for('sku_detail', sku_id=s.id) }}">查看</a>
-                        {% endif %}
-                        <a class="btn btn-sm btn-secondary" href="{{ url_for('sku_edit', sku_id=s.id) }}">编辑</a>
-                        {% if session.role == 'admin' %}
-                        <form method="post" action="{{ url_for('sku_delete', sku_id=s.id) }}" style="display:inline;" onsubmit="return confirm('确认删除 {{ s.name }}？');">
-                            <button class="btn btn-sm btn-danger" type="submit">删除</button>
-                        </form>
-                        {% endif %}
+                    <td class="text-right">
+                        <div class="actions" style="justify-content:flex-end;">
+                            {% if 'sku_detail' in available_endpoints %}
+                            <a class="btn btn-sm btn-secondary" href="{{ url_for('sku_detail', sku_id=s.id) }}">查看</a>
+                            {% endif %}
+                            <a class="btn btn-sm btn-secondary" href="{{ url_for('sku_edit', sku_id=s.id) }}">编辑</a>
+                            {% if session.role == 'admin' %}
+                            <form method="post" action="{{ url_for('sku_delete', sku_id=s.id) }}" style="display:inline;" onsubmit="return confirm('确认删除 {{ s.name }}？');">
+                                <button class="btn btn-sm btn-danger" type="submit">删除</button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                     {% endif %}
                 </tr>

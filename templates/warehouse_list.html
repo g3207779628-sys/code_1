@@ -37,11 +37,13 @@
                     <td class="mono" style="font-size:11px; color:var(--ink-quiet);">{{ (r.created_at or '')[:16] }}</td>
                     <td class="text-right">
                         {% if session.role in ['admin','manager'] %}
-                        <a class="btn btn-sm btn-link" href="{{ url_for('warehouse_edit', wh_id=r.id) }}">编辑</a>
+                        <div class="actions" style="justify-content:flex-end;">
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('warehouse_edit', wh_id=r.id) }}">编辑</a>
                         <form method="post" action="{{ url_for('warehouse_delete', wh_id=r.id) }}" style="display:inline;"
                               onsubmit="return confirm('删除仓库「{{ r.name }}」？仅未含库位时可删');">
                             <button class="btn btn-sm btn-danger" type="submit">删除</button>
                         </form>
+                        </div>
                         {% endif %}
                     </td>
                 </tr>

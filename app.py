@@ -83,6 +83,26 @@ def _iter_nav_leaves(nav_tree):
 
 # 所有合法菜单 key（由 NAV_TREE 自动派生；跳过 divider 项与纯容器节点）
 ALL_MENUS = {it["key"] for it in _iter_nav_leaves(NAV_TREE)}
+CONFIGURABLE_MENUS = ALL_MENUS - {"dashboard"}
+
+
+def _permission_nav_tree():
+    tree = []
+    for group in NAV_TREE:
+        items = []
+        for it in group["items"]:
+            if it.get("children"):
+                children = [dict(ch) for ch in it["children"] if ch.get("key") in CONFIGURABLE_MENUS]
+                if children:
+                    items.append({"label": it["label"], "children": children})
+            elif it.get("key") in CONFIGURABLE_MENUS:
+                items.append(dict(it))
+        if items:
+            tree.append({"label": group["label"], "items": items})
+    return tree
+
+
+PERMISSION_NAV_TREE = _permission_nav_tree()
 
 
 def _user_menus(user_id, role):
@@ -96,7 +116,8 @@ def _user_menus(user_id, role):
             ).fetchall()
         menus = {r["menu_key"] for r in rows}
         if not menus:
-            menus = {"dashboard"}  # 最低权限：仅工作台
+            menus = set()
+        menus.discard("dashboard")
     menus.add("password")  # 所有登录用户均可改密
     return menus
 
@@ -215,18 +236,72 @@ def _build_menu_label_map():
     return m
 
 
+QUICK_MENU_KEYS = ("inventory", "inbound", "pending", "pick", "requisition", "sku", "location")
+
+ENDPOINT_MENU_OVERRIDES = {
+    "welcome": None,
+    "index": "dashboard",
+    "pending_approvals_list": "pending",
+    "stock_log_view": "log",
+    "forecast_view": "forecast",
+    "password_change": "password",
+}
+
+ENDPOINT_PREFIX_MENU = (
+    ("inbound_", "inbound"),
+    ("outbound_", "pick"),
+    ("pick_", "pick"),
+    ("requisition_", "requisition"),
+    ("transfer_", "transfer"),
+    ("damage_", "damage"),
+    ("stocktake_", "stocktake"),
+    ("inventory_", "inventory"),
+    ("sku_", "sku"),
+    ("warehouse_", "warehouse"),
+    ("location_", "location"),
+    ("user_", "user_admin"),
+    ("position_", "position_admin"),
+)
+
+
+def _current_menu_key(endpoint):
+    if endpoint in ENDPOINT_MENU_OVERRIDES:
+        return ENDPOINT_MENU_OVERRIDES[endpoint]
+    for item in _iter_nav_leaves(NAV_TREE):
+        if endpoint == item.get("endpoint"):
+            return item["key"]
+    endpoint = endpoint or ""
+    for prefix, key in ENDPOINT_PREFIX_MENU:
+        if endpoint.startswith(prefix):
+            return key
+    return None
+
+
+def _quick_nav_items(menus, available):
+    leaves = {item["key"]: item for item in _iter_nav_leaves(NAV_TREE)}
+    items = []
+    for key in QUICK_MENU_KEYS:
+        item = leaves.get(key)
+        if item and key in menus and item.get("endpoint") in available:
+            items.append(item)
+    return items
+
+
 @app.context_processor
 def inject_menus():
     menu_labels = _build_menu_label_map()
     if "user_id" not in session:
         return {"menus": set(), "POSITIONS": _load_positions_dict(),
                 "nav_tree": NAV_TREE, "available_endpoints": set(),
-                "menu_labels": menu_labels}
+                "menu_labels": menu_labels, "quick_nav": [],
+                "current_menu_key": None}
     menus = _user_menus(session["user_id"], session.get("role"))
     available = {rule.endpoint for rule in app.url_map.iter_rules()}
     return {"menus": menus, "POSITIONS": _load_positions_dict(),
             "nav_tree": NAV_TREE, "available_endpoints": available,
-            "menu_labels": menu_labels}
+            "menu_labels": menu_labels,
+            "quick_nav": _quick_nav_items(menus, available),
+            "current_menu_key": _current_menu_key(request.endpoint)}
 
 
 def login_required(f):
@@ -285,7 +360,7 @@ def role_required(*roles):
                 return redirect(url_for("login"))
             if session.get("role") not in roles:
                 flash(f"权限不足。该操作需要角色：{', '.join(roles)}", "error")
-                return redirect(url_for("index"))
+                return redirect(url_for("welcome"))
             return f(*args, **kwargs)
         return wrapper
     return deco
@@ -312,6 +387,8 @@ def login():
                 flash("首次登录请先修改初始密码", "error")
                 return redirect(url_for("password_change"))
             # 欢迎语在 welcome 页内显示（hero 大字），不再用 flash
+            if session["role"] == "admin":
+                return redirect(url_for("index"))
             return redirect(url_for("welcome"))
         flash("用户名或密码错误", "error")
     return render_template("login.html")
@@ -373,7 +450,9 @@ def password_change():
                     )
                     session["must_change_password"] = False
                     flash("密码已修改", "success")
-                    return redirect(url_for("index"))
+                    if session.get("role") == "admin":
+                        return redirect(url_for("index"))
+                    return redirect(url_for("welcome"))
     return render_template("password_change.html")
 
 
@@ -391,7 +470,7 @@ def user_admin():
             with database.get_conn() as conn:
                 conn.execute("DELETE FROM menu_permission WHERE user_id = ?", (uid,))
                 for k in keys:
-                    if k in ALL_MENUS:
+                    if k in CONFIGURABLE_MENUS:
                         conn.execute(
                             "INSERT OR IGNORE INTO menu_permission (user_id, menu_key) VALUES (?, ?)",
                             (uid, k),
@@ -411,12 +490,12 @@ def user_admin():
                     keys = [k.strip() for k in (preset["menu_keys"] or "").split(",") if k.strip()]
                     conn.execute("DELETE FROM menu_permission WHERE user_id = ?", (uid,))
                     for k in keys:
-                        if k in ALL_MENUS:
+                        if k in CONFIGURABLE_MENUS:
                             conn.execute(
                                 "INSERT OR IGNORE INTO menu_permission (user_id, menu_key) VALUES (?, ?)",
                                 (uid, k),
                             )
-                    flash(f"已套用预设：{preset['name']}（{len(keys)} 项权限）", "success")
+                    flash(f"已套用预设：{preset['name']}（{len([k for k in keys if k in CONFIGURABLE_MENUS])} 项权限）", "success")
 
         elif action == "reset_password":
             uid = int(request.form["user_id"])
@@ -456,12 +535,7 @@ def user_admin():
                              email or None, phone or None),
                         )
                         new_uid = cur.lastrowid
-                        # v3: 新建用户默认仅"工作台"权限，不再按岗位自动赋权
-                        conn.execute(
-                            "INSERT OR IGNORE INTO menu_permission (user_id, menu_key) VALUES (?, ?)",
-                            (new_uid, "dashboard"),
-                        )
-                    flash(f"用户 {username} 已创建，首次登录将强制改密。默认仅工作台权限，请到权限里勾选其他菜单。", "success")
+                    flash(f"用户 {username} 已创建，首次登录将强制改密。请到权限里勾选可访问菜单。", "success")
                 except sqlite3.IntegrityError:
                     flash("用户名已存在", "error")
 
@@ -511,7 +585,7 @@ def user_admin():
         ).fetchall()
         perms = {u["id"]: set() for u in users}
         for r in conn.execute("SELECT user_id, menu_key FROM menu_permission").fetchall():
-            if r["user_id"] in perms:
+            if r["user_id"] in perms and r["menu_key"] in CONFIGURABLE_MENUS:
                 perms[r["user_id"]].add(r["menu_key"])
         positions_rows = conn.execute("SELECT code, label FROM position ORDER BY code").fetchall()
         presets = conn.execute(
@@ -520,7 +594,7 @@ def user_admin():
     # 给每个 preset 算"已选 X 项"
     presets_list = []
     for p in presets:
-        keys = [k.strip() for k in (p["menu_keys"] or "").split(",") if k.strip()]
+        keys = [k.strip() for k in (p["menu_keys"] or "").split(",") if k.strip() and k.strip() in CONFIGURABLE_MENUS]
         presets_list.append({
             "code": p["code"], "name": p["name"], "description": p["description"],
             "menu_keys": keys, "count": len(keys),
@@ -529,8 +603,8 @@ def user_admin():
         "user_admin.html",
         users=users,
         perms=perms,
-        nav_tree=NAV_TREE,
-        all_menus=ALL_MENUS,
+        nav_tree=PERMISSION_NAV_TREE,
+        all_menus=CONFIGURABLE_MENUS,
         positions=positions_rows,
         presets=presets_list,
     )
@@ -556,18 +630,18 @@ def user_perms(user_id):
             keys = request.form.getlist("menu_keys")
             conn.execute("DELETE FROM menu_permission WHERE user_id=?", (user_id,))
             for k in keys:
-                if k in ALL_MENUS:
+                if k in CONFIGURABLE_MENUS:
                     conn.execute(
                         "INSERT OR IGNORE INTO menu_permission (user_id, menu_key) VALUES (?, ?)",
                         (user_id, k),
                     )
-            flash(f"已保存 {user['username']} 的权限（{len(keys)} 项）", "success")
+            flash(f"已保存 {user['username']} 的权限（{len([k for k in keys if k in CONFIGURABLE_MENUS])} 项）", "success")
             return redirect(url_for("user_admin"))
         current_perms = set(r["menu_key"] for r in conn.execute(
             "SELECT menu_key FROM menu_permission WHERE user_id=?", (user_id,)
-        ).fetchall())
+        ).fetchall() if r["menu_key"] in CONFIGURABLE_MENUS)
     return render_template("user_perms.html",
-                           user=user, current_perms=current_perms, nav_tree=NAV_TREE)
+                           user=user, current_perms=current_perms, nav_tree=PERMISSION_NAV_TREE)
 
 
 # ============ 独立新建用户页 ============
@@ -596,11 +670,7 @@ def user_new():
                          email or None, phone or None),
                     )
                     new_uid = cur.lastrowid
-                    conn.execute(
-                        "INSERT OR IGNORE INTO menu_permission (user_id, menu_key) VALUES (?, ?)",
-                        (new_uid, "dashboard"),
-                    )
-                flash(f"用户 {username} 已创建，首次登录将强制改密。默认仅工作台权限。", "success")
+                flash(f"用户 {username} 已创建，首次登录将强制改密。请配置可访问菜单。", "success")
                 return redirect(url_for("user_perms", user_id=new_uid))
             except sqlite3.IntegrityError:
                 flash("用户名已存在", "error")
@@ -665,7 +735,7 @@ def role_preset():
                 code = request.form.get("code", "").strip()
                 name = request.form.get("name", "").strip()
                 desc = request.form.get("description", "").strip()
-                keys = ",".join(request.form.getlist("menu_keys"))
+                keys = ",".join(k for k in request.form.getlist("menu_keys") if k in CONFIGURABLE_MENUS)
                 if not name:
                     flash("名称必填", "error")
                 else:
@@ -683,7 +753,7 @@ def role_preset():
                 pid = int(request.form["preset_id"])
                 name = request.form.get("name", "").strip()
                 desc = request.form.get("description", "").strip()
-                keys = ",".join(request.form.getlist("menu_keys"))
+                keys = ",".join(k for k in request.form.getlist("menu_keys") if k in CONFIGURABLE_MENUS)
                 conn.execute(
                     "UPDATE role_preset SET name=?, description=?, menu_keys=? WHERE id=?",
                     (name, desc, keys, pid),
@@ -701,7 +771,7 @@ def role_preset():
         ).fetchall()
     presets_list = []
     for p in presets:
-        keys = [k.strip() for k in (p["menu_keys"] or "").split(",") if k.strip()]
+        keys = [k.strip() for k in (p["menu_keys"] or "").split(",") if k.strip() and k.strip() in CONFIGURABLE_MENUS]
         presets_list.append({
             "id": p["id"], "code": p["code"], "name": p["name"],
             "description": p["description"], "menu_keys": keys,
@@ -709,7 +779,7 @@ def role_preset():
         })
     return render_template(
         "role_preset.html",
-        presets=presets_list, nav_tree=NAV_TREE,
+        presets=presets_list, nav_tree=PERMISSION_NAV_TREE,
     )
 
 
@@ -774,9 +844,10 @@ def index():
     endpoint 仍是 'index'（向后兼容所有 url_for('index') 引用 + 菜单"工作台" key='dashboard' endpoint='index'）。
     /  路径让给了 welcome（公共/已登录通用首页）。
     """
-    pos = session.get("position") or "warehouse_manager"
-    if pos not in database.POSITIONS:
-        pos = "warehouse_manager"
+    if session.get("role") != "admin":
+        flash("工作台仅管理员可用，请从左侧菜单进入已授权功能。", "warn")
+        return redirect(url_for("welcome"))
+    pos = "warehouse_manager"
     template = f"dashboard_{pos}.html"
     with database.get_conn() as conn:
         ctx = {"stats": _global_stats(conn)}

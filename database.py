@@ -507,23 +507,23 @@ SEED_WH_OWNERS = [
 # 各岗位默认菜单权限（admin 角色直接拿全部，不走这张表）。
 # password 菜单由 app.py 自动追加，这里不写。
 DEFAULT_PERMISSIONS_BY_POSITION = {
-    "warehouse_manager": ["dashboard", "report", "pending", "inbound", "pick",
+    "warehouse_manager": ["report", "pending", "inbound", "pick",
                           "inventory", "transfer", "storage", "warehouse", "location",
                           "damage", "stocktake", "log", "forecast",
                           "sku", "user_admin", "channel_config", "backup"],
-    "inventory_ctrl":    ["dashboard", "report", "pending", "inbound", "pick",
+    "inventory_ctrl":    ["report", "pending", "inbound", "pick",
                           "inventory", "transfer", "storage", "warehouse", "location",
                           "damage", "stocktake", "log", "forecast",
                           "sku", "user_admin", "channel_config"],
-    "purchaser":         ["dashboard", "report", "inbound", "inventory", "log",
+    "purchaser":         ["report", "inbound", "inventory", "log",
                           "forecast", "sku"],
-    "receiver":          ["dashboard", "inbound", "inventory", "log"],
-    "putaway":           ["dashboard", "inbound", "inventory", "log"],
-    "cs":                ["dashboard", "pick", "sku"],
-    "picker":            ["dashboard", "pick", "inventory", "log"],
-    "packer":            ["dashboard", "pick"],
-    "shipping":          ["dashboard", "pick"],
-    "stocktaker":        ["dashboard", "stocktake", "inventory", "log"],
+    "receiver":          ["inbound", "inventory", "log"],
+    "putaway":           ["inbound", "inventory", "log"],
+    "cs":                ["pick", "sku"],
+    "picker":            ["pick", "inventory", "log"],
+    "packer":            ["pick"],
+    "shipping":          ["pick"],
+    "stocktaker":        ["stocktake", "inventory", "log"],
 }
 
 # 4 个内置通知渠道（admin 在 UI 上启用/填凭证；短信/邮件按要求"只留接口"）
@@ -544,13 +544,13 @@ SEED_ALERT_RULES = [
 # 4 个默认角色预设（admin 可在 UI 上增删改）
 SEED_ROLE_PRESETS = [
     ("warehouse_manager", "仓库经理", "查看所有业务 + 审批权",
-     "index,pending,inbound,pick,transfer,inventory,storage,damage,stocktake,log,forecast,sku,channel_config"),
+     "pending,inbound,pick,transfer,inventory,damage,stocktake,log,forecast,sku,channel_config"),
     ("purchaser",         "采购员",   "入库 + 商品",
-     "index,inbound,inventory,sku"),
+     "inbound,inventory,sku"),
     ("outbound_staff",    "出库员",   "仅出库 + 库存查询",
-     "index,pick,inventory"),
-    ("normal_staff",      "普通员工", "仅工作台",
-     "index"),
+     "pick,inventory"),
+    ("normal_staff",      "普通员工", "仅修改密码",
+     ""),
 ]
 
 
@@ -589,7 +589,7 @@ def _seed_default_permissions(conn):
         ).fetchone()
         if has_perm:
             continue
-        keys = DEFAULT_PERMISSIONS_BY_POSITION.get(u["position"] or "", ["dashboard"])
+        keys = DEFAULT_PERMISSIONS_BY_POSITION.get(u["position"] or "", [])
         for mk in keys:
             conn.execute(
                 "INSERT OR IGNORE INTO menu_permission (user_id, menu_key) VALUES (?, ?)",

@@ -88,12 +88,14 @@
                     </td>
                     <td>{{ o.operator_name or o.creator_name or '—' }}</td>
                     <td class="text-right">
-                        <a class="btn btn-sm btn-link" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">查看</a>
+                        <div class="actions" style="justify-content:flex-end;">
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('inbound_detail', order_no=o.order_no) }}">查看</a>
                         {% if o.status == 'draft' %}
                         <form method="post" action="{{ url_for('inbound_cancel', order_no=o.order_no) }}" style="display:inline;" onsubmit="return confirm('撤销该入库单（草稿）？');">
                             <button class="btn btn-sm btn-danger" type="submit">撤销</button>
                         </form>
                         {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

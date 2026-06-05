@@ -8,7 +8,10 @@
 {% block content %}
 
 <style>
-/* ── 原型 C 专属：双栏布局 + 实时摘要（颜色间距全部走现有 CSS 变量） ── */
+/* ── 本页专属（全局 style.css 无等价物）：双栏布局 + inline typeahead 下拉 + 实时摘要卡。
+       颜色/形状一律走全局变量；卡片外壳、表单、按钮、徽章均复用全局 class。 ── */
+
+/* 双栏布局：左录入 + 右 sticky 摘要 */
 .req-c-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -17,7 +20,7 @@
 }
 .req-c-main { min-width: 0; }
 
-/* inline typeahead 容器 */
+/* inline typeahead 下拉容器（JS 依赖 .ta-input/.ta-menu.open/.ta-opt，必须保留） */
 .ta-wrap { position: relative; }
 .ta-wrap input.ta-input { width: 100%; }
 .ta-menu {
@@ -42,34 +45,15 @@
 .ta-opt .ta-code { font-family: var(--font-mono); font-size: 11px; color: var(--ink-quiet); flex-shrink: 0; }
 .ta-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-faded); }
 
-.sample-tag {
-    display: inline-block; margin-left: 6px;
-    font-size: 11px; font-weight: 600;
-    color: var(--accent-deep); background: var(--accent-soft);
-    padding: 1px 7px; border-radius: 10px; vertical-align: middle;
-}
-
-/* 右栏摘要卡片 sticky */
-.summary-card {
-    position: sticky; top: 16px;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    overflow: hidden;
-}
-.summary-card .sc-head {
-    padding: 14px 18px; border-bottom: 1px solid var(--line);
-    background: var(--bg-soft);
-    display: flex; align-items: center; gap: 10px;
-}
-.summary-card .sc-head .accent-bar { width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
-.summary-card .sc-head h3 { font-size: 14px; font-weight: 700; }
-.summary-card .sc-body { padding: 16px 18px; }
+/* 右栏实时摘要卡：外壳/表头复用全局 .form-card / .head；以下仅摘要专属字段排版。
+   注意：.sc-field .v.empty 必须保留，用更高优先级压住全局 .empty(列表空态 padding:40px)。 */
+.summary-card { position: sticky; top: 16px; }
+.summary-card .body { padding: 16px 18px; }
 
 .sc-field { margin-bottom: 12px; }
 .sc-field .k { font-size: 11px; color: var(--ink-quiet); margin-bottom: 2px; }
 .sc-field .v { font-size: 14px; color: var(--ink); font-weight: 600; word-break: break-word; }
-.sc-field .v.empty { color: var(--ink-faded); font-weight: 400; }
+.sc-field .v.empty { color: var(--ink-faded); font-weight: 400; padding: 0; text-align: left; }
 
 .sc-divider { height: 1px; background: var(--line); margin: 14px 0; }
 
@@ -121,13 +105,13 @@
                     <div class="form-grid">
 
                         <div class="form-row">
-                            <label for="applicant">申请人 <span class="req" style="color:var(--accent);">*</span></label>
+                            <label for="applicant">申请人 <span class="req">*</span></label>
                             <input type="text" id="applicant" name="applicant" placeholder="手填申请人姓名"
                                    aria-label="申请人" required>
                         </div>
 
                         <div class="form-row">
-                            <label for="dept-input">所属部门{% if dept_is_sample %}<span class="sample-tag">示例数据</span>{% endif %}</label>
+                            <label for="dept-input">所属部门{% if dept_is_sample %}<span class="tag" style="margin-left:6px;">示例数据</span>{% endif %}</label>
                             <div class="ta-wrap" data-ta="dept">
                                 <input type="text" class="ta-input" id="dept-input" autocomplete="off"
                                        placeholder="输入即筛部门" aria-label="所属部门搜索"
@@ -149,13 +133,13 @@
                         </div>
 
                         <div class="form-row">
-                            <label for="req-date">申请日期 <span class="req" style="color:var(--accent);">*</span></label>
+                            <label for="req-date">申请日期 <span class="req">*</span></label>
                             <input type="date" id="req-date" name="req_date" value="{{ today }}"
                                    aria-label="申请日期" required>
                         </div>
 
                         <div class="form-row span2">
-                            <label for="cat-select">领用类别{% if cat_is_sample %}<span class="sample-tag">示例数据</span>{% endif %}</label>
+                            <label for="cat-select">领用类别{% if cat_is_sample %}<span class="tag" style="margin-left:6px;">示例数据</span>{% endif %}</label>
                             <select id="cat-select" name="category" aria-label="领用类别">
                                 <option value="">— 请选择类别 —</option>
                                 {% for c in categories %}
@@ -202,9 +186,9 @@
 
         <!-- ───── 右栏：实时摘要 ───── -->
         <aside class="req-c-side">
-            <div class="summary-card" aria-label="申请单摘要" role="region">
-                <div class="sc-head"><span class="accent-bar"></span><h3>申请单摘要</h3></div>
-                <div class="sc-body">
+            <div class="form-card summary-card" aria-label="申请单摘要" role="region">
+                <div class="head"><span class="accent-bar"></span><h3>申请单摘要</h3></div>
+                <div class="body">
                     <div class="sc-field">
                         <div class="k">申请人</div>
                         <div class="v empty" id="sum-applicant">未填写</div>

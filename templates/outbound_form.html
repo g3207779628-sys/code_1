@@ -3,7 +3,7 @@
 {% block crumb %}<span class="sep">/</span><a href="{{ url_for('pick_list') }}">出库</a><span class="sep">/</span><span class="current">新建</span>{% endblock %}
 {% block content %}
 
-<form method="post" id="outbound-form" enctype="multipart/form-data">
+<form method="post" id="outbound-form" class="has-sticky-actions" enctype="multipart/form-data">
 
     <div class="v13-page-head">
         <div>
@@ -48,6 +48,7 @@
     <div class="form-card">
         <div class="head"><span class="accent-bar"></span><h3>出库明细</h3><span class="meta" id="meta-detail">FIFO 自动选批次 · 已添加 0 行 · 选物品后编码/单位/现库存自动填</span></div>
         <div class="body">
+            <div class="line-table-wrap">
             <table class="line-table" id="items-table">
                 <thead>
                     <tr>
@@ -63,6 +64,7 @@
                 </thead>
                 <tbody id="items-body"></tbody>
             </table>
+            </div>
             <button type="button" class="add-line" onclick="addRow()">+ 添加一行明细</button>
         </div>
     </div>

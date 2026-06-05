@@ -3,108 +3,266 @@
 {% block crumb %}<span class="sep">/</span><span class="current">工作台</span>{% endblock %}
 {% block content %}
 
-{# === 6 列 KPI strip（无背景色块，仅彩色数字） === #}
-<div class="kpi-strip">
+<div class="wb">
+
+  {# ===== 页头 ===== #}
+  <div class="page-head anim" style="animation-delay:.02s">
     <div>
-        <div class="label">在仓总数</div>
-        <div class="num">{{ "{:,}".format(stats.total_on_hand) }}<span class="unit">件</span></div>
-        <div class="delta">{{ stats.sku }} 种物品</div>
+      <div class="ph-pre">// DASHBOARD</div>
+      <h1>工作台</h1>
+      <div class="ph-sub">早上好，<b>{{ session.display_name or session.username }}</b> · 今天有 <b>{{ stats.low_stock_count }}</b> 项物品需补货，<b>{{ stats.draft_inbound }}</b> 项待你审批 · <span id="todayStr"></span></div>
     </div>
-    <div>
-        <div class="label">物品数</div>
-        <div class="num">{{ stats.sku }}</div>
-        <div class="delta">{{ stats.batch }} 个批次</div>
+    <div class="seg">
+      <button class="on">本月</button>
+      <button>本周</button>
+      <button>今日</button>
     </div>
-    <div>
-        <div class="label">低库存</div>
-        <div class="num {% if stats.low_stock_count >= 3 %}err{% elif stats.low_stock_count %}warn{% endif %}">{{ stats.low_stock_count }}</div>
-        {% if stats.low_stock_count %}<div class="delta">需补货</div>{% endif %}
+  </div>
+
+  {# ===== KPI 行 ===== #}
+  <div class="kpi-row">
+    <div class="card hov kpi-hero anim" style="animation-delay:.06s">
+      <div class="k-top">
+        <div class="k-label"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="m3 8 9 5 9-5M3 16l9 5 9-5M3 12l9 5 9-5"/></svg></span>在仓总数</div>
+        <span class="delta up">▲ 2.1% <span style="opacity:.7">较上周</span></span>
+      </div>
+      <div class="k-num"><span class="count" data-to="{{ stats.total_on_hand }}">0</span><span class="u">件</span></div>
+      <div class="k-subs">
+        <div class="s"><b class="count" data-to="{{ stats.sku }}">0</b>种物品</div>
+        <div class="s"><b class="count" data-to="{{ stats.batch }}">0</b>个批次</div>
+        <div class="s"><b class="count" data-to="8">0</b>个仓库</div>
+      </div>
+      <svg class="spark" id="heroSpark" viewBox="0 0 420 54" preserveAspectRatio="none"></svg>
     </div>
-    <div>
-        <div class="label">待审批</div>
-        <div class="num warn">{{ stats.pending_damage + stats.draft_inbound }}</div>
-        <div class="delta">入 {{ stats.draft_inbound }} · 损 {{ stats.pending_damage }}</div>
+
+    <div class="card hov kpi anim" style="animation-delay:.1s">
+      <div class="k-label"><span class="ic ink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>物品种类</div>
+      <div class="k-num"><span class="count" data-to="{{ stats.sku }}">0</span><span class="u">种</span></div>
+      <div class="k-foot"><span class="meta">{{ stats.batch }} 个批次</span></div>
     </div>
-    <div>
-        <div class="label">本月入库</div>
-        <div class="num">{{ stats.month_inbound }}<span class="unit">单</span></div>
-        <div class="delta">已审批</div>
+
+    <div class="card hov kpi anim" style="animation-delay:.14s">
+      <div class="k-label"><span class="ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v9m0 0 3-3m-3 3-3-3"/><rect x="4" y="14" width="16" height="6" rx="1.5"/></svg></span>本月入库</div>
+      <div class="k-num"><span class="count" data-to="{{ stats.month_inbound }}">0</span><span class="u">单</span></div>
+      <div class="k-foot"><span class="meta">已审核 {{ stats.month_inbound }}</span><div class="minibars" id="inBars"></div></div>
     </div>
-    <div>
-        <div class="label">本月出库</div>
-        <div class="num">{{ stats.month_outbound }}<span class="unit">单</span></div>
-        <div class="delta">已完成</div>
+
+    <div class="card hov kpi anim" style="animation-delay:.18s">
+      <div class="k-label"><span class="ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12V3m0 0 3 3m-3-3-3 3"/><rect x="4" y="14" width="16" height="6" rx="1.5"/></svg></span>本月出库</div>
+      <div class="k-num"><span class="count" data-to="{{ stats.month_outbound }}">0</span><span class="u">单</span></div>
+      <div class="k-foot"><span class="meta">已完成 {{ stats.month_outbound }}</span><svg class="minispark" id="outSpark" viewBox="0 0 64 26" preserveAspectRatio="none"></svg></div>
     </div>
+  </div>
+
+  {# ===== 需处理 ===== #}
+  <div class="alert-row">
+    <div class="alert warn anim {% if not stats.low_stock_count %}zero{% endif %}" style="animation-delay:.2s">
+      <div class="a-ic {% if stats.low_stock_count %}pulse{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4m0 3h.01"/><path d="M10.3 4.3 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/></svg></div>
+      <div class="a-body"><div class="t">低库存物品 · 需补货</div><div class="v"><span class="count" data-to="{{ stats.low_stock_count }}">0</span><span class="u">项</span></div></div>
+      <a class="a-cta" href="{{ url_for('inbound_new') }}">去补货 →</a>
+    </div>
+    <div class="alert info {% if not stats.draft_inbound %}zero{% endif %} anim" style="animation-delay:.24s">
+      <div class="a-ic {% if stats.draft_inbound %}pulse{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <div class="a-body"><div class="t">待审批单据 {% if stats.draft_inbound %}· 待处理{% else %}· 已清空{% endif %}</div><div class="v"><span class="count" data-to="{{ stats.draft_inbound }}">0</span><span class="u">单</span></div></div>
+      <a class="a-cta" href="{{ url_for('pending_approvals_list') }}">查看中心 →</a>
+    </div>
+  </div>
+
+  {# ===== 可视化（趋势线 / 环图为装饰性示例数据） ===== #}
+  <div class="viz-row">
+    <div class="panel anim" style="animation-delay:.26s">
+      <div class="panel-head">
+        <div class="ph-l"><span class="bar"></span><h3>出入库趋势</h3><span class="cnt">近 14 天</span></div>
+        <div class="legend">
+          <span class="li"><span class="sw" style="background:var(--accent)"></span>入库</span>
+          <span class="li"><span class="sw" style="background:var(--blue)"></span>出库</span>
+        </div>
+      </div>
+      <div class="panel-body"><svg class="linechart" id="lineChart" viewBox="0 0 720 208"></svg></div>
+    </div>
+    <div class="panel anim" style="animation-delay:.3s">
+      <div class="panel-head">
+        <div class="ph-l"><span class="bar" style="background:var(--blue)"></span><h3>物品大类占比</h3></div>
+        <a class="link-mini" href="{{ url_for('item_category_major_admin') }}">明细 ›</a>
+      </div>
+      <div class="panel-body">
+        <div class="donut-wrap">
+          <svg class="donut-svg" id="donut" viewBox="0 0 120 120"></svg>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== 列表卡 ===== #}
+  <div class="list-row">
+
+    {# 待审入库单 #}
+    <div class="list-card anim" style="animation-delay:.32s">
+      <div class="lc-head"><div class="l"><span class="bar org"></span><h3>待审入库单</h3></div><span class="cnt gray">{{ stats.draft_inbound }}</span></div>
+      <div class="lc-body"{% if pending_approvals|selectattr('type','equalto','入库')|list %} style="padding-top:0;"{% endif %}>
+        {% set inbound_pending = pending_approvals|selectattr('type','equalto','入库')|list %}
+        {% if inbound_pending %}
+          <table class="mtab">
+            <thead><tr><th>单号</th><th>明细</th><th class="r">件数</th></tr></thead>
+            <tbody>
+              {% for a in inbound_pending %}
+              <tr><td class="tm">{{ a.id }}</td><td class="nm">{{ a.detail }}</td><td class="r pos">{{ a.qty }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div style="padding:14px 17px;text-align:center;">
+            <a class="link-mini" style="justify-content:center;" href="{{ url_for('pending_approvals_list') }}">查看全部待审 →</a>
+          </div>
+        {% else %}
+          <div class="empty-st">
+            <div class="e-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+            <div class="e-t">暂无待审入库单</div>
+            <div class="e-s">ALL CLEAR · 0 PENDING</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# 低库存物品 #}
+    <div class="list-card anim" style="animation-delay:.36s">
+      <div class="lc-head"><div class="l"><span class="bar org"></span><h3>低库存物品</h3></div><span class="cnt org">{{ stats.low_stock_count }}</span></div>
+      <div class="lc-body"{% if low_stock_top3 %} style="padding-top:0;"{% endif %}>
+        {% if low_stock_top3 %}
+          {% for s in low_stock_top3 %}
+          {% set ratio = ((s.on_hand / s.safety_stock * 100) if s.safety_stock else 0)|round(0, 'floor')|int %}
+          <div class="low-item">
+            <div class="low-top"><span class="nm">{{ s.name }}</span><span class="stk"><b>{{ s.on_hand }}</b> <span class="sl">/ {{ s.safety_stock }} 阈值</span></span></div>
+            <div class="low-loc">{{ s.location_code or '未分配库位' }}</div>
+            <div class="low-bar"><i data-w="{{ ratio }}"></i></div>
+          </div>
+          {% endfor %}
+          <div style="padding:16px 17px;text-align:center;">
+            <a class="link-mini" style="justify-content:center;" href="{{ url_for('inventory_list') }}">查看全部低库存 →</a>
+          </div>
+        {% else %}
+          <div class="empty-st">
+            <div class="e-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+            <div class="e-t">库存充足，无需补货</div>
+            <div class="e-s">ALL CLEAR · 0 LOW</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# 最近出入库 #}
+    <div class="list-card anim" style="animation-delay:.4s">
+      <div class="lc-head"><div class="l"><span class="bar blu"></span><h3>最近出入库</h3></div><a class="link-mini" href="{{ url_for('stock_log_view') }}">流水 ›</a></div>
+      <div class="lc-body" style="padding-top:2px;">
+        <table class="mtab">
+          <thead><tr><th>时间</th><th>物品</th><th class="r">变动</th></tr></thead>
+          <tbody id="moveBody">
+            {% for r in recent_inout5 %}
+            <tr>
+              <td class="tm">{{ r.occurred_at[5:16] }}</td>
+              <td class="nm">{{ r.sku_name }}</td>
+              <td class="r {{ 'pos' if r.delta > 0 else 'neg' }}">{{ '+' if r.delta > 0 }}{{ r.delta }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="mt-empty">暂无出入库记录</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="foot">KINGSOFT-WMS · V9 · BUILD 20260604 · 内部办公仓储系统</footer>
+
 </div>
 
-{# === 3 列 dense-card 中段（待审入库 / 低库存 / 最近出入库） === #}
-<div class="grid-3" style="margin-bottom:14px;">
+<script>
+/* === 工作台可视化脚本（KPI 数字为真实 Jinja 值；趋势线/环图/火花图为装饰性示例数据） === */
+(function(){
+  const $=s=>document.querySelector(s);
+  function smooth(pts,w,h,pad){
+    const xs=pts.map((_,i)=>pad+i*((w-2*pad)/(pts.length-1)));
+    const max=Math.max(...pts),min=Math.min(...pts),rng=(max-min)||1;
+    const ys=pts.map(v=>h-pad-((v-min)/rng)*(h-2*pad));
+    let d=`M${xs[0]},${ys[0]}`;
+    for(let i=0;i<pts.length-1;i++){
+      const x0=xs[i-1]??xs[i],y0=ys[i-1]??ys[i],x1=xs[i],y1=ys[i],x2=xs[i+1],y2=ys[i+1],x3=xs[i+2]??x2,y3=ys[i+2]??y2;
+      const c1x=x1+(x2-x0)/6,c1y=y1+(y2-y0)/6,c2x=x2-(x3-x1)/6,c2y=y2-(y3-y1)/6;
+      d+=` C${c1x},${c1y} ${c2x},${c2y} ${x2},${y2}`;
+    }
+    return {d,xs,ys};
+  }
+  function pad2(n){return n<10?'0'+n:n;}
+  (function(){const d=new Date();const wk=['日','一','二','三','四','五','六'][d.getDay()];
+    const el=$('#todayStr');if(el)el.textContent=`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} 周${wk}`;})();
 
-    <div class="dense-card">
-        <div class="head">
-            <h3>待审入库单 <span class="count">{{ stats.draft_inbound }}</span></h3>
-            <a class="more" href="{{ url_for('pending_approvals_list') }}">全部 →</a>
-        </div>
-        <table class="dense-table">
-            <thead><tr><th>单号</th><th>入库员工</th><th class="text-right">件数</th><th>状态</th></tr></thead>
-            <tbody>
-                {% for a in pending_approvals if a.type == '入库' %}
-                <tr>
-                    <td class="id-cell">{{ a.id }}</td>
-                    <td>{{ a.detail }}</td>
-                    <td class="num-mono text-right">{{ a.qty }}</td>
-                    <td><span class="tag tag-warn">待审</span></td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" class="empty-cell"><span class="ico">✓</span>暂无待审入库单</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+  function countUp(el){
+    const to=+el.dataset.to,dur=900,st=performance.now(),fmt=to>=1000;
+    function f(t){const p=Math.min((t-st)/dur,1),e=1-Math.pow(1-p,3),val=Math.round(to*e);
+      el.textContent=fmt?val.toLocaleString('en-US'):val;if(p<1)requestAnimationFrame(f);}
+    requestAnimationFrame(f);
+  }
+  function runCounts(){document.querySelectorAll('.wb .count').forEach((el,i)=>setTimeout(()=>countUp(el),120+i*40));}
 
-    <div class="dense-card">
-        <div class="head">
-            <h3>低库存物品 <span class="count">{{ stats.low_stock_count }}</span></h3>
-            <a class="more" href="{{ url_for('inventory_list') }}?state=low">补货 →</a>
-        </div>
-        <table class="dense-table">
-            <thead><tr><th>物品</th><th>库位</th><th class="text-right">在仓</th><th class="text-right">阈值</th></tr></thead>
-            <tbody>
-                {% for s in low_stock_top3 %}
-                <tr>
-                    <td class="sku-name">{{ s.name }}</td>
-                    <td class="mono" style="color:var(--ink-quiet);">{{ s.location_code or '-' }}</td>
-                    <td class="num-mono text-right" style="color:var(--err);">{{ s.on_hand }}</td>
-                    <td class="num-mono text-right">{{ s.safety_stock }}</td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" class="empty-cell"><span class="ico">✓</span>库存充足，无需补货</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+  function drawHeroSpark(){
+    const host=$('#heroSpark');if(!host)return;
+    const data=[6120,6180,6150,6240,6210,6300,6280,6340,6310,6360,6330,6390,6350,6369];
+    const w=420,h=54,p=4,{d,xs,ys}=smooth(data,w,h,p),area=`${d} L${xs[xs.length-1]},${h} L${xs[0]},${h} Z`;
+    host.innerHTML=`<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+      <path d="${area}" fill="url(#hg)"/>
+      <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1;animation:wbdraw 1.3s ease forwards .2s"/>
+      <circle cx="${xs[xs.length-1]}" cy="${ys[ys.length-1]}" r="3.2" fill="var(--accent)" opacity="0" style="animation:wbfadeIn .4s ease forwards 1.3s"/>`;
+  }
+  function drawInBars(){
+    const box=$('#inBars');if(!box)return;
+    const data=[3,5,2,6,4,7,5],max=Math.max(...data);box.innerHTML='';
+    data.forEach((v,i)=>{const b=document.createElement('i');if(i===data.length-1)b.className='hot';box.appendChild(b);
+      setTimeout(()=>b.style.height=(6+v/max*20)+'px',300+i*60);});
+  }
+  function drawOutSpark(){
+    const host=$('#outSpark');if(!host)return;
+    const data=[1,0,2,1,0,1,0],{d}=smooth(data,64,26,3);
+    host.innerHTML=`<path d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.6" stroke-linecap="round" opacity=".55" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1;animation:wbdraw 1s ease forwards .4s"/>`;
+  }
+  function drawLineChart(){
+    const host=$('#lineChart');if(!host)return;
+    const inb=[18,22,15,28,24,30,26,32,20,34,29,38,31,40],out=[12,16,10,18,14,20,15,22,12,24,18,26,20,28];
+    const days=['22','23','24','25','26','27','28','29','30','31','01','02','03','04'];
+    const w=720,h=208,padL=34,padR=14,padT=14,padB=26,max=Math.max(...inb,...out)*1.1;
+    const X=i=>padL+i*((w-padL-padR)/(inb.length-1)),Y=v=>h-padB-(v/max)*(h-padT-padB);
+    let grid='',axis='';
+    for(let g=0;g<=4;g++){const yv=max*g/4,y=Y(yv);
+      grid+=`<line class="lc-grid" x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}"/>`;
+      axis+=`<text x="${padL-7}" y="${y+3}" text-anchor="end">${Math.round(yv)}</text>`;}
+    days.forEach((dd,i)=>{if(i%2===0)axis+=`<text x="${X(i)}" y="${h-9}" text-anchor="middle">${dd}</text>`;});
+    function line(data,color,delay,fillId){
+      let d=`M${X(0)},${Y(data[0])}`;
+      for(let i=1;i<data.length;i++){const cx=(X(i-1)+X(i))/2;d+=` C${cx},${Y(data[i-1])} ${cx},${Y(data[i])} ${X(i)},${Y(data[i])}`;}
+      const area=`${d} L${X(data.length-1)},${h-padB} L${X(0)},${h-padB} Z`;
+      let dots='';data.forEach((v,i)=>{dots+=`<circle class="lc-dot" cx="${X(i)}" cy="${Y(v)}" r="0" fill="${color}"><animate attributeName="r" to="2.6" dur=".3s" begin="${delay+0.9}s" fill="freeze"/><title>${days[i]} · ${v}</title></circle>`;});
+      return `<path d="${area}" fill="url(#${fillId})" opacity="0" style="animation:wbfadeIn .6s ease forwards ${delay+0.6}s"/>
+              <path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1;animation:wbdraw 1.4s cubic-bezier(.4,0,.2,1) forwards ${delay}s"/>${dots}`;
+    }
+    host.innerHTML=`<defs>
+        <linearGradient id="fillO" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".16"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient>
+        <linearGradient id="fillB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--blue)" stop-opacity=".12"/><stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient>
+      </defs><g class="lc-axis">${grid}${axis}</g>${line(out,'var(--blue)',.3,'fillB')}${line(inb,'var(--accent)',.1,'fillO')}`;
+  }
+  function drawDonut(){
+    const host=$('#donut');if(!host)return;
+    const segs=[{nm:'应急保障',v:38,c:'var(--accent)'},{nm:'消防类',v:22,c:'var(--blue)'},{nm:'勤务保障',v:18,c:'#2a2622'},{nm:'办公用品',v:14,c:'#c9a23f'},{nm:'其它',v:8,c:'#cfc8bd'}];
+    const total=segs.reduce((a,b)=>a+b.v,0),cx=60,cy=60,r=44,C=2*Math.PI*r;let off=0,arcs='';
+    segs.forEach((s,i)=>{const len=s.v/total*C,gap=2;
+      arcs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.c}" stroke-width="15" stroke-dasharray="${len-gap} ${C-len+gap}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round" style="opacity:0;transform-origin:${cx}px ${cy}px;animation:wbdonutIn .6s ease forwards ${0.4+i*0.1}s"/>`;
+      off+=len;});
+    host.innerHTML=`${arcs}<text class="donut-center big" x="60" y="58" text-anchor="middle">${total}%</text><text class="donut-center sm" x="60" y="72" text-anchor="middle">5 大类</text>`;
+    const lg=$('#donutLegend');if(lg)lg.innerHTML=segs.map(s=>`<div class="dl-row"><span class="sw" style="background:${s.c}"></span><span class="nm">${s.nm}</span><span class="pct">${s.v}%</span></div>`).join('');
+  }
+  function fillLowBar(){document.querySelectorAll('.wb .low-bar i').forEach(i=>setTimeout(()=>i.style.width=Math.min(i.dataset.w,100)+'%',500));}
 
-    <div class="dense-card">
-        <div class="head">
-            <h3>最近出入库</h3>
-            <a class="more" href="{{ url_for('stock_log_view') }}">流水 →</a>
-        </div>
-        <table class="dense-table">
-            <thead><tr><th>时间</th><th>物品</th><th class="text-right">变动</th></tr></thead>
-            <tbody>
-                {% for r in recent_inout5 %}
-                <tr>
-                    <td class="mono" style="color:var(--ink-quiet);">{{ r.occurred_at[5:16] }}</td>
-                    <td class="sku-name">{{ r.sku_name }}</td>
-                    <td class="num-mono text-right {{ 'delta-in' if r.delta > 0 else 'delta-out' }}">{{ '+' if r.delta > 0 }}{{ r.delta }}</td>
-                </tr>
-                {% else %}
-                <tr><td colspan="3" class="empty-cell"><span class="ico">○</span>暂无出入库记录</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-</div>
+  window.addEventListener('load',()=>{runCounts();drawHeroSpark();drawInBars();drawOutSpark();drawLineChart();drawDonut();fillLowBar();});
+})();
+</script>
 
 {% endblock %}

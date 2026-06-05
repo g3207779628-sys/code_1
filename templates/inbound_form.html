@@ -3,7 +3,7 @@
 {% block crumb %}<span class="sep">/</span><a href="{{ url_for('inbound_list') }}">入库</a><span class="sep">/</span><span class="current">新建</span>{% endblock %}
 {% block content %}
 
-<form method="post" id="inbound-form" enctype="multipart/form-data">
+<form method="post" id="inbound-form" class="has-sticky-actions" enctype="multipart/form-data">
 
     <div class="v13-page-head">
         <div>
@@ -22,7 +22,7 @@
     </div>
 
     <div class="form-card">
-        <div class="head"><span class="accent-bar"></span><h3>位置信息</h3><span class="meta">必填 1 项</span></div>
+        <div class="head"><span class="accent-bar"></span><h3>位置信息</h3><span class="meta">必填：仓库、入库员工、明细</span></div>
         <div class="body">
             <div class="form-grid">
                 <div class="form-row">
@@ -54,6 +54,7 @@
         <div class="body">
             <datalist id="inb-areas">{% for a in area_options or [] %}<option value="{{ a }}">{% endfor %}</datalist>
             <datalist id="inb-positions">{% for p in position_options or [] %}<option value="{{ p }}">{% endfor %}</datalist>
+            <div class="line-table-wrap">
             <table class="line-table" id="item-table">
                 <thead>
                     <tr>
@@ -71,6 +72,7 @@
                 </thead>
                 <tbody id="item-rows"></tbody>
             </table>
+            </div>
             <button type="button" class="add-line" onclick="addRow()">+ 添加一行明细</button>
         </div>
     </div>

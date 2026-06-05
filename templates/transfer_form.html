@@ -3,7 +3,7 @@
 {% block crumb %}<span class="sep">/</span><a href="{{ url_for('transfer_list') }}">调拨</a><span class="sep">/</span><span class="current">新建</span>{% endblock %}
 {% block content %}
 
-<form method="post" enctype="multipart/form-data" id="transfer-form">
+<form method="post" enctype="multipart/form-data" id="transfer-form" class="has-sticky-actions">
 
     <div class="v13-page-head">
         <div>
@@ -62,6 +62,7 @@
             <div class="info-tip">
                 <strong>i</strong> 先选完<strong>调出库位</strong>，再点每行的「选物品 →」按钮，会跳到独立选择页，**只显示该库位上可调的物品+批次**。
             </div>
+            <div class="line-table-wrap">
             <table class="line-table" id="items-table">
                 <thead>
                     <tr>
@@ -73,6 +74,7 @@
                 </thead>
                 <tbody id="items-body"></tbody>
             </table>
+            </div>
             <button type="button" class="add-line" onclick="addRow()">+ 添加一行明细</button>
         </div>
     </div>

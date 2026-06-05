@@ -13,7 +13,7 @@
 <div class="form-card">
     <div class="head"><span class="accent-bar"></span><h3>新增 {{ title }}</h3></div>
     <div class="body">
-        <form method="post" style="display:flex; gap:12px; align-items:flex-end;">
+        <form method="post" class="inline-create-form" style="display:flex; gap:12px; align-items:flex-end;">
             <input type="hidden" name="action" value="create">
             <div class="form-row" style="flex:1; margin:0;">
                 <label>名称 <span style="color:var(--accent);">*</span></label>
@@ -31,7 +31,8 @@
 <div class="form-card">
     <div class="head"><span class="accent-bar"></span><h3>{{ title }} 列表</h3><span class="meta">{{ rows|length }} 条</span></div>
     <div class="body" style="padding:0;">
-        <table class="dense-table">
+        <div class="table-scroll">
+        <table class="dense-table data-table">
             <thead>
                 <tr><th style="width:80px;">ID</th><th>名称</th><th>备注</th><th style="width:160px;">创建时间</th><th style="width:140px;" class="text-right">操作</th></tr>
             </thead>
@@ -55,6 +56,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 

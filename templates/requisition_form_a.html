@@ -119,10 +119,11 @@
 </script>
 
 <style>
-/* —— 本页专属：inline typeahead（即输即筛下拉），区别于系统跳转式 picker —— */
+/* —— 本页专属最小样式：inline typeahead（即输即筛下拉），全局只有跳转式 .picker-btn，无此组件 —— */
+/* 注：.sample-tag / 只读单元格配色 / 数量右对齐 等沿用全局变量，不再自定义局部色变量 */
 .sample-tag {
     margin-left: 6px; font-size: 11px; font-weight: 500;
-    color: var(--warn); background: var(--warn-bg);
+    color: var(--amber); background: var(--amber-soft);
     padding: 1px 6px; border-radius: var(--radius-sm); vertical-align: middle;
 }
 .typeahead { position: relative; }
@@ -142,17 +143,15 @@
 }
 .typeahead .ta-list li.active,
 .typeahead .ta-list li:hover { background: var(--accent-soft); }
-.typeahead .ta-list li.ta-empty { color: var(--ink-faint); cursor: default; text-align: center; }
+.typeahead .ta-list li.ta-empty { color: var(--ink-faded); cursor: default; text-align: center; }
 .typeahead .ta-list li.ta-empty:hover { background: transparent; }
 
 /* 物品行内的 typeahead 容器需要继承单元格宽度 */
-.line-table .typeahead { width: 100%; }
+.line-table .typeahead,
 .line-table .typeahead .ta-input { width: 100%; }
-.line-table .cell-ro {
-    background: var(--bg-soft); font-size: 12px; color: var(--ink-soft);
-}
-.line-table .cell-ro.mono { font-family: var(--font-mono); }
-.line-table .cell-onhand { text-align: right; color: var(--accent-deep); font-family: var(--font-mono); }
+/* 只读回填单元格（td，全局 .c-* 仅给字体/对齐，这里补底色 + 现库存强调色） */
+.line-table .cell-ro { background: var(--bg-soft); font-size: 12px; color: var(--ink-quiet); }
+.line-table .cell-onhand { color: var(--accent-deep); }
 .line-table input[name="quantity[]"] { text-align: right; }
 
 /* 隐藏标签但保留可访问性 */

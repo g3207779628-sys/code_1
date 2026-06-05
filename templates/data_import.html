@@ -167,7 +167,7 @@
 </div>
 
 <style>
-/* 数据导入预览表：表头粘顶 + 内容横向滑动 */
+/* 数据导入专属：预览表表头粘顶 + 单元格省略号（全局 .dense-table 无 sticky 变体） */
 .import-preview-table thead th {
     position: sticky;
     top: 0;
@@ -222,12 +222,12 @@ document.querySelectorAll('select.tbl-sel').forEach(sel => {
     <div class="head"><span class="accent-bar"></span><h3>导入结果</h3><span class="meta">共 {{ summary.tables | length }} 个目标表</span></div>
     <div class="body">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;">
-            <div style="padding:18px 22px; background:var(--ok-bg, #F0FDF4); border-left:3px solid var(--ok); border-radius:6px;">
+            <div style="padding:18px 22px; background:var(--ok-bg); border-left:3px solid var(--ok); border-radius:var(--radius-sm);">
                 <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">总成功</div>
                 <div style="font-size:32px; font-weight:700; color:var(--ok); font-family:var(--font-mono);">{{ summary.total_success }}</div>
                 <div style="font-size:12px; color:var(--ink-quiet);">行</div>
             </div>
-            <div style="padding:18px 22px; background:var(--err-bg, #FEF2F2); border-left:3px solid var(--err); border-radius:6px;">
+            <div style="padding:18px 22px; background:var(--err-bg); border-left:3px solid var(--err); border-radius:var(--radius-sm);">
                 <div style="font-size:11px; color:var(--ink-quiet); margin-bottom:4px;">总失败</div>
                 <div style="font-size:32px; font-weight:700; color:var(--err); font-family:var(--font-mono);">{{ summary.total_fail }}</div>
                 <div style="font-size:12px; color:var(--ink-quiet);">行</div>

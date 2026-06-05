@@ -27,7 +27,8 @@
     </div>
     <div class="card-body" style="padding:0;">
         {% if rows %}
-        <table>
+        <div class="table-scroll">
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>物品</th>
@@ -51,6 +52,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <div class="empty">所有物品在仓数都 ≥ 安全库存。无需补货。</div>
         {% endif %}

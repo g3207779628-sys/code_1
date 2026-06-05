@@ -61,8 +61,8 @@ function closePanel(uid, panelType) {
                     <td class="actions">
                         {% if u.role != 'admin' or session.role == 'admin' %}
                         <button class="btn btn-sm btn-primary" onclick="togglePanel({{ u.id }}, 'edit')">编辑</button>
-                        <button class="btn btn-sm btn-link" onclick="togglePanel({{ u.id }}, 'view')">查看</button>
-                        <button class="btn btn-sm btn-link" onclick="togglePanel({{ u.id }}, 'pwd')">重置密码</button>
+                        <button class="btn btn-sm btn-secondary" onclick="togglePanel({{ u.id }}, 'view')">查看</button>
+                        <button class="btn btn-sm btn-secondary" onclick="togglePanel({{ u.id }}, 'pwd')">重置密码</button>
                         {% if u.id != session.user_id %}
                         <form method="post" style="display:inline;" onsubmit="return confirm('确定删除 {{ u.username }}？');">
                             <input type="hidden" name="action" value="delete_user">
